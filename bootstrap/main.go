@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"time"
 
 	"axlab.dev/bit/files"
 	"axlab.dev/bit/logs"
@@ -39,9 +40,37 @@ func main() {
 	}
 
 	logs.Sep()
-	for _, it := range files.List(".") {
+	logs.Out(">>> Listing %s\n", proc.WorkingDir())
+	watcher := files.Watch(".", files.ListOptions{})
+	logs.Sep()
+	for _, it := range watcher.List() {
 		logs.Break()
-		logs.Out("%s", it.String())
+		logs.Out("- %s", it.String())
+	}
+
+	interrupt := proc.HandleInterrupt()
+
+	logs.Sep()
+	logs.Out(">>> Watching...\n")
+
+	events := watcher.Start(100 * time.Millisecond)
+
+outer:
+	for {
+		select {
+		case list := <-events:
+			for i, ev := range list {
+				if i == 0 {
+					logs.Sep()
+				}
+				logs.Break()
+				logs.Out("%s\n", ev.String())
+			}
+		case <-interrupt:
+			logs.Sep()
+			logs.Out("Got interrupt")
+			break outer
+		}
 	}
 
 	logs.Sep()

@@ -2,11 +2,34 @@ package proc
 
 import (
 	"os"
+	"os/signal"
 	"path/filepath"
+	"sync"
 	"syscall"
 
 	"axlab.dev/bit/logs"
 )
+
+var (
+	interruptMutex sync.Mutex
+	interruptChan  chan struct{}
+)
+
+func HandleInterrupt() chan struct{} {
+	interruptMutex.Lock()
+	defer interruptMutex.Unlock()
+	if interruptChan == nil {
+		interruptChan = make(chan struct{})
+		inner := make(chan os.Signal, 1)
+		signal.Notify(inner, os.Interrupt)
+		go func() {
+			for range inner {
+				close(interruptChan)
+			}
+		}()
+	}
+	return interruptChan
+}
 
 func Bootstrap() {
 	exe := GetBootstrapExe()
