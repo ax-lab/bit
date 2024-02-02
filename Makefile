@@ -1,9 +1,6 @@
-.PHONY: all run test build
+.PHONY: all test build
 
 all: test build
-
-run:
-	@go run ./bootstrap
 
 build:
 	@go build ./bootstrap
