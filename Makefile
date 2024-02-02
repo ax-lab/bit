@@ -9,4 +9,4 @@ build:
 	@go build ./bootstrap
 
 test:
-	@go test ./bootstrap
+	@go test ./bootstrap/...
