@@ -1,9 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"os"
 
+	"axlab.dev/bit/files"
+	"axlab.dev/bit/logs"
 	"axlab.dev/bit/output"
 	"axlab.dev/bit/proc"
 	"axlab.dev/bit/text"
@@ -12,12 +13,12 @@ import (
 func main() {
 	proc.Bootstrap()
 
-	fmt.Printf("-> WorkDir: %s\n", proc.WorkingDir())
-	fmt.Printf("-> Args:    %v\n", os.Args)
+	logs.Out("-> WorkDir: %s\n", proc.WorkingDir())
+	logs.Out("-> Args:    %v\n", os.Args)
 
-	fmt.Printf("-> Main:    %s\n", proc.FileName())
-	fmt.Printf("-> Exe:     %s\n", proc.GetBootstrapExe())
-	fmt.Printf("-> Project: %s\n", proc.ProjectDir())
+	logs.Out("-> Main:    %s\n", proc.FileName())
+	logs.Out("-> Exe:     %s\n", proc.GetBootstrapExe())
+	logs.Out("-> Project: %s\n", proc.ProjectDir())
 
 	build := output.Open("./build")
 	build.Write("src/main.c", text.Cleanup(`
@@ -30,12 +31,18 @@ func main() {
 	`))
 
 	if proc.Run("CC", "gcc", "./build/src/main.c", "-o", "./build/output.exe") {
+		logs.Sep()
 		exitCode := proc.Spawn("./build/output.exe")
-		fmt.Printf("\nexited with %d\n", exitCode)
+		logs.Out("\nexited with %d\n", exitCode)
 	} else {
-		fmt.Printf("\nCompilation failed\n")
+		logs.Out("\nCompilation failed\n")
 	}
 
-	fmt.Printf("\n")
+	logs.Sep()
+	for _, it := range files.List(".") {
+		logs.Break()
+		logs.Out("%s", it.String())
+	}
 
+	logs.Sep()
 }

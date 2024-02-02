@@ -2,13 +2,12 @@ package proc
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
 
-	"axlab.dev/bit/errs"
+	"axlab.dev/bit/logs"
 	"axlab.dev/bit/text"
 )
 
@@ -27,7 +26,7 @@ func Spawn(name string, args ...string) int {
 	fullPath, err := exec.LookPath(name)
 	if err != nil {
 		if !errors.Is(err, exec.ErrDot) {
-			errs.Check(err)
+			logs.Check(err)
 		}
 	}
 
@@ -38,13 +37,13 @@ func Spawn(name string, args ...string) int {
 
 	argv := []string{fullPath}
 	argv = append(argv, args...)
-	proc := errs.Handle(os.StartProcess(fullPath, argv, &os.ProcAttr{
+	proc := logs.Handle(os.StartProcess(fullPath, argv, &os.ProcAttr{
 		Dir:   ".",
 		Env:   os.Environ(),
 		Files: files,
 	}))
 
-	status := errs.Handle(proc.Wait())
+	status := logs.Handle(proc.Wait())
 	return status.ExitCode()
 }
 
@@ -80,13 +79,13 @@ func Run(prefix, name string, args ...string) bool {
 		if isError {
 			stdErr.WriteString(output)
 			if !hasErr {
-				fmt.Printf("\n")
+				logs.Sep()
 				hasErr = true
 			}
 			if strings.ContainsAny(output, "\r\n") {
 				lines := text.Lines(stdErr.String())
 				for _, line := range lines[:len(lines)-1] {
-					fmt.Fprintf(os.Stderr, "%s | %s\n", prefix, line)
+					logs.Err("%s | %s\n", prefix, line)
 				}
 				stdErr.Reset()
 				stdErr.WriteString(lines[len(lines)-1])
@@ -101,17 +100,17 @@ func Run(prefix, name string, args ...string) bool {
 	ok := err == nil && status == 0 && !hasErr
 
 	if !ok {
-		fmt.Printf("\n")
+		logs.Sep()
 	}
 
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "%s command error: %v\n", prefix, err)
+		logs.Err("%s command error: %v\n", prefix, err)
 	}
 
 	if status != 0 {
-		fmt.Fprintf(os.Stderr, "%s exited with %d\n", prefix, status)
+		logs.Err("%s exited with %d\n", prefix, status)
 	} else if hasErr {
-		fmt.Fprintf(os.Stderr, "%s output errors", prefix)
+		logs.Err("%s output errors", prefix)
 	}
 
 	return ok

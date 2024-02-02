@@ -6,15 +6,15 @@ import (
 	"os/exec"
 	"sync"
 
-	"axlab.dev/bit/errs"
+	"axlab.dev/bit/logs"
 )
 
 func ExecInDir(prefix, dir string, callback func() bool) bool {
 	var success bool
-	cwd := errs.Handle(os.Getwd())
-	errs.Check(os.Chdir(dir))
+	cwd := logs.Handle(os.Getwd())
+	logs.Check(os.Chdir(dir))
 	success = callback()
-	errs.Check(os.Chdir(cwd))
+	logs.Check(os.Chdir(cwd))
 	return success
 }
 

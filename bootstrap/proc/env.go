@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"axlab.dev/bit/errs"
+	"axlab.dev/bit/logs"
 )
 
 func WorkingDir() string {
-	return errs.Handle(filepath.Abs("."))
+	return logs.Handle(filepath.Abs("."))
 }
 
 func IsDir(path string) bool {
