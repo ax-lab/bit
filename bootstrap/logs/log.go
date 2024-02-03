@@ -55,6 +55,15 @@ func Out(msg string, args ...any) {
 	}
 }
 
+func Fatal(msg string, args ...any) {
+	if len(args) > 0 {
+		msg = fmt.Sprintf(msg, args...)
+	}
+	Sep()
+	Err("[FATAL] %s\n\n", msg)
+	os.Exit(1)
+}
+
 func Err(msg string, args ...any) {
 	if len(args) > 0 {
 		msg = fmt.Sprintf(msg, args...)

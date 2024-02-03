@@ -1,6 +1,7 @@
-package proc
+package files
 
 import (
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -18,6 +19,10 @@ func IsDir(path string) bool {
 		return stat.IsDir()
 	}
 	return false
+}
+
+func MakeDir(path string) {
+	logs.Check(os.MkdirAll(path, fs.ModePerm))
 }
 
 func IsFile(path string) bool {

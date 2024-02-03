@@ -7,6 +7,7 @@ import (
 	"sync"
 	"syscall"
 
+	"axlab.dev/bit/files"
 	"axlab.dev/bit/logs"
 )
 
@@ -37,7 +38,7 @@ func Bootstrap() {
 		return
 	}
 
-	rootDir := filepath.Join(ProjectDir(), "bootstrap")
+	rootDir := filepath.Join(files.ProjectDir(), "bootstrap")
 	exeTime := logs.Handle(os.Stat(exe)).ModTime()
 	queue := []string{rootDir}
 	needReboot := false
@@ -58,18 +59,18 @@ func Bootstrap() {
 	if needReboot {
 		logs.Sep()
 		logs.Out("bootstrap: detected changes, rebuilding...\n")
-		mainFile := filepath.Join(ProjectDir(), "bootstrap", "main.go")
+		mainFile := filepath.Join(files.ProjectDir(), "bootstrap", "main.go")
 		if Run("GO", "go", "build", "-o", exe, mainFile) {
 			logs.Out("bootstrap: restarting...\n\n")
-			files := make([]*os.File, 3)
-			files[syscall.Stdin] = os.Stdin
-			files[syscall.Stdout] = os.Stdout
-			files[syscall.Stderr] = os.Stderr
+			fps := make([]*os.File, 3)
+			fps[syscall.Stdin] = os.Stdin
+			fps[syscall.Stdout] = os.Stdout
+			fps[syscall.Stderr] = os.Stderr
 
 			proc := logs.Handle(os.StartProcess(exe, os.Args, &os.ProcAttr{
-				Dir:   WorkingDir(),
+				Dir:   files.WorkingDir(),
 				Env:   os.Environ(),
-				Files: files,
+				Files: fps,
 			}))
 
 			status := logs.Handle(proc.Wait())
@@ -93,7 +94,7 @@ func GetBootstrapExe() string {
 		exeFile = filepath.Clean(exeFile)
 	}
 
-	if filepath.Dir(exeFile) != ProjectDir() {
+	if filepath.Dir(exeFile) != files.ProjectDir() {
 		return "" // go run
 	}
 

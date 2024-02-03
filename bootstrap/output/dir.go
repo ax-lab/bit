@@ -20,9 +20,3 @@ func Open(rootDir string) *Dir {
 func (dir *Dir) Root() string {
 	return dir.root
 }
-
-func (dir *Dir) Write(name, text string) {
-	path := filepath.Join(dir.root, name)
-	logs.Check(os.MkdirAll(filepath.Dir(path), os.ModePerm))
-	logs.Check(os.WriteFile(path, []byte(text), os.ModePerm))
-}
