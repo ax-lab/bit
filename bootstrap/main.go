@@ -7,6 +7,8 @@ import (
 	"axlab.dev/bit/text"
 )
 
+const sampleC = false
+
 func main() {
 	proc.Bootstrap()
 
@@ -19,25 +21,29 @@ func main() {
 	logs.Out("-> Build: %s\n", buildDir.FullPath())
 	logs.Sep()
 
-	main := buildDir.Write("src/main.c", text.Cleanup(`
-		#include <stdio.h>
+	compiler.Watch()
 
-		int main() {
-			printf("hello world\n");
-			return 42;
-		}
-	`))
+	if sampleC {
+		main := buildDir.Write("src/main.c", text.Cleanup(`
+			#include <stdio.h>
 
-	output := buildDir.GetFullPath("output.exe")
-	if proc.Run("CC", "gcc", main.FullPath(), "-o", output) {
-		logs.Sep()
-		if exitCode := proc.Spawn(output); exitCode != 0 {
-			logs.Out("\n(exited with %d)\n", exitCode)
+			int main() {
+				printf("hello world\n");
+				return 42;
+			}
+		`))
+
+		output := buildDir.GetFullPath("output.exe")
+		if proc.Run("CC", "gcc", main.FullPath(), "-o", output) {
+			logs.Sep()
+			if exitCode := proc.Spawn(output); exitCode != 0 {
+				logs.Out("\n(exited with %d)\n", exitCode)
+			} else {
+				logs.Out("\n")
+			}
 		} else {
-			logs.Out("\n")
+			logs.Out("\nCompilation failed\n")
 		}
-	} else {
-		logs.Out("\nCompilation failed\n")
 	}
 
 	logs.Sep()

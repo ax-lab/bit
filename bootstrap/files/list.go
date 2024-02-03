@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -72,7 +71,7 @@ func List(dirPath string, options ListOptions) (out []*Entry) {
 
 		entry := &Entry{
 			Name:  dirEntry.Name(),
-			Path:  path.Join(dirPath, entryPath),
+			Path:  entryPath,
 			IsDir: dirEntry.IsDir(),
 			entry: dirEntry,
 		}
