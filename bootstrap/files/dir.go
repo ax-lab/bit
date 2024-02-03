@@ -2,6 +2,7 @@ package files
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -54,6 +55,13 @@ func (dir Dir) Write(name, text string) *DirFile {
 	return &DirFile{name: name, path: path, text: text}
 }
 
+func (dir Dir) Remove(name string) {
+	path, _ := dir.ResolvePath(name)
+	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logs.Warn(err, "removing `%s` from `%s`", name, dir.name)
+	}
+}
+
 func (dir Dir) MakeDir(name string) {
 	path, _ := dir.ResolvePath(name)
 	logs.Check(os.MkdirAll(path, os.ModePerm))
@@ -67,14 +75,25 @@ func (dir Dir) RemoveAll(name string) {
 }
 
 func (dir Dir) ReadFile(name string) *DirFile {
-	path, name := dir.ResolvePath(name)
+	out, err := dir.TryReadFile(name)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		logs.Fatal("%v", err)
+	}
+	return out
+}
+
+func (dir Dir) TryReadFile(name string) (*DirFile, error) {
+	path, name, err := dir.TryResolvePath(name)
+	if err != nil {
+		return nil, err
+	}
+
 	if data, err := os.ReadFile(path); err == nil {
 		text := string(data)
-		return &DirFile{name: name, path: path, text: text}
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		logs.Warn(err, "reading `%s` in `%s`", name, dir.name)
+		return &DirFile{name: name, path: path, text: text}, nil
+	} else {
+		return nil, err
 	}
-	return nil
 }
 
 func (dir Dir) GetFullPath(path string) string {
@@ -83,6 +102,14 @@ func (dir Dir) GetFullPath(path string) string {
 }
 
 func (dir Dir) ResolvePath(path string) (fullPath, relativeName string) {
+	fullPath, relativeName, err := dir.TryResolvePath(path)
+	if err != nil {
+		logs.Fatal("%v", err)
+	}
+	return
+}
+
+func (dir Dir) TryResolvePath(path string) (fullPath, relativeName string, err error) {
 	base := dir.FullPath()
 	if !filepath.IsAbs(path) {
 		fullPath = filepath.Join(base, path)
@@ -97,11 +124,12 @@ func (dir Dir) ResolvePath(path string) (fullPath, relativeName string) {
 
 	filePath := logs.Handle(filepath.Rel(base, fullPath))
 	if filePath == "" || strings.Contains(filePath, "..") {
-		logs.Fatal("`%s` is not a valid path within directory `%s`", path, dir.Name())
+		err = fmt.Errorf("`%s` is not a valid path within directory `%s`", path, dir.Name())
+		return
 	}
 
 	filePath = strings.Replace(filePath, "\\", "/", -1)
-	return fullPath, filePath
+	return fullPath, filePath, nil
 }
 
 type DirFile struct {

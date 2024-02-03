@@ -1,10 +1,9 @@
 package bit
 
 import (
-	"path"
+	"fmt"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"axlab.dev/bit/files"
@@ -12,12 +11,42 @@ import (
 	"axlab.dev/bit/proc"
 )
 
+type CompilerError struct {
+	Location Location
+	Span     Span
+	Message  string
+	Args     []any
+}
+
+func (err CompilerError) String() string {
+	msg := err.Message
+	if len(err.Args) > 0 {
+		msg = fmt.Sprintf(msg, err.Args)
+	}
+	loc := fmt.Sprintf("%s:%s", err.Span.Source().Name(), err.Location.String())
+	txt := err.Span.DisplayText(0)
+	if len(txt) > 0 {
+		txt = fmt.Sprintf("\n\n    | %s", txt)
+	}
+	return fmt.Sprintf("at %s: %s%s", loc, msg, txt)
+}
+
+func (err CompilerError) Error() string {
+	return err.String()
+}
+
 type Compiler struct {
 	inputDir files.Dir
 	buildDir files.Dir
 
 	programsMutex sync.Mutex
 	programs      map[string]map[string]*Program
+
+	sourceFileMutex sync.Mutex
+	sourceFileMap   map[string]*struct {
+		src *Source
+		err error
+	}
 }
 
 func NewCompiler(inputPath, buildPath string) *Compiler {
@@ -66,6 +95,7 @@ mainLoop:
 	for {
 		select {
 		case events := <-inputEvents:
+			comp.FlushSources()
 			for _, ev := range events {
 				if ev.Entry.IsDir {
 					continue
@@ -80,21 +110,11 @@ mainLoop:
 				}
 			}
 		case <-interrupt:
+			logs.Sep()
+			logs.Out("Exiting!\n")
 			break mainLoop
 		}
 	}
-}
-
-type Program struct {
-	compiler *Compiler
-
-	inputPath     string
-	buildPath     string
-	inputFullPath string
-	buildFullPath string
-
-	compiling  atomic.Bool
-	buildMutex sync.Mutex
 }
 
 func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
@@ -115,13 +135,12 @@ func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
 
 	program := outputMap[buildPath]
 	if program == nil {
-		program = &Program{
-			compiler:      comp,
-			inputPath:     inputName,
-			buildPath:     buildName,
-			inputFullPath: inputPath,
-			buildFullPath: buildPath,
-		}
+		program = NewProgram(comp, ProgramConfig{
+			InputPath:     inputName,
+			BuildPath:     buildName,
+			InputFullPath: inputPath,
+			BuildFullPath: buildPath,
+		})
 		outputMap[buildPath] = program
 	}
 
@@ -130,8 +149,9 @@ func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
 
 func (program *Program) QueueCompile() {
 	if program.compiling.CompareAndSwap(false, true) {
+		inputPath := program.config.InputPath
 		logs.Sep()
-		logs.Out("-> Queued `%s`...\n", program.inputPath)
+		logs.Out("-> Queued `%s`...\n", inputPath)
 		go func() {
 			program.buildMutex.Lock()
 			defer program.compiling.Store(false)
@@ -139,24 +159,19 @@ func (program *Program) QueueCompile() {
 
 			startTime := time.Now()
 			logs.Break()
-			logs.Out(".. Compiling `%s`...\n", program.inputPath)
 			defer func() {
 				duration := time.Since(startTime)
 				logs.Break()
-				logs.Out("== Finished `%s` in %s\n", program.inputPath, duration.String())
+				logs.Out("== Finished `%s` in %s\n", inputPath, duration.String())
 			}()
 
 			compiler := program.compiler
-			inputDir := compiler.inputDir
-			buildDir := compiler.buildDir
-
-			file := inputDir.ReadFile(program.inputPath)
-			baseDir := file.Name()
-			if file == nil {
-				return
+			if source, err := compiler.LoadSource(inputPath); err == nil {
+				logs.Out(".. Compiling `%s`...\n", inputPath)
+				program.Compile(source)
+			} else {
+				logs.Err("!! Failed to load `%s`: %v", inputPath, err)
 			}
-
-			buildDir.Write(path.Join(baseDir, file.Name()+".src"), file.Text())
 		}()
 	}
 }
@@ -168,7 +183,7 @@ func (program *Program) ClearBuild() {
 		defer program.buildMutex.Unlock()
 
 		logs.Sep()
-		logs.Out("-> Removing `%s`\n", program.inputPath)
-		program.compiler.buildDir.RemoveAll(program.buildPath)
+		logs.Out("-> Removing `%s`\n", program.config.InputPath)
+		program.compiler.buildDir.RemoveAll(program.config.BuildPath)
 	}()
 }
