@@ -1,6 +1,7 @@
 package bit
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -8,7 +9,6 @@ import (
 
 	"axlab.dev/bit/files"
 	"axlab.dev/bit/logs"
-	"axlab.dev/bit/proc"
 )
 
 type CompilerError struct {
@@ -36,6 +36,8 @@ func (err CompilerError) Error() string {
 }
 
 type Compiler struct {
+	ctx context.Context
+
 	inputDir files.Dir
 	buildDir files.Dir
 
@@ -49,8 +51,9 @@ type Compiler struct {
 	}
 }
 
-func NewCompiler(inputPath, buildPath string) *Compiler {
+func NewCompiler(ctx context.Context, inputPath, buildPath string) *Compiler {
 	return &Compiler{
+		ctx:      ctx,
 		inputDir: files.OpenDir(inputPath).MustExist("compiler input"),
 		buildDir: files.OpenDir(buildPath).Create("compiler build"),
 	}
@@ -75,11 +78,9 @@ func (comp *Compiler) Watch() {
 		return strings.HasSuffix(entry.Name, ".bit")
 	}})
 
-	interrupt := proc.HandleInterrupt()
 	inputEvents := watcher.Start(100 * time.Millisecond)
 
-	logs.Sep()
-	logs.Out(">>> Compiling from `%s` to `%s`...\n", input.Name(), comp.buildDir.Name())
+	logs.Out("\n○○○ Watcher: compiling from at `%s` to `%s`...\n", input.Name(), comp.buildDir.Name())
 
 	for _, it := range watcher.List() {
 		if it.IsDir {
@@ -109,9 +110,7 @@ mainLoop:
 					program.ClearBuild()
 				}
 			}
-		case <-interrupt:
-			logs.Sep()
-			logs.Out("Exiting!\n")
+		case <-comp.ctx.Done():
 			break mainLoop
 		}
 	}
@@ -136,10 +135,8 @@ func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
 	program := outputMap[buildPath]
 	if program == nil {
 		program = NewProgram(comp, ProgramConfig{
-			InputPath:     inputName,
-			BuildPath:     buildName,
-			InputFullPath: inputPath,
-			BuildFullPath: buildPath,
+			InputPath: inputName,
+			BuildPath: buildName,
 		})
 		outputMap[buildPath] = program
 	}
@@ -148,29 +145,26 @@ func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
 }
 
 func (program *Program) QueueCompile() {
-	if program.compiling.CompareAndSwap(false, true) {
+	if program.NeedRecompile() && program.compiling.CompareAndSwap(false, true) {
 		inputPath := program.config.InputPath
-		logs.Sep()
-		logs.Out("-> Queued `%s`...\n", inputPath)
+		logs.Out("\n>>> Queued `%s`...\n", inputPath)
 		go func() {
 			program.buildMutex.Lock()
 			defer program.compiling.Store(false)
 			defer program.buildMutex.Unlock()
 
 			startTime := time.Now()
-			logs.Break()
 			defer func() {
 				duration := time.Since(startTime)
-				logs.Break()
-				logs.Out("== Finished `%s` in %s\n", inputPath, duration.String())
+				logs.Out("<<< Finished `%s` in %s\n", inputPath, duration.String())
 			}()
 
 			compiler := program.compiler
 			if source, err := compiler.LoadSource(inputPath); err == nil {
-				logs.Out(".. Compiling `%s`...\n", inputPath)
+				logs.Out("... Compiling `%s`...\n", inputPath)
 				program.Compile(source)
 			} else {
-				logs.Err("!! Failed to load `%s`: %v", inputPath, err)
+				logs.Err("!!! Failed to load `%s`: %v", inputPath, err)
 			}
 		}()
 	}
@@ -182,8 +176,7 @@ func (program *Program) ClearBuild() {
 		defer program.compiling.Store(false)
 		defer program.buildMutex.Unlock()
 
-		logs.Sep()
-		logs.Out("-> Removing `%s`\n", program.config.InputPath)
+		logs.Out("\n>>> Removing `%s`\n", program.config.InputPath)
 		program.compiler.buildDir.RemoveAll(program.config.BuildPath)
 	}()
 }

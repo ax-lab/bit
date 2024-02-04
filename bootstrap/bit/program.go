@@ -11,8 +11,6 @@ import (
 type ProgramConfig struct {
 	InputPath     string
 	BuildPath     string
-	InputFullPath string
-	BuildFullPath string
 	LexerTemplate *Lexer
 }
 
@@ -35,6 +33,22 @@ func NewProgram(compiler *Compiler, config ProgramConfig) *Program {
 		config:   config,
 		lexer:    config.LexerTemplate.CopyOrDefault(),
 	}
+}
+
+func (program *Program) NeedRecompile() bool {
+	compiler := program.compiler
+	input := compiler.inputDir.Stat(program.config.InputPath)
+	if input == nil {
+		return false
+	}
+
+	baseName := path.Base(program.config.InputPath)
+	output := compiler.buildDir.Stat(program.outputPath(baseName + ".src"))
+	if output == nil {
+		return true
+	}
+
+	return output.ModTime().Before(input.ModTime())
 }
 
 func (program *Program) Compile(source *Source) {
@@ -98,6 +112,6 @@ func (program *Program) removeOutput(name string) {
 }
 
 func (program *Program) outputPath(name string) string {
-	baseDir := program.source.Name()
+	baseDir := program.config.BuildPath
 	return path.Join(baseDir, name)
 }

@@ -79,9 +79,9 @@ func Run(prefix, name string, args ...string) bool {
 		if isError {
 			stdErr.WriteString(output)
 			if !hasErr {
-				logs.Sep()
-				hasErr = true
+				logs.Out("\n")
 			}
+			hasErr = true
 			if strings.ContainsAny(output, "\r\n") {
 				lines := text.Lines(stdErr.String())
 				for _, line := range lines[:len(lines)-1] {
@@ -100,7 +100,7 @@ func Run(prefix, name string, args ...string) bool {
 	ok := err == nil && status == 0 && !hasErr
 
 	if !ok {
-		logs.Sep()
+		logs.Out("\n")
 	}
 
 	if err != nil {

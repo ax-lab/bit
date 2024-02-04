@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"runtime"
-	"strings"
 )
 
 const (
@@ -23,45 +22,13 @@ func CallerSuffix(skip int) string {
 	return Caller(skip+1, "  -- ")
 }
 
-var (
-	curSep = "\n"
-)
-
-func Break() {
-	if len(curSep) > 1 {
-		os.Stdout.WriteString(curSep[:1])
-		curSep = curSep[1:]
-	}
-}
-
-func Sep() {
-	os.Stdout.WriteString(curSep)
-	curSep = ""
-}
-
 func Out(msg string, args ...any) {
 	if len(args) > 0 {
 		msg = fmt.Sprintf(msg, args...)
 	}
 	if len(msg) > 0 {
 		os.Stdout.WriteString(msg)
-		if strings.HasSuffix(msg, "\n\n") {
-			curSep = ""
-		} else if strings.HasSuffix(msg, "\n") {
-			curSep = "\n"
-		} else {
-			curSep = "\n\n"
-		}
 	}
-}
-
-func Fatal(msg string, args ...any) {
-	if len(args) > 0 {
-		msg = fmt.Sprintf(msg, args...)
-	}
-	Sep()
-	Err("[FATAL] %s\n\n", msg)
-	os.Exit(1)
 }
 
 func Err(msg string, args ...any) {
@@ -70,14 +37,15 @@ func Err(msg string, args ...any) {
 	}
 	if len(msg) > 0 {
 		os.Stderr.WriteString(msg)
-		if strings.HasSuffix(msg, "\n\n") {
-			curSep = ""
-		} else if strings.HasSuffix(msg, "\n") {
-			curSep = "\n"
-		} else {
-			curSep = "\n\n"
-		}
 	}
+}
+
+func Fatal(msg string, args ...any) {
+	if len(args) > 0 {
+		msg = fmt.Sprintf(msg, args...)
+	}
+	Err("\n[FATAL] %s\n", msg)
+	os.Exit(1)
 }
 
 func Warn(err error, msg string, args ...any) bool {
@@ -85,8 +53,7 @@ func Warn(err error, msg string, args ...any) bool {
 		if len(args) > 0 {
 			msg = fmt.Sprintf(msg, args...)
 		}
-		Sep()
-		fmt.Printf("[WRN] %s: %v%s\n", msg, err, CallerSuffix(1))
+		fmt.Printf("\n[WRN] %s: %v%s\n", msg, err, CallerSuffix(1))
 		return false
 	}
 	return true
@@ -97,8 +64,7 @@ func Error(err error, msg string, args ...any) bool {
 		if len(args) > 0 {
 			msg = fmt.Sprintf(msg, args...)
 		}
-		Sep()
-		fmt.Printf("[ERR] %s: %v%s\n", msg, err, CallerSuffix(1))
+		fmt.Printf("\n[ERR] %s: %v%s\n", msg, err, CallerSuffix(1))
 		return false
 	}
 	return true
@@ -108,6 +74,7 @@ func Info(msg string, args ...any) {
 	if len(args) > 0 {
 		msg = fmt.Sprintf(msg, args...)
 	}
-	Sep()
-	fmt.Printf("[INF] %s%s\n", msg, CallerSuffix(1))
+	if len(msg) > 0 {
+		fmt.Printf("\n[INF] %s%s\n", msg, CallerSuffix(1))
+	}
 }

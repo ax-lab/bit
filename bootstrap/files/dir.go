@@ -74,6 +74,16 @@ func (dir Dir) RemoveAll(name string) {
 	}
 }
 
+func (dir Dir) Stat(name string) fs.FileInfo {
+	fullPath, _ := dir.ResolvePath(name)
+	if info, err := os.Stat(fullPath); err == nil {
+		return info
+	} else if !errors.Is(err, fs.ErrNotExist) {
+		logs.Warn(err, "stating `%s` in `%s`", name, dir.name)
+	}
+	return nil
+}
+
 func (dir Dir) ReadFile(name string) *DirFile {
 	out, err := dir.TryReadFile(name)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
