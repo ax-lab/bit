@@ -28,7 +28,10 @@ const (
 type Token struct {
 	Type TokenType
 	Span Span
-	Pos  Location
+}
+
+func (token Token) Indent() int {
+	return token.Span.Indent()
 }
 
 type Lexer struct {
@@ -127,7 +130,6 @@ func (lexer *Lexer) Tokenize(src *Source) (out []Token, err error) {
 
 		var (
 			sta  = cur.Pos()
-			pos  = cur.Location()
 			span = cur.Span()
 			text = cur.Text()
 		)
@@ -185,7 +187,6 @@ func (lexer *Lexer) Tokenize(src *Source) (out []Token, err error) {
 		out = append(out, Token{
 			Type: token,
 			Span: span.Truncated(len),
-			Pos:  pos,
 		})
 	}
 	return

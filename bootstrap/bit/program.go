@@ -70,9 +70,9 @@ func (program *Program) Compile(source *Source) {
 		if txt := token.Span.DisplayText(80); txt != "" {
 			tokenText.WriteString(fmt.Sprintf(" = %s", txt))
 		}
-		tokenText.WriteString(fmt.Sprintf("\n\tat %s:%s", token.Span.Source().Name(), token.Pos.String()))
+		tokenText.WriteString(fmt.Sprintf("\n\tat %s:%s", token.Span.Source().Name(), token.Span.Location().String()))
 		if token.Span.Len() > 0 {
-			pos := token.Pos
+			pos := token.Span.Location()
 			pos.Advance(token.Span.Source().TabWidth(), token.Span.Text())
 			tokenText.WriteString(fmt.Sprintf(" to %s", pos.String()))
 		}

@@ -44,6 +44,7 @@ func (src *Source) File() *files.DirFile {
 func (src *Source) Span() Span {
 	return Span{
 		src: src,
+		loc: Location{},
 		sta: 0,
 		end: len(src.text),
 	}
@@ -113,6 +114,7 @@ func (comp *Compiler) LoadSource(path string) (*Source, error) {
 
 type Span struct {
 	src *Source
+	loc Location
 	sta int
 	end int
 }
@@ -122,14 +124,15 @@ func (span Span) Source() *Source {
 }
 
 func (span Span) Cursor() *Cursor {
-	loc := span.Location()
-	return &Cursor{span, loc}
+	return &Cursor{span}
 }
 
 func (span Span) Location() Location {
-	loc := Location{}
-	loc.Advance(span.src.TabWidth(), span.src.Text()[:span.sta])
-	return loc
+	return span.loc
+}
+
+func (span Span) Indent() int {
+	return span.loc.Indent()
 }
 
 func (span Span) Sta() int {
@@ -147,6 +150,15 @@ func (span Span) Len() int {
 func (span Span) Text() string {
 	text := span.src.Text()
 	return text[span.sta:span.end]
+}
+
+func (span Span) CreateError(msg string, args ...any) error {
+	err := CompilerError{
+		Span:    span,
+		Message: msg,
+		Args:    args,
+	}
+	return err
 }
 
 func (span Span) DisplayText(maxChars int) string {
@@ -271,7 +283,6 @@ func (loc *Location) Advance(tabWidth uint32, text string) {
 
 type Cursor struct {
 	span Span
-	loc  Location
 }
 
 func (cur *Cursor) Span() Span {
@@ -279,24 +290,15 @@ func (cur *Cursor) Span() Span {
 }
 
 func (cur *Cursor) Error(size int, msg string, args ...any) error {
-	err := CompilerError{
-		Location: cur.loc,
-		Span:     cur.span.Truncated(size),
-		Message:  msg,
-		Args:     args,
-	}
+	err := cur.span.Truncated(size).CreateError(msg, args...)
 	cur.Advance(size)
 	return err
-}
-
-func (cur *Cursor) Location() Location {
-	return cur.loc
 }
 
 func (cur *Cursor) Advance(len int) {
 	tab := cur.span.src.TabWidth()
 	txt := cur.span.Text()[:len]
-	cur.loc.Advance(tab, txt)
+	cur.span.loc.Advance(tab, txt)
 	cur.span.sta += len
 }
 

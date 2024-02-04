@@ -12,10 +12,9 @@ import (
 )
 
 type CompilerError struct {
-	Location Location
-	Span     Span
-	Message  string
-	Args     []any
+	Span    Span
+	Message string
+	Args    []any
 }
 
 func (err CompilerError) String() string {
@@ -23,7 +22,7 @@ func (err CompilerError) String() string {
 	if len(err.Args) > 0 {
 		msg = fmt.Sprintf(msg, err.Args)
 	}
-	loc := fmt.Sprintf("%s:%s", err.Span.Source().Name(), err.Location.String())
+	loc := fmt.Sprintf("%s:%s", err.Span.Source().Name(), err.Span.Location().String())
 	txt := err.Span.DisplayText(0)
 	if len(txt) > 0 {
 		txt = fmt.Sprintf("\n\n    | %s", txt)
