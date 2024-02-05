@@ -5,6 +5,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"unicode"
+	"unsafe"
 
 	"axlab.dev/bit/files"
 )
@@ -39,6 +40,34 @@ func (src *Source) Dir() files.Dir {
 
 func (src *Source) File() *files.DirFile {
 	return src.file
+}
+
+func (src *Source) Compare(other *Source) int {
+	if src == other {
+		return 0
+	}
+
+	srcHasFile := src.file != nil
+	otherHasFile := other.file != nil
+	if srcHasFile != otherHasFile {
+		if srcHasFile {
+			return -1
+		} else {
+			return +1
+		}
+	}
+
+	if cmp := strings.Compare(src.name, other.name); cmp != 0 {
+		return cmp
+	}
+
+	srcPtr := uintptr(unsafe.Pointer(src))
+	otherPtr := uintptr(unsafe.Pointer(other))
+	if srcPtr < otherPtr {
+		return -1
+	} else {
+		return +1
+	}
 }
 
 func (src *Source) Span() Span {
@@ -150,6 +179,22 @@ func (span Span) Len() int {
 func (span Span) Text() string {
 	text := span.src.Text()
 	return text[span.sta:span.end]
+}
+
+func (span Span) Compare(other Span) int {
+	if cmp := span.src.Compare(other.src); cmp != 0 {
+		return cmp
+	} else if span.sta < other.sta {
+		return -1
+	} else if other.sta < span.sta {
+		return +1
+	} else if span.end < other.end {
+		return -1
+	} else if other.end < span.end {
+		return +1
+	} else {
+		return 0
+	}
 }
 
 func (span Span) CreateError(msg string, args ...any) error {

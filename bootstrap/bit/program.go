@@ -6,32 +6,37 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"axlab.dev/bit/proc"
 )
 
 type ProgramConfig struct {
 	InputPath     string
 	BuildPath     string
 	LexerTemplate *Lexer
+	Globals       map[Key]Binding
 }
 
 type Program struct {
 	compiler *Compiler
 	config   ProgramConfig
 
-	lexer  *Lexer
-	source *Source
-	tokens []Token
-	errors []error
+	lexer    *Lexer
+	source   *Source
+	tokens   []Token
+	errors   []error
+	bindings *BindingMap
 
 	compiling  atomic.Bool
 	buildMutex sync.Mutex
+
+	errMutex sync.Mutex
 }
 
 func NewProgram(compiler *Compiler, config ProgramConfig) *Program {
 	return &Program{
 		compiler: compiler,
 		config:   config,
-		lexer:    config.LexerTemplate.CopyOrDefault(),
 	}
 }
 
@@ -48,13 +53,29 @@ func (program *Program) NeedRecompile() bool {
 		return true
 	}
 
-	return output.ModTime().Before(input.ModTime())
+	outputTime := output.ModTime()
+	if outputTime.Before(input.ModTime()) {
+		return true
+	}
+
+	if exeTime := proc.GetBootstrapExeModTime(); !exeTime.IsZero() && exeTime.After(outputTime) {
+		return true
+	}
+
+	return false
 }
 
 func (program *Program) Compile(source *Source) {
+	program.lexer = program.config.LexerTemplate.CopyOrDefault()
 	program.source = source
 	program.tokens = nil
 	program.errors = nil
+
+	program.bindings = &BindingMap{}
+	for key, binding := range program.config.Globals {
+		program.bindings.BindGlobal(key, binding)
+	}
+	program.bindings.InitSource(source)
 
 	baseName := source.Name()
 	program.writeOutput(baseName+".src", source.Text())
@@ -81,6 +102,7 @@ func (program *Program) Compile(source *Source) {
 	program.writeOutput(tokenFile, tokenText.String())
 
 	if errFile := baseName + ".errors.txt"; len(program.errors) > 0 {
+		SortErrors(program.errors)
 		txt := strings.Builder{}
 		for n, err := range program.errors {
 			txt.WriteString(fmt.Sprintf("[%d of %d] ", n+1, len(program.errors)))
@@ -95,6 +117,8 @@ func (program *Program) Compile(source *Source) {
 
 func (program *Program) HandleError(err error) {
 	if err != nil {
+		program.errMutex.Lock()
+		defer program.errMutex.Unlock()
 		program.errors = append(program.errors, err)
 	}
 }

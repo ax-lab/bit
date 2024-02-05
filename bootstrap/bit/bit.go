@@ -1,8 +1,10 @@
 package bit
 
 import (
+	"cmp"
 	"context"
 	"fmt"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -178,4 +180,22 @@ func (program *Program) ClearBuild() {
 		logs.Out("\n>>> Removing `%s`\n", program.config.InputPath)
 		program.compiler.buildDir.RemoveAll(program.config.BuildPath)
 	}()
+}
+
+func SortErrors(errs []error) {
+	sort.Slice(errs, func(i, j int) bool {
+		errA := errs[i]
+		errB := errs[j]
+		cmpErrA, okA := errA.(CompilerError)
+		cmpErrB, okB := errB.(CompilerError)
+		if okA != okB {
+			return !okA // non-compilation errors first
+		}
+
+		if orderByMessage := !okA; orderByMessage {
+			return cmp.Compare(errA.Error(), errB.Error()) < 0
+		}
+
+		return cmpErrA.Span.Compare(cmpErrB.Span) < 0
+	})
 }

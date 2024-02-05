@@ -166,3 +166,26 @@ func GetBootstrapExe(force bool) string {
 	}
 	return out
 }
+
+var bootstrapExeModTime *time.Time
+
+func GetBootstrapExeModTime() time.Time {
+	compute := func() (out time.Time) {
+		exe := GetBootstrapExe(false)
+		if exe == "" {
+			return
+		}
+
+		if stat, err := os.Stat(exe); err == nil {
+			out = stat.ModTime()
+		}
+		return
+	}
+
+	if bootstrapExeModTime == nil {
+		value := compute()
+		bootstrapExeModTime = &value
+	}
+
+	return *bootstrapExeModTime
+}
