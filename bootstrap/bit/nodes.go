@@ -3,7 +3,10 @@ package bit
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"sync/atomic"
+
+	"axlab.dev/bit/text"
 )
 
 type Key interface {
@@ -50,6 +53,46 @@ func (node *Node) Bind(key Key) {
 
 func (node *Node) String() string {
 	return fmt.Sprintf("Node(%s#%d @%s)", node.value.String(), node.id, node.span.String())
+}
+
+func (node *Node) Dump() string {
+	header := fmt.Sprintf("#%d = ", node.id)
+	out := strings.Builder{}
+	out.WriteString(header)
+	out.WriteString(node.value.String())
+	if diff := 30 - out.Len(); diff > 0 {
+		out.WriteString(strings.Repeat(" ", diff))
+	} else {
+		out.WriteString("  ")
+	}
+	out.WriteString("@ ")
+	out.WriteString(node.span.String())
+	if txt := node.span.DisplayText(120); txt != "" {
+		if len(txt) <= 20 {
+			if diff := 60 - out.Len(); diff > 0 {
+				out.WriteString(strings.Repeat(" ", diff))
+			} else {
+				out.WriteString("  ")
+			}
+			out.WriteString("# ")
+			out.WriteString(txt)
+			out.WriteString(" ")
+		} else {
+			indent := strings.Repeat(" ", len(header))
+			out.WriteString(fmt.Sprintf("\n%s> ", indent))
+			out.WriteString(txt)
+			out.WriteString("\n")
+		}
+	}
+	if len(node.nodes) > 0 {
+		out.WriteString("{")
+		for n, it := range node.nodes {
+			out.WriteString(fmt.Sprintf("\n\t[%03d] ", n))
+			out.WriteString(text.Indented(it.Dump()))
+		}
+		out.WriteString("\n}")
+	}
+	return out.String()
 }
 
 func (node *Node) AddError(msg string, args ...any) {

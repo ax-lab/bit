@@ -30,6 +30,7 @@ type Program struct {
 	tokens   []Token
 	errors   []error
 	allNodes []*Node
+	modules  []*Node
 	bindings *BindingMap
 
 	compiling  atomic.Bool
@@ -80,6 +81,7 @@ func (program *Program) Compile(source *Source) {
 	program.tokens = nil
 	program.errors = nil
 	program.allNodes = nil
+	program.modules = nil
 
 	program.bindings = &BindingMap{}
 	for key, binding := range program.config.Globals {
@@ -131,6 +133,11 @@ func (program *Program) Compile(source *Source) {
 	} else {
 		program.removeOutput(errFile)
 	}
+
+	for _, it := range program.modules {
+		mod := it.Value().(Module)
+		program.writeOutput("src/"+mod.Source.Name()+".dump.txt", it.Dump())
+	}
 }
 
 func (program *Program) loadSource(source *Source) *Node {
@@ -164,6 +171,7 @@ func (program *Program) loadSource(source *Source) *Node {
 	program.writeOutput(tokenFile, tokenText.String())
 
 	module := program.NewNode(Module{source}, source.Span())
+	program.modules = append(program.modules, module)
 
 	tokenNodes := make([]*Node, len(tokens))
 	for i, it := range tokens {
