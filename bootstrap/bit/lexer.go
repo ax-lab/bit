@@ -14,6 +14,32 @@ const (
 	COMMENT_DELIM_END = "#/"
 )
 
+type Symbol string
+
+func (sym Symbol) IsEqual(key Key) bool {
+	if v, ok := key.(Symbol); ok {
+		return sym == v
+	}
+	return false
+}
+
+func (sym Symbol) String() string {
+	return fmt.Sprintf("Symbol(%s)", string(sym))
+}
+
+type Word string
+
+func (w Word) IsEqual(key Key) bool {
+	if v, ok := key.(Word); ok {
+		return w == v
+	}
+	return false
+}
+
+func (w Word) String() string {
+	return fmt.Sprintf("Word(%s)", string(w))
+}
+
 type TokenType string
 
 const (
@@ -26,8 +52,14 @@ const (
 	TokenComment TokenType = "Comment"
 )
 
-func (typ TokenType) Key() Key {
-	return typ
+func (typ TokenType) Bind(node *Node) {
+	node.Bind(typ)
+	switch typ {
+	case TokenWord:
+		node.Bind(Word(node.Span().Text()))
+	case TokenSymbol:
+		node.Bind(Symbol(node.Span().Text()))
+	}
 }
 
 func (typ TokenType) IsEqual(key Key) bool {

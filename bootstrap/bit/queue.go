@@ -13,6 +13,7 @@ type Binding interface {
 	IsSame(other Binding) bool
 	Precedence() Precedence
 	Process(binding *BindingValue, segments []*Segment, nodes []*Node) (requeue []*Node)
+	String() string
 }
 
 type processQueue struct {

@@ -45,6 +45,10 @@ func NewProgram(compiler *Compiler, config ProgramConfig) *Program {
 	}
 }
 
+func (program *Program) BindNodes(key Key, nodes ...*Node) {
+	program.bindings.AddNodes(key, nodes...)
+}
+
 func (program *Program) NeedRecompile() bool {
 	compiler := program.compiler
 	input := compiler.inputDir.Stat(program.config.InputPath)
@@ -105,6 +109,8 @@ func (program *Program) Compile(source *Source) {
 	} else {
 		program.removeOutput(unresolvedFile)
 	}
+
+	program.writeOutput("bindings.txt", program.bindings.Dump())
 
 	if debugCheckNodes {
 		visited := make(map[*Node]bool)

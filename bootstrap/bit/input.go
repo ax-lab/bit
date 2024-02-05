@@ -253,6 +253,7 @@ func (span Span) DisplayText(maxChars int) string {
 		if cnt > maxChars {
 			text = text[:pos]
 			trimR = true
+			break
 		}
 	}
 
@@ -289,7 +290,11 @@ func (span Span) Merged(other Span) Span {
 }
 
 func (span Span) String() string {
-	return fmt.Sprintf("%s:%s", span.src.Name(), span.loc.String())
+	if len := span.Len(); len > 0 {
+		return fmt.Sprintf("%s:%s+%d", span.src.Name(), span.loc.String(), len)
+	} else {
+		return fmt.Sprintf("%s:%s", span.src.Name(), span.loc.String())
+	}
 }
 
 type Location struct {

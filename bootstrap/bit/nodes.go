@@ -12,8 +12,8 @@ type Key interface {
 }
 
 type Value interface {
-	Key() Key
 	String() string
+	Bind(node *Node)
 }
 
 type Node struct {
@@ -37,9 +37,15 @@ func (program *Program) NewNode(value Value, span Span) *Node {
 		span:    span,
 		id:      int(idCounter.Add(1)),
 	}
-	program.bindings.AddNodes(node)
+
 	program.allNodes = append(program.allNodes, node)
+	node.value.Bind(node)
+
 	return node
+}
+
+func (node *Node) Bind(key Key) {
+	node.program.BindNodes(key, node)
 }
 
 func (node *Node) String() string {
@@ -51,11 +57,8 @@ func (node *Node) AddError(msg string, args ...any) {
 	node.program.HandleError(err)
 }
 
-func (node *Node) Key() Key {
-	if node.value != nil {
-		return node.value.Key()
-	}
-	return nil
+func (node *Node) Id() int {
+	return node.id
 }
 
 func (node *Node) Value() Value {

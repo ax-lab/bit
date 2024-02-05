@@ -2,8 +2,11 @@ package bit
 
 import (
 	"cmp"
+	"fmt"
 	"math"
 	"slices"
+	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 )
@@ -36,28 +39,18 @@ func (segs *BindingMap) StepNext() bool {
 	return true
 }
 
-func (segs *BindingMap) AddNodes(nodes ...*Node) {
+func (segs *BindingMap) AddNodes(key Key, nodes ...*Node) {
 	cur := 0
 	for cur < len(nodes) {
 		sta := cur
 		cur++
 
 		src := nodes[sta].Span().Source()
-		key := nodes[sta].Key()
-		if key == nil {
-			continue
-		}
-
 		for cur < len(nodes) {
 			if src != nodes[cur].Span().Source() {
 				break
 			}
-			next := nodes[cur].Key()
-			if next != nil && next.IsEqual(key) {
-				cur++
-			} else {
-				break
-			}
+			cur++
 		}
 
 		bySource := segs.getByKey(key).getBySource(src)
@@ -99,6 +92,73 @@ func (segs *BindingMap) BindStatic(key Key, src *Source, binding Binding) {
 
 func (segs *BindingMap) Bind(key Key, span Span, binding Binding) {
 	segs.doBind(key, span, binding, false)
+}
+
+func (segs *BindingMap) Dump() string {
+	out := strings.Builder{}
+
+	var keys []Key
+	for k := range segs.byKey {
+		keys = append(keys, k)
+	}
+	sort.Slice(keys, func(a, b int) bool {
+		return keys[a].String() < keys[b].String()
+	})
+
+	for n, key := range keys {
+		if n > 0 {
+			out.WriteString("\n")
+		}
+		out.WriteString(fmt.Sprintf(">>> KEY = %s:\n", key.String()))
+
+		byKey := segs.byKey[key]
+
+		var sources []*Source
+		for src := range byKey.bySource {
+			sources = append(sources, src)
+		}
+
+		sort.Slice(sources, func(a, b int) bool {
+			return sources[a].Compare(sources[b]) < 0
+		})
+
+		for _, src := range sources {
+			out.WriteString(fmt.Sprintf("\n\t--> %s:\n", src.Name()))
+
+			bySrc := byKey.bySource[src]
+
+			out.WriteString("\n\t\tNodes {\n")
+			for n, it := range bySrc.nodes {
+				out.WriteString(fmt.Sprintf("\t\t\t[%03d] %s#%d  @%s", n, it.Value().String(), it.Id(), it.Span().String()))
+				if txt := it.Span().DisplayText(0); len(txt) > 0 {
+					out.WriteString("  # ")
+					out.WriteString(txt)
+				}
+				out.WriteString("\n")
+			}
+			out.WriteString("\t\t}\n")
+
+			out.WriteString("\n\t\tSegments{\n")
+
+			for n, seg := range bySrc.table.segs {
+				out.WriteString(fmt.Sprintf("\t\t\t[%03d] %d..%d = ", n, seg.sta, seg.end))
+				binding := seg.binding
+				if binding.global {
+					out.WriteString("(GLOBAL) ")
+				} else {
+					out.WriteString(fmt.Sprintf("(%d..%d) ", binding.sta, binding.end))
+				}
+				out.WriteString(binding.val.String())
+				if !seg.process.Load() {
+					out.WriteString(" [DONE]")
+				}
+				out.WriteString("\n")
+			}
+			out.WriteString("\t\t}\n")
+		}
+	}
+
+	return out.String()
 }
 
 func (segs *BindingMap) doBind(key Key, span Span, binding Binding, global bool) {

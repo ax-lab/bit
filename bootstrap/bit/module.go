@@ -6,8 +6,8 @@ type Module struct {
 	Source *Source
 }
 
-func (mod Module) Key() Key {
-	return mod.Source
+func (mod Module) Bind(node *Node) {
+	node.Bind(mod.Source)
 }
 
 func (mod Module) String() string {
