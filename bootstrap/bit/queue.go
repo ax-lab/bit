@@ -9,10 +9,18 @@ const (
 
 type Precedence int
 
+type BindArgs struct {
+	Program  *Program
+	Binding  *BindingValue
+	Segments []*Segment
+	Nodes    []*Node
+	Requeue  []*Node
+}
+
 type Binding interface {
 	IsSame(other Binding) bool
 	Precedence() Precedence
-	Process(binding *BindingValue, segments []*Segment, nodes []*Node) (requeue []*Node)
+	Process(args *BindArgs)
 	String() string
 }
 

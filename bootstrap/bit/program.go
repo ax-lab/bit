@@ -83,7 +83,9 @@ func (program *Program) Compile(source *Source) {
 	program.allNodes = nil
 	program.modules = nil
 
-	program.bindings = &BindingMap{}
+	program.bindings = &BindingMap{
+		program: program,
+	}
 	for key, binding := range program.config.Globals {
 		program.bindings.BindGlobal(key, binding)
 	}

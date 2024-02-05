@@ -15,6 +15,8 @@ type BindingMap struct {
 	mutex sync.Mutex
 	byKey map[Key]*segmentsByKey
 
+	program *Program
+
 	queue processQueue
 
 	globalMutex   sync.Mutex
@@ -33,8 +35,16 @@ func (segs *BindingMap) StepNext() bool {
 	}
 
 	binding := segments[0].binding
-	toQueue := binding.val.Process(binding, segments, nodes)
-	requeue(toQueue)
+	args := BindArgs{
+		Program:  segs.program,
+		Binding:  binding,
+		Segments: segments,
+		Nodes:    nodes,
+		Requeue:  nodes,
+	}
+	binding.val.Process(&args)
+
+	requeue(args.Requeue)
 
 	return true
 }
