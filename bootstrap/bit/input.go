@@ -26,6 +26,17 @@ type Source struct {
 	tabWidth atomic.Uint32
 }
 
+func (src *Source) IsEqual(key Key) bool {
+	if v, ok := key.(*Source); ok {
+		return src == v
+	}
+	return false
+}
+
+func (src *Source) String() string {
+	return fmt.Sprintf("Source(%s)", src.name)
+}
+
 func (src *Source) Name() string {
 	return src.name
 }
@@ -275,6 +286,10 @@ func (span Span) Merged(other Span) Span {
 	span.sta = min(span.sta, other.sta)
 	span.end = max(span.end, other.end)
 	return span
+}
+
+func (span Span) String() string {
+	return fmt.Sprintf("%s:%s", span.src.Name(), span.loc.String())
 }
 
 type Location struct {

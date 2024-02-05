@@ -1,6 +1,7 @@
 package bit
 
 import (
+	"fmt"
 	"regexp"
 	"sort"
 	"strings"
@@ -24,6 +25,21 @@ const (
 	TokenString  TokenType = "String"
 	TokenComment TokenType = "Comment"
 )
+
+func (typ TokenType) Key() Key {
+	return typ
+}
+
+func (typ TokenType) IsEqual(key Key) bool {
+	if v, ok := key.(TokenType); ok {
+		return typ == v
+	}
+	return false
+}
+
+func (typ TokenType) String() string {
+	return fmt.Sprintf("Token%s", string(typ))
+}
 
 type Token struct {
 	Type TokenType

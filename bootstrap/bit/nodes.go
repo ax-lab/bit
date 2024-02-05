@@ -1,16 +1,19 @@
 package bit
 
 import (
+	"fmt"
 	"sort"
 	"sync/atomic"
 )
 
 type Key interface {
 	IsEqual(other Key) bool
+	String() string
 }
 
 type Value interface {
 	Key() Key
+	String() string
 }
 
 type Node struct {
@@ -18,18 +21,29 @@ type Node struct {
 	value   Value
 	span    Span
 	done    atomic.Bool
+	id      int
 
 	nodes  []*Node
 	parent *Node
 	index  int
 }
 
+var idCounter atomic.Int32
+
 func (program *Program) NewNode(value Value, span Span) *Node {
-	return &Node{
+	node := &Node{
 		program: program,
 		value:   value,
 		span:    span,
+		id:      int(idCounter.Add(1)),
 	}
+	program.bindings.AddNodes(node)
+	program.allNodes = append(program.allNodes, node)
+	return node
+}
+
+func (node *Node) String() string {
+	return fmt.Sprintf("Node(%s#%d @%s)", node.value.String(), node.id, node.span.String())
 }
 
 func (node *Node) AddError(msg string, args ...any) {
@@ -104,6 +118,10 @@ func (node *Node) Compare(other *Node) int {
 	}
 
 	return 0
+}
+
+func (node *Node) AddChildren(nodes ...*Node) {
+	node.InsertNodes(len(node.nodes), nodes...)
 }
 
 func (node *Node) RemoveNodes(sta, end int) []*Node {

@@ -10,6 +10,10 @@ import (
 	"axlab.dev/bit/proc"
 )
 
+const (
+	debugCheckNodes = false
+)
+
 type ProgramConfig struct {
 	InputPath     string
 	BuildPath     string
@@ -25,6 +29,7 @@ type Program struct {
 	source   *Source
 	tokens   []Token
 	errors   []error
+	allNodes []*Node
 	bindings *BindingMap
 
 	compiling  atomic.Bool
@@ -70,38 +75,45 @@ func (program *Program) Compile(source *Source) {
 	program.source = source
 	program.tokens = nil
 	program.errors = nil
+	program.allNodes = nil
 
 	program.bindings = &BindingMap{}
 	for key, binding := range program.config.Globals {
 		program.bindings.BindGlobal(key, binding)
 	}
-	program.bindings.InitSource(source)
 
-	baseName := source.Name()
-	program.writeOutput(baseName+".src", source.Text())
-
-	tokens, err := program.lexer.Tokenize(source)
-	program.tokens = tokens
-	program.HandleError(err)
-
-	tokenFile := baseName + ".tokens.txt"
-	tokenText := strings.Builder{}
-	for n, token := range program.tokens {
-		tokenText.WriteString(fmt.Sprintf("[%d of %d] %s", n+1, len(program.tokens), token.Type))
-		if txt := token.Span.DisplayText(80); txt != "" {
-			tokenText.WriteString(fmt.Sprintf(" = %s", txt))
+	program.loadSource(source)
+	for program.bindings.StepNext() {
+		if len(program.errors) > 0 {
+			break
 		}
-		tokenText.WriteString(fmt.Sprintf("\n\tat %s:%s", token.Span.Source().Name(), token.Span.Location().String()))
-		if token.Span.Len() > 0 {
-			pos := token.Span.Location()
-			pos.Advance(token.Span.Source().TabWidth(), token.Span.Text())
-			tokenText.WriteString(fmt.Sprintf(" to %s", pos.String()))
-		}
-		tokenText.WriteString("\n\n")
 	}
-	program.writeOutput(tokenFile, tokenText.String())
 
-	if errFile := baseName + ".errors.txt"; len(program.errors) > 0 {
+	program.writeOutput("nodes.txt", program.dumpNodes(program.allNodes))
+
+	var unresolved []*Node
+	for _, it := range program.allNodes {
+		if !it.Done() {
+			unresolved = append(unresolved, it)
+		}
+	}
+
+	const unresolvedFile = "errors-unresolved.txt"
+	if cnt := len(unresolved); cnt > 0 {
+		program.HandleError(fmt.Errorf("there are %d unresolved nodes", cnt))
+		program.writeOutput(unresolvedFile, "# UNRESOLVED NODES\n\n"+program.dumpNodes(unresolved))
+	} else {
+		program.removeOutput(unresolvedFile)
+	}
+
+	if debugCheckNodes {
+		visited := make(map[*Node]bool)
+		for _, it := range program.allNodes {
+			checkNodes(it, visited)
+		}
+	}
+
+	if errFile := "errors.txt"; len(program.errors) > 0 {
 		SortErrors(program.errors)
 		txt := strings.Builder{}
 		for n, err := range program.errors {
@@ -115,6 +127,48 @@ func (program *Program) Compile(source *Source) {
 	}
 }
 
+func (program *Program) loadSource(source *Source) *Node {
+	program.bindings.InitSource(source)
+
+	baseName := source.Name()
+	program.writeOutput("src/"+baseName, source.Text())
+
+	tokens, err := program.lexer.Tokenize(source)
+	program.tokens = tokens
+	program.HandleError(err)
+
+	tokenFile := "tokens/" + baseName + ".txt"
+	tokenText := strings.Builder{}
+	for n, token := range program.tokens {
+		if n > 0 {
+			tokenText.WriteString("\n")
+		}
+		tokenText.WriteString(fmt.Sprintf("[%d of %d] %s", n+1, len(program.tokens), token.Type))
+		if txt := token.Span.DisplayText(80); txt != "" {
+			tokenText.WriteString(fmt.Sprintf(" = %s", txt))
+		}
+		tokenText.WriteString(fmt.Sprintf("\n\tat %s:%s", token.Span.Source().Name(), token.Span.Location().String()))
+		if token.Span.Len() > 0 {
+			pos := token.Span.Location()
+			pos.Advance(token.Span.Source().TabWidth(), token.Span.Text())
+			tokenText.WriteString(fmt.Sprintf(" to %s", pos.String()))
+		}
+		tokenText.WriteString("\n")
+	}
+	program.writeOutput(tokenFile, tokenText.String())
+
+	module := program.NewNode(Module{source}, source.Span())
+
+	tokenNodes := make([]*Node, len(tokens))
+	for i, it := range tokens {
+		tokenNodes[i] = program.NewNode(it.Type, it.Span)
+	}
+
+	module.AddChildren(tokenNodes...)
+
+	return module
+}
+
 func (program *Program) HandleError(err error) {
 	if err != nil {
 		program.errMutex.Lock()
@@ -123,10 +177,40 @@ func (program *Program) HandleError(err error) {
 	}
 }
 
+func (program *Program) dumpNodes(nodes []*Node) string {
+	out := strings.Builder{}
+	count := len(nodes)
+	for n, it := range nodes {
+		if n > 0 {
+			out.WriteString("\n")
+		}
+		out.WriteString(fmt.Sprintf("[%03d / %03d] ", n+1, count))
+		out.WriteString(fmt.Sprintf("%s #%d", it.value.String(), it.id))
+
+		if n := len(it.nodes); n > 0 {
+			out.WriteString(fmt.Sprintf(" ==> [%d]{", n))
+			for _, child := range it.nodes {
+				out.WriteString(" ")
+				out.WriteString(fmt.Sprintf("#%d", child.id))
+			}
+			out.WriteString(" }")
+		}
+
+		out.WriteString("\n\n\t@")
+		out.WriteString(it.Span().String())
+		if txt := it.Span().DisplayText(40); txt != "" {
+			out.WriteString(" = ")
+			out.WriteString(txt)
+		}
+		out.WriteString("\n")
+	}
+	return out.String()
+}
+
 func (program *Program) writeOutput(name, text string) {
 	compiler := program.compiler
 	path := program.outputPath(name)
-	compiler.buildDir.Write(path, "# BUILD FILE\n\n"+text)
+	compiler.buildDir.Write(path, text)
 }
 
 func (program *Program) removeOutput(name string) {
@@ -138,4 +222,29 @@ func (program *Program) removeOutput(name string) {
 func (program *Program) outputPath(name string) string {
 	baseDir := program.config.BuildPath
 	return path.Join(baseDir, name)
+}
+
+func checkNodes(node *Node, visited map[*Node]bool) {
+	if visited[node] {
+		return
+	}
+
+	if visited == nil {
+		visited = make(map[*Node]bool)
+	}
+	visited[node] = true
+
+	if node.parent != nil && node.parent.nodes[node.index] != node {
+		panic(fmt.Sprintf("parent link for `%s` is invalid", node.String()))
+	}
+
+	for n, it := range node.nodes {
+		if it.parent != node || it.index != n {
+			panic(fmt.Sprintf("`%s` in parent `%s` is invalid", node.String(), it.String()))
+		}
+	}
+
+	for _, it := range node.nodes {
+		checkNodes(it, visited)
+	}
 }
