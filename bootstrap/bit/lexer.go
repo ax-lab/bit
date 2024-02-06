@@ -24,7 +24,7 @@ func (sym Symbol) IsEqual(key Key) bool {
 }
 
 func (sym Symbol) String() string {
-	return fmt.Sprintf("Symbol(%s)", string(sym))
+	return fmt.Sprintf("Symbol(`%s`)", string(sym))
 }
 
 type Word string

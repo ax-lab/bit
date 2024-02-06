@@ -274,8 +274,27 @@ type BindingValue struct {
 	src    *Source
 }
 
-func (src *BindingValue) overrides(other *BindingValue) bool {
-	return other.sta <= src.sta && src.end <= other.end
+func (bind *BindingValue) overrides(other *BindingValue) bool {
+	return other.sta <= bind.sta && bind.end <= other.end
+}
+
+func (bind *BindingValue) String() string {
+	out := strings.Builder{}
+	out.WriteString("Binding(")
+	if bind.global {
+		out.WriteString("GLOBAL")
+	} else {
+		out.WriteString(fmt.Sprintf("%d..%d", bind.sta, bind.end))
+	}
+
+	out.WriteString(" / ")
+	out.WriteString(bind.key.String())
+	out.WriteString(" = ")
+	out.WriteString(bind.val.String())
+	out.WriteString(" @")
+	out.WriteString(bind.src.Name())
+	out.WriteString(")")
+	return out.String()
 }
 
 type segmentsByKey struct {
@@ -465,4 +484,17 @@ func findSegmentAt(offset int, segs []*Segment) (index int, found bool) {
 			return -1
 		}
 	})
+}
+
+func DebugSegments(msg string, segments ...*Segment) {
+	out := strings.Builder{}
+	out.WriteString(msg)
+	for _, it := range segments {
+		out.WriteString(fmt.Sprintf("\n\n    @ %d..%d\n    = %s\n", it.sta, it.end, it.binding.String()))
+	}
+
+	if len(segments) == 0 {
+		out.WriteString("  (no segments)\n")
+	}
+	fmt.Println(out.String())
 }

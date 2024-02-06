@@ -242,3 +242,16 @@ func SortNodes(nodes []*Node) {
 		return a.Compare(b) < 0
 	})
 }
+
+func DebugNodes(msg string, nodes ...*Node) {
+	out := strings.Builder{}
+	out.WriteString(msg)
+	for _, it := range nodes {
+		out.WriteString(text.Indented("\n\n"+it.Dump()) + "\n")
+	}
+
+	if len(nodes) == 0 {
+		out.WriteString("  (no nodes)\n")
+	}
+	fmt.Println(out.String())
+}
