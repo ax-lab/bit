@@ -128,8 +128,16 @@ func (node *Node) Offset() int {
 	return node.span.Sta()
 }
 
+func (node *Node) Len() int {
+	return len(node.nodes)
+}
+
 func (node *Node) Nodes() []*Node {
 	return node.nodes
+}
+
+func (node *Node) Index() int {
+	return node.index
 }
 
 func (node *Node) Parent() *Node {
@@ -219,6 +227,12 @@ func (node *Node) InsertNodes(at int, newNodes ...*Node) {
 	for n, it := range node.nodes[at:] {
 		it.parent = node
 		it.index = n + at
+	}
+}
+
+func (node *Node) Remove() {
+	if node.parent != nil {
+		node.parent.RemoveNodes(node.index, node.index+1)
 	}
 }
 

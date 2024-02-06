@@ -222,7 +222,7 @@ func (program *Program) dumpNodes(nodes []*Node) string {
 
 		out.WriteString("\n\n\t@")
 		out.WriteString(it.Span().String())
-		if txt := it.Span().DisplayText(40); txt != "" {
+		if txt := it.Span().DisplayText(60); txt != "" {
 			out.WriteString(" = ")
 			out.WriteString(txt)
 		}

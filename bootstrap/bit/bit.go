@@ -139,6 +139,7 @@ func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
 			InputPath: inputName,
 			BuildPath: buildName,
 		})
+		program.InitCore()
 		outputMap[buildPath] = program
 	}
 
