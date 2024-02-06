@@ -339,11 +339,13 @@ func (table *segmentTable) bind(binding *BindingValue) {
 	replaceSta, _ := findSegmentAt(sta, table.segs)
 	replaceEnd := replaceSta
 	if is_append := replaceSta >= len(table.segs); is_append {
-		table.segs = append(table.segs, &Segment{
+		new_seg := &Segment{
 			binding: binding,
 			sta:     binding.sta,
 			end:     binding.end,
-		})
+		}
+		table.segs = append(table.segs, new_seg)
+		new_seg.enqueue()
 		return
 	}
 

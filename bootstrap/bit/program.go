@@ -50,6 +50,13 @@ func (program *Program) BindNodes(key Key, nodes ...*Node) {
 	program.bindings.AddNodes(key, nodes...)
 }
 
+func (program *Program) DeclareGlobal(key Key, binding Binding) {
+	if program.config.Globals == nil {
+		program.config.Globals = make(map[Key]Binding)
+	}
+	program.config.Globals[key] = binding
+}
+
 func (program *Program) NeedRecompile() bool {
 	compiler := program.compiler
 	input := compiler.inputDir.Stat(program.config.InputPath)
@@ -86,6 +93,7 @@ func (program *Program) Compile(source *Source) {
 	program.bindings = &BindingMap{
 		program: program,
 	}
+
 	for key, binding := range program.config.Globals {
 		program.bindings.BindGlobal(key, binding)
 	}

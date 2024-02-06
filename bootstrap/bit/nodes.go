@@ -47,8 +47,20 @@ func (program *Program) NewNode(value Value, span Span) *Node {
 	return node
 }
 
+func (node *Node) Program() *Program {
+	return node.program
+}
+
 func (node *Node) Bind(key Key) {
 	node.program.BindNodes(key, node)
+}
+
+func (node *Node) DeclareStatic(key Key, binding Binding) {
+	node.program.bindings.BindStatic(key, node.span.Source(), binding)
+}
+
+func (node *Node) Declare(key Key, binding Binding) {
+	node.program.bindings.Bind(key, node.span, binding)
 }
 
 func (node *Node) String() string {
