@@ -25,28 +25,31 @@ type BindingMap struct {
 }
 
 func (segs *BindingMap) StepNext() bool {
-	segments, nodes, requeue := segs.queue.Dequeue()
-	if len(segments) == 0 {
-		return false
+	for {
+		segments, nodes := segs.queue.Dequeue()
+		if len(segments) == 0 {
+			return false
+		}
+
+		for _, it := range segments {
+			it.process.Store(false)
+		}
+
+		if len(nodes) == 0 {
+			continue
+		}
+
+		SortNodes(nodes)
+
+		binding := segments[0].binding
+		args := BindArgs{
+			Program:  segs.program,
+			Segments: segments,
+			Nodes:    nodes,
+		}
+		binding.val.Process(&args)
+		return true
 	}
-
-	for _, it := range segments {
-		it.process.Store(false)
-	}
-
-	binding := segments[0].binding
-	args := BindArgs{
-		Program:  segs.program,
-		Binding:  binding,
-		Segments: segments,
-		Nodes:    nodes,
-		Requeue:  nodes,
-	}
-	binding.val.Process(&args)
-
-	requeue(args.Requeue)
-
-	return true
 }
 
 func (segs *BindingMap) AddNodes(key Key, nodes ...*Node) {
@@ -151,7 +154,13 @@ func (segs *BindingMap) Dump() string {
 			out.WriteString("\n\t\tSegments{\n")
 
 			for n, seg := range bySrc.table.segs {
-				out.WriteString(fmt.Sprintf("\t\t\t[%03d] %d..%d = ", n, seg.sta, seg.end))
+				var end string
+				if seg.end == math.MaxInt {
+					end = "MAX"
+				} else {
+					end = fmt.Sprint(end)
+				}
+				out.WriteString(fmt.Sprintf("\t\t\t[%03d] %d..%s = ", n, seg.sta, end))
 				binding := seg.binding
 				if binding.global {
 					out.WriteString("(GLOBAL) ")
@@ -183,6 +192,7 @@ func (segs *BindingMap) doBind(key Key, span Span, binding Binding, global bool)
 		parent: segments,
 		global: global,
 		val:    binding,
+		repr:   binding.String(),
 		key:    key,
 		src:    span.Source(),
 		sta:    sta,
@@ -223,7 +233,14 @@ func (seg *Segment) IsDone() bool {
 }
 
 func (seg *Segment) Compare(other *Segment) int {
+	// precedence has the precedence
 	if ord := cmp.Compare(seg.Precedence(), other.Precedence()); ord != 0 {
+		return ord
+	}
+
+	// use the string repr for the binding value as an easy way to sort and
+	// keep segments for the same binding operator together
+	if ord := cmp.Compare(seg.binding.repr, other.binding.repr); ord != 0 {
 		return ord
 	}
 
@@ -254,6 +271,33 @@ func (seg *Segment) Precedence() Precedence {
 	return seg.binding.val.Precedence()
 }
 
+func (seg *Segment) takeNodes() (out []*Node) {
+	src := seg.binding.parent
+	src.nodesMutex.Lock()
+	defer src.nodesMutex.Unlock()
+	if !src.nodesSorted {
+		SortNodes(src.nodes)
+		src.nodesSorted = true
+	}
+
+	sta, _ := findNodeAt(seg.sta, src.nodes)
+	end, _ := findNodeAt(seg.end, src.nodes[sta:])
+	if end > sta {
+		all := src.nodes
+		src.nodes = nil
+		src.nodes = append(src.nodes, all[:sta]...)
+
+		for _, it := range all[sta:end] {
+			if it.done.CompareAndSwap(false, true) {
+				out = append(out, it)
+			}
+		}
+
+		src.nodes = append(src.nodes, all[end:]...)
+	}
+	return out
+}
+
 func (seg *Segment) skip() {
 	seg.process.Store(false)
 }
@@ -270,6 +314,7 @@ type BindingValue struct {
 	sta    int
 	end    int
 	val    Binding
+	repr   string
 	key    Key
 	src    *Source
 }
@@ -337,16 +382,39 @@ func (segs *segmentsBySource) addNodes(nodes ...*Node) {
 		return
 	}
 
+	SortNodes(nodes)
+
 	segs.nodesMutex.Lock()
+	defer segs.table.revive(nodes)
 	defer segs.nodesMutex.Unlock()
 
+	sorted := segs.nodesSorted && nodes[0].Offset() >= segs.nodes[len(segs.nodes)-1].Offset()
+
 	segs.nodes = append(segs.nodes, nodes...)
-	segs.nodesSorted = false
+	segs.nodesSorted = sorted
 }
 
 type segmentTable struct {
 	mutex sync.RWMutex
 	segs  []*Segment
+}
+
+func (table *segmentTable) revive(nodes []*Node) {
+	curIdx, curOff := 0, 0
+	for _, it := range nodes {
+		off := it.Offset()
+		if off < curOff {
+			continue
+		}
+
+		if idx, ok := findSegmentAt(off, table.segs[curIdx:]); ok {
+			idx += curIdx
+			seg := table.segs[idx]
+			seg.enqueue()
+			curIdx = idx + 1
+			curOff = seg.end
+		}
+	}
 }
 
 func (table *segmentTable) bind(binding *BindingValue) {
@@ -490,7 +558,13 @@ func DebugSegments(msg string, segments ...*Segment) {
 	out := strings.Builder{}
 	out.WriteString(msg)
 	for _, it := range segments {
-		out.WriteString(fmt.Sprintf("\n\n    @ %d..%d\n    = %s\n", it.sta, it.end, it.binding.String()))
+		var end string
+		if it.end == math.MaxInt {
+			end = "MAX"
+		} else {
+			end = fmt.Sprint(it.end)
+		}
+		out.WriteString(fmt.Sprintf("\n\n    @ %d..%s\n    = %s\n", it.sta, end, it.binding.String()))
 	}
 
 	if len(segments) == 0 {

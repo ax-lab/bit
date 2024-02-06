@@ -148,8 +148,8 @@ func (node *Node) Done() bool {
 	return node.done.Load()
 }
 
-func (node *Node) SetDone(done bool) {
-	node.done.Store(done)
+func (node *Node) Undo() {
+	node.done.Store(false)
 }
 
 func (node *Node) Next() *Node {

@@ -12,7 +12,6 @@ type Precedence int
 
 type BindArgs struct {
 	Program  *Program
-	Binding  *BindingValue
 	Segments []*Segment
 	Nodes    []*Node
 	Requeue  []*Node
@@ -37,7 +36,7 @@ func (h *processQueue) Queue(segment *Segment) {
 	}
 }
 
-func (h *processQueue) Dequeue() (segs []*Segment, nodes []*Node, requeue func(nodes []*Node)) {
+func (h *processQueue) Dequeue() (segs []*Segment, nodes []*Node) {
 	h.skipDone()
 	if len(h.list) == 0 {
 		return
@@ -49,7 +48,7 @@ func (h *processQueue) Dequeue() (segs []*Segment, nodes []*Node, requeue func(n
 	h.skipDone()
 	for len(h.list) > 0 {
 		next := h.list[0]
-		same := next.binding.src == head.binding.src && next.binding.parent == head.binding.parent && next.binding.val.IsSame(head.binding.val)
+		same := next.binding.src == head.binding.src && next.binding.val.IsSame(head.binding.val)
 		if same {
 			heap.Pop(h)
 			segs = append(segs, next)
@@ -59,52 +58,9 @@ func (h *processQueue) Dequeue() (segs []*Segment, nodes []*Node, requeue func(n
 		}
 	}
 
-	src := head.binding.parent
-	src.nodesMutex.Lock()
-	defer src.nodesMutex.Unlock()
-	if !src.nodesSorted {
-		SortNodes(src.nodes)
-		src.nodesSorted = true
-	}
-
-	all := src.nodes
-	src.nodes = nil
-
 	for _, it := range segs {
-		sta, _ := findNodeAt(it.sta, all)
-		end, _ := findNodeAt(it.end, all[sta:])
-		end += sta
-		if end > sta {
-			src.nodes = append(src.nodes, all[:sta]...)
-
-			add := all[sta:end]
-			nodes = append(nodes, add...)
-			for _, it := range add {
-				it.SetDone(true)
-			}
-
-			all = all[end:]
-		}
-	}
-
-	src.nodes = append(src.nodes, all...)
-	requeue = func(toRequeue []*Node) {
-		cur := 0
-		for _, it := range toRequeue {
-			if !it.Done() {
-				toRequeue[cur] = it
-				cur++
-			}
-		}
-		toRequeue = toRequeue[:cur]
-		if len(toRequeue) == 0 {
-			return
-		}
-
-		src.nodesMutex.Lock()
-		defer src.nodesMutex.Unlock()
-		src.nodesSorted = false
-		src.nodes = append(src.nodes, toRequeue...)
+		add := it.takeNodes()
+		nodes = append(nodes, add...)
 	}
 
 	return
