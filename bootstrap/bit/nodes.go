@@ -212,7 +212,7 @@ func (node *Node) RemoveNodes(sta, end int) []*Node {
 
 	removed := nodes[sta:end]
 	for _, it := range removed {
-		it.index = 0
+		// keep the index intact in case operators are still referencing it
 		it.parent = nil
 	}
 

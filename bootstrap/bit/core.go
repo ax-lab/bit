@@ -29,25 +29,24 @@ func (op SplitLines) Precedence() Precedence {
 }
 
 func (op SplitLines) Process(args *BindArgs) {
-	for _, it := range args.Nodes {
-		par := it.Parent()
-		if par == nil {
-			continue
+	for _, nodes := range args.NodesByParent() {
+		par := nodes[0].Parent()
+		cur, children := 0, par.RemoveNodes(0, par.Len())
+		push := func(line []*Node) {
+			if len(line) > 0 {
+				node := args.Program.NewNode(Line{}, SliceSpan(line))
+				node.AddChildren(line...)
+				par.AddChildren(node)
+			}
+		}
+		for _, it := range nodes {
+			pos := it.Index()
+			line := children[cur:pos]
+			push(line)
+			cur = pos + 1
 		}
 
-		index, count := it.Index(), par.Len()
-		if index == 0 || index == count-1 {
-			it.Remove()
-		} else {
-			nodes := par.RemoveNodes(0, count)
-			lineA := nodes[:index]
-			lineB := nodes[index+1:]
-			nodeA := args.Program.NewNode(Line{}, SliceSpan(lineA))
-			nodeA.AddChildren(lineA...)
-			nodeB := args.Program.NewNode(Line{}, SliceSpan(lineB))
-			nodeB.AddChildren(lineB...)
-			par.AddChildren(nodeA, nodeB)
-		}
+		push(children[cur:])
 	}
 }
 

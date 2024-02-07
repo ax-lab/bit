@@ -1,6 +1,9 @@
 package bit
 
-import "container/heap"
+import (
+	"container/heap"
+	"sort"
+)
 
 const (
 	PrecFirst Precedence = iota
@@ -16,6 +19,27 @@ type BindArgs struct {
 	Segments []*Segment
 	Nodes    []*Node
 	Requeue  []*Node
+}
+
+func (args *BindArgs) NodesByParent() (out [][]*Node) {
+	set := make(map[*Node][]*Node)
+	for _, it := range args.Nodes {
+		par := it.Parent()
+		if par == nil {
+			continue
+		}
+		set[par] = append(set[par], it)
+	}
+
+	for _, v := range set {
+		out = append(out, v)
+	}
+
+	sort.Slice(out, func(i, j int) bool {
+		return out[i][0].Parent().Compare(out[j][0].Parent()) < 0
+	})
+
+	return
 }
 
 type Binding interface {
