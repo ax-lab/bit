@@ -4,6 +4,7 @@ import "container/heap"
 
 const (
 	PrecFirst Precedence = iota
+	PrecBrackets
 	PrecLines
 	PrecLast
 )

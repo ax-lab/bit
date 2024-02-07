@@ -312,6 +312,10 @@ func SliceSpan[T HasSpan](elems []T) Span {
 	}
 }
 
+func RangeSpan[T HasSpan](elems ...T) Span {
+	return SliceSpan(elems)
+}
+
 type Location struct {
 	row int
 	col int

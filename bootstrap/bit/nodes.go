@@ -108,7 +108,7 @@ func (node *Node) Dump() string {
 }
 
 func (node *Node) AddError(msg string, args ...any) {
-	err := node.span.CreateError(msg, args)
+	err := node.span.CreateError(msg, args...)
 	node.program.HandleError(err)
 }
 
@@ -130,6 +130,10 @@ func (node *Node) Offset() int {
 
 func (node *Node) Len() int {
 	return len(node.nodes)
+}
+
+func (node *Node) Text() string {
+	return node.span.Text()
 }
 
 func (node *Node) Nodes() []*Node {
@@ -188,6 +192,19 @@ func (node *Node) Compare(other *Node) int {
 
 func (node *Node) AddChildren(nodes ...*Node) {
 	node.InsertNodes(len(node.nodes), nodes...)
+}
+
+func (node *Node) RemoveRange(sta, end *Node) []*Node {
+	if sta.parent != node || end.parent != node {
+		panic("RemoveRange: range nodes are not children of the current node")
+	}
+
+	s, e := sta.Index(), end.Index()
+	if e < s {
+		s, e = e, s
+	}
+
+	return node.RemoveNodes(s, e+1)
 }
 
 func (node *Node) RemoveNodes(sta, end int) []*Node {

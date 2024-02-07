@@ -22,7 +22,7 @@ type CompilerError struct {
 func (err CompilerError) String() string {
 	msg := err.Message
 	if len(err.Args) > 0 {
-		msg = fmt.Sprintf(msg, err.Args)
+		msg = fmt.Sprintf(msg, err.Args...)
 	}
 	loc := fmt.Sprintf("%s:%s", err.Span.Source().Name(), err.Span.Location().String())
 	txt := err.Span.DisplayText(0)

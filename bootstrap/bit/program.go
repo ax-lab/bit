@@ -154,7 +154,7 @@ func (program *Program) loadSource(source *Source) *Node {
 	program.bindings.InitSource(source)
 
 	baseName := source.Name()
-	program.writeOutput("src/"+baseName, source.Text())
+	program.writeOutput("src/"+baseName+".txt", source.Text())
 
 	tokens, err := program.lexer.Tokenize(source)
 	program.tokens = tokens
