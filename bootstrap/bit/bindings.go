@@ -388,7 +388,7 @@ func (segs *segmentsBySource) addNodes(nodes ...*Node) {
 	defer segs.table.revive(nodes)
 	defer segs.nodesMutex.Unlock()
 
-	sorted := segs.nodesSorted && nodes[0].Offset() >= segs.nodes[len(segs.nodes)-1].Offset()
+	sorted := len(segs.nodes) == 0 || (segs.nodesSorted && nodes[0].Offset() >= segs.nodes[len(segs.nodes)-1].Offset())
 
 	segs.nodes = append(segs.nodes, nodes...)
 	segs.nodesSorted = sorted
