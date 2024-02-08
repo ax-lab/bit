@@ -10,6 +10,7 @@ const (
 	PrecBrackets
 	PrecIndent
 	PrecLines
+	PrecReplace
 	PrecOutput
 	PrecLast
 )

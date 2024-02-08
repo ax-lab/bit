@@ -257,6 +257,20 @@ func (node *Node) Remove() {
 	}
 }
 
+func (node *Node) ReplaceWithValue(value Value) *Node {
+	newNode := node.program.NewNode(value, node.span)
+	node.Replace(newNode)
+	return newNode
+}
+
+func (node *Node) Replace(nodes ...*Node) {
+	if par := node.parent; par != nil {
+		index := node.index
+		par.RemoveNodes(index, index+1)
+		par.InsertNodes(index, nodes...)
+	}
+}
+
 func SortNodes(nodes []*Node) {
 	sort.Slice(nodes, func(i, j int) bool {
 		a, b := nodes[i], nodes[j]
