@@ -20,7 +20,7 @@ func (val Indented) IsEqual(other Key) bool {
 type ParseIndent struct{}
 
 func (op ParseIndent) Precedence() Precedence {
-	return PrecBrackets
+	return PrecIndent
 }
 
 func (op ParseIndent) IsSame(other Binding) bool {
@@ -40,6 +40,8 @@ func (op ParseIndent) Process(args *BindArgs) {
 		base  int
 		level int
 	}
+
+	args.RequeueNodes()
 
 	for _, par := range args.ParentNodes() {
 		nodes := par.Nodes()

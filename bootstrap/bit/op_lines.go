@@ -1,10 +1,6 @@
 package bit
 
-import "fmt"
-
-type Line struct {
-	Level int
-}
+type Line struct{}
 
 func (val Line) IsEqual(other Key) bool {
 	if v, ok := other.(Line); ok {
@@ -15,10 +11,11 @@ func (val Line) IsEqual(other Key) bool {
 
 func (val Line) Bind(node *Node) {
 	node.Bind(Line{})
+	node.Bind(Indented{})
 }
 
 func (val Line) String() string {
-	return fmt.Sprintf("Line[%d]", val.Level)
+	return "Line"
 }
 
 type SplitLines struct{}
@@ -41,7 +38,7 @@ func (op SplitLines) Process(args *BindArgs) {
 		push := func(line []*Node) {
 			if len(line) > 0 {
 				span := SliceSpan(line)
-				node := args.Program.NewNode(Line{span.Indent()}, span)
+				node := args.Program.NewNode(Line{}, span)
 				node.AddChildren(line...)
 				par.AddChildren(node)
 			}

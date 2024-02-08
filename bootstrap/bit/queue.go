@@ -8,7 +8,9 @@ import (
 const (
 	PrecFirst Precedence = iota
 	PrecBrackets
+	PrecIndent
 	PrecLines
+	PrecOutput
 	PrecLast
 )
 
@@ -58,7 +60,7 @@ func (args *BindArgs) ParentNodes() (out []*Node) {
 	return
 }
 
-func (args *BindArgs) UndoNodes() {
+func (args *BindArgs) RequeueNodes() {
 	for _, it := range args.Nodes {
 		it.Undo()
 	}

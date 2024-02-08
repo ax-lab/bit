@@ -2,6 +2,8 @@ package bit
 
 import (
 	"context"
+	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -9,6 +11,8 @@ import (
 	"axlab.dev/bit/files"
 	"axlab.dev/bit/logs"
 )
+
+const MaxErrorOutput = 16
 
 type Compiler struct {
 	ctx context.Context
@@ -63,6 +67,7 @@ func (comp *Compiler) Watch(once bool) {
 	}
 	logs.Out("\n○○○ %s: compiling from at `%s` to `%s`...\n", header, input.Name(), comp.buildDir.Name())
 
+	var programs []*Program
 	for _, it := range watcher.List() {
 		if it.IsDir {
 			continue
@@ -70,6 +75,7 @@ func (comp *Compiler) Watch(once bool) {
 
 		buildPath := it.Path
 		program := comp.GetProgram(it.Path, buildPath)
+		programs = append(programs, program)
 
 		force := once
 		program.QueueCompile(force)
@@ -99,6 +105,14 @@ mainLoop:
 	}
 
 	comp.pending.Wait()
+	if once {
+		for _, it := range programs {
+			if len(it.errors) > 0 {
+				os.Stderr.WriteString(fmt.Sprintf("\n>>> Program %s <<<\n\n", it.source.Name()))
+			}
+			it.ShowErrors()
+		}
+	}
 }
 
 func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
@@ -130,13 +144,15 @@ func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
 	return program
 }
 
-func (program *Program) QueueCompile(force bool) {
+func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
+	wait = make(chan struct{})
 	recompile := force || program.NeedRecompile()
 	if recompile && program.compiling.CompareAndSwap(false, true) {
 		inputPath := program.config.InputPath
 		logs.Out("\n>>> Queued `%s`...\n", inputPath)
 		program.compiler.pending.Add(1)
 		go func() {
+			defer close(wait)
 			defer program.compiler.pending.Done()
 			program.buildMutex.Lock()
 			defer program.compiling.Store(false)
@@ -156,7 +172,10 @@ func (program *Program) QueueCompile(force bool) {
 				logs.Err("!!! Failed to load `%s`: %v", inputPath, err)
 			}
 		}()
+	} else {
+		close(wait)
 	}
+	return wait
 }
 
 func (program *Program) ClearBuild() {

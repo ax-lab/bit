@@ -2,6 +2,7 @@ package bit
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"strings"
 	"sync"
@@ -133,14 +134,7 @@ func (program *Program) Compile(source *Source) {
 	}
 
 	if errFile := "errors.txt"; len(program.errors) > 0 {
-		SortErrors(program.errors)
-		txt := strings.Builder{}
-		for n, err := range program.errors {
-			txt.WriteString(fmt.Sprintf("[%d of %d] ", n+1, len(program.errors)))
-			txt.WriteString(err.Error())
-			txt.WriteString("\n\n")
-		}
-		program.writeOutput(errFile, txt.String())
+		program.writeOutput(errFile, program.errorsToString(-1))
 	} else {
 		program.removeOutput(errFile)
 	}
@@ -149,6 +143,32 @@ func (program *Program) Compile(source *Source) {
 		mod := it.Value().(Module)
 		program.writeOutput("src/"+mod.Source.Name()+".dump.txt", it.Dump()+"\n")
 	}
+}
+
+func (program *Program) ShowErrors() bool {
+	if errs := program.errorsToString(MaxErrorOutput); len(errs) > 0 {
+		os.Stderr.WriteString(errs)
+		return true
+	}
+	return false
+}
+
+func (program *Program) errorsToString(max int) string {
+	SortErrors(program.errors)
+	txt := strings.Builder{}
+	for n, err := range program.errors {
+		if n > 0 {
+			txt.WriteString("\n")
+		}
+		if max > 0 && n == max {
+			txt.WriteString(fmt.Sprintf("Too many errors, omitting %d errors...\n", len(program.errors)-n))
+			break
+		}
+		txt.WriteString(fmt.Sprintf("[%d of %d] ", n+1, len(program.errors)))
+		txt.WriteString(err.Error())
+		txt.WriteString("\n")
+	}
+	return txt.String()
 }
 
 func (program *Program) loadSource(source *Source) *Node {
