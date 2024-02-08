@@ -12,6 +12,10 @@ func (str Str) IsEqual(other Key) bool {
 }
 
 func (str Str) String() string {
+	return string(str)
+}
+
+func (str Str) Repr() string {
 	return fmt.Sprintf("Str(%v)", string(str))
 }
 

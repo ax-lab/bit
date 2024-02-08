@@ -230,7 +230,7 @@ func (program *Program) dumpNodes(nodes []*Node) string {
 			out.WriteString("\n")
 		}
 		out.WriteString(fmt.Sprintf("[%03d / %03d] ", n+1, count))
-		out.WriteString(fmt.Sprintf("%s #%d", it.value.String(), it.id))
+		out.WriteString(fmt.Sprintf("%s #%d", it.value.Repr(), it.id))
 
 		if n := len(it.nodes); n > 0 {
 			out.WriteString(fmt.Sprintf(" ==> [%d]{", n))

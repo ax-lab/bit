@@ -14,7 +14,7 @@ func (val Line) Bind(node *Node) {
 	node.Bind(Indented{})
 }
 
-func (val Line) String() string {
+func (val Line) Repr() string {
 	return "Line"
 }
 

@@ -26,7 +26,7 @@ func (val Group) Bind(node *Node) {
 	node.Bind(Group{})
 }
 
-func (val Group) String() string {
+func (val Group) Repr() string {
 	return "Group"
 }
 

@@ -115,14 +115,14 @@ func (segs *BindingMap) Dump() string {
 		keys = append(keys, k)
 	}
 	sort.Slice(keys, func(a, b int) bool {
-		return keys[a].String() < keys[b].String()
+		return keys[a].Repr() < keys[b].Repr()
 	})
 
 	for n, key := range keys {
 		if n > 0 {
 			out.WriteString("\n")
 		}
-		out.WriteString(fmt.Sprintf(">>> KEY = %s:\n", key.String()))
+		out.WriteString(fmt.Sprintf(">>> KEY = %s:\n", key.Repr()))
 
 		byKey := segs.byKey[key]
 
@@ -142,7 +142,7 @@ func (segs *BindingMap) Dump() string {
 
 			out.WriteString("\n\t\tNodes {\n")
 			for n, it := range bySrc.nodes {
-				out.WriteString(fmt.Sprintf("\t\t\t[%03d] %s#%d  @%s", n, it.Value().String(), it.Id(), it.Span().String()))
+				out.WriteString(fmt.Sprintf("\t\t\t[%03d] %s#%d  @%s", n, it.Value().Repr(), it.Id(), it.Span().String()))
 				if txt := it.Span().DisplayText(0); len(txt) > 0 {
 					out.WriteString("  # ")
 					out.WriteString(txt)
@@ -334,7 +334,7 @@ func (bind *BindingValue) String() string {
 	}
 
 	out.WriteString(" / ")
-	out.WriteString(bind.key.String())
+	out.WriteString(bind.key.Repr())
 	out.WriteString(" = ")
 	out.WriteString(bind.val.String())
 	out.WriteString(" @")

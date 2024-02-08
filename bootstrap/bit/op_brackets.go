@@ -9,7 +9,7 @@ type Bracket struct {
 
 func (val Bracket) Bind(node *Node) {}
 
-func (val Bracket) String() string {
+func (val Bracket) Repr() string {
 	return fmt.Sprintf("Bracket(`%s%s`)", val.Sta, val.End)
 }
 

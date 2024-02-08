@@ -18,7 +18,7 @@ func (mod Module) Bind(node *Node) {
 	node.Bind(Module{})
 }
 
-func (mod Module) String() string {
+func (mod Module) Repr() string {
 	if mod.Source == nil {
 		return "Module(nil)"
 	}

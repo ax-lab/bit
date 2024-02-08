@@ -6,7 +6,7 @@ func (val Indented) Bind(node *Node) {
 	node.Bind(Indented{})
 }
 
-func (val Indented) String() string {
+func (val Indented) Repr() string {
 	return "Indented"
 }
 
