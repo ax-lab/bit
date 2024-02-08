@@ -19,6 +19,8 @@ type Compiler struct {
 	programsMutex sync.Mutex
 	programs      map[string]map[string]*Program
 
+	pending sync.WaitGroup
+
 	sourceFileMutex sync.Mutex
 	sourceFileMap   map[string]*struct {
 		src *Source
@@ -95,6 +97,8 @@ mainLoop:
 			break mainLoop
 		}
 	}
+
+	comp.pending.Wait()
 }
 
 func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
@@ -131,7 +135,9 @@ func (program *Program) QueueCompile(force bool) {
 	if recompile && program.compiling.CompareAndSwap(false, true) {
 		inputPath := program.config.InputPath
 		logs.Out("\n>>> Queued `%s`...\n", inputPath)
+		program.compiler.pending.Add(1)
 		go func() {
+			defer program.compiler.pending.Done()
 			program.buildMutex.Lock()
 			defer program.compiling.Store(false)
 			defer program.buildMutex.Unlock()
