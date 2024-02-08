@@ -42,6 +42,22 @@ func (args *BindArgs) NodesByParent() (out [][]*Node) {
 	return
 }
 
+func (args *BindArgs) ParentNodes() (out []*Node) {
+	set := make(map[*Node][]*Node)
+	for _, it := range args.Nodes {
+		par := it.Parent()
+		set[par] = append(set[par], it)
+	}
+
+	out = make([]*Node, 0, len(set))
+	for it := range set {
+		out = append(out, it)
+	}
+
+	SortNodes(out)
+	return
+}
+
 type Binding interface {
 	IsSame(other Binding) bool
 	Precedence() Precedence

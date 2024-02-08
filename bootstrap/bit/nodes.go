@@ -116,6 +116,10 @@ func (node *Node) Id() int {
 	return node.id
 }
 
+func (node *Node) Indent() int {
+	return node.Span().Indent()
+}
+
 func (node *Node) Value() Value {
 	return node.value
 }
