@@ -32,7 +32,7 @@ func (segs *BindingMap) StepNext() bool {
 		}
 
 		for _, it := range segments {
-			it.process.Store(false)
+			it.pending.Store(false)
 		}
 
 		if len(nodes) == 0 {
@@ -168,7 +168,7 @@ func (segs *BindingMap) Dump() string {
 					out.WriteString(fmt.Sprintf("(%d..%d) ", binding.sta, binding.end))
 				}
 				out.WriteString(binding.val.String())
-				if !seg.process.Load() {
+				if !seg.pending.Load() {
 					out.WriteString(" [DONE]")
 				}
 				out.WriteString("\n")
@@ -221,7 +221,7 @@ func (segs *BindingMap) getByKey(key Key) *segmentsByKey {
 
 type Segment struct {
 	binding  *BindingValue
-	process  atomic.Bool
+	pending  atomic.Bool
 	queued   atomic.Bool
 	queuePos atomic.Int64
 	sta      int
@@ -229,7 +229,8 @@ type Segment struct {
 }
 
 func (seg *Segment) IsDone() bool {
-	return !seg.process.Load()
+	pending := seg.pending.Load()
+	return !pending
 }
 
 func (seg *Segment) Compare(other *Segment) int {
@@ -299,11 +300,11 @@ func (seg *Segment) takeNodes() (out []*Node) {
 }
 
 func (seg *Segment) skip() {
-	seg.process.Store(false)
+	seg.pending.Store(false)
 }
 
 func (seg *Segment) enqueue() {
-	seg.process.Store(true)
+	seg.pending.Store(true)
 	seg.binding.from.queue.Queue(seg)
 }
 

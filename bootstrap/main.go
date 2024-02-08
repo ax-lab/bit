@@ -18,19 +18,22 @@ const (
 
 	FlagBoot   = "--boot"
 	FlagBooted = "--bootstrapped"
+	FlagOnce   = "--once"
 )
 
 func main() {
 
 	args := os.Args
 
-	boot, booted := false, false
+	var boot, booted, once bool
 	if len(args) > 1 {
 		switch args[1] {
 		case FlagBoot:
 			boot = true
 		case FlagBooted:
 			booted = true
+		case FlagOnce:
+			once = true
 		}
 	}
 
@@ -61,7 +64,10 @@ func main() {
 		logs.Out("○○○ Input: %s\n", inputDir.FullPath())
 		logs.Out("○○○ Build: %s\n", buildDir.FullPath())
 
-		compiler.Watch()
+		compiler.Watch(once)
+		if once {
+			logs.Out("\n")
+		}
 
 		if SampleC {
 			main := buildDir.Write("src/main.c", text.Cleanup(`

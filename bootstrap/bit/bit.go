@@ -42,7 +42,7 @@ func (comp *Compiler) BuildDir() files.Dir {
 	return comp.buildDir
 }
 
-func (comp *Compiler) Watch() {
+func (comp *Compiler) Watch(once bool) {
 	input := comp.inputDir
 	inputPath := input.FullPath()
 
@@ -55,7 +55,11 @@ func (comp *Compiler) Watch() {
 
 	inputEvents := watcher.Start(100 * time.Millisecond)
 
-	logs.Out("\n○○○ Watcher: compiling from at `%s` to `%s`...\n", input.Name(), comp.buildDir.Name())
+	header := "Watcher"
+	if once {
+		header = "Build"
+	}
+	logs.Out("\n○○○ %s: compiling from at `%s` to `%s`...\n", header, input.Name(), comp.buildDir.Name())
 
 	for _, it := range watcher.List() {
 		if it.IsDir {
@@ -64,11 +68,13 @@ func (comp *Compiler) Watch() {
 
 		buildPath := it.Path
 		program := comp.GetProgram(it.Path, buildPath)
-		program.QueueCompile()
+
+		force := once
+		program.QueueCompile(force)
 	}
 
 mainLoop:
-	for {
+	for !once {
 		select {
 		case events := <-inputEvents:
 			comp.FlushSources()
@@ -80,7 +86,7 @@ mainLoop:
 				buildPath := ev.Entry.Path
 				program := comp.GetProgram(ev.Entry.Path, buildPath)
 				if ev.Type != files.EventRemove {
-					program.QueueCompile()
+					program.QueueCompile(false)
 				} else {
 					program.ClearBuild()
 				}
@@ -120,8 +126,9 @@ func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
 	return program
 }
 
-func (program *Program) QueueCompile() {
-	if program.NeedRecompile() && program.compiling.CompareAndSwap(false, true) {
+func (program *Program) QueueCompile(force bool) {
+	recompile := force || program.NeedRecompile()
+	if recompile && program.compiling.CompareAndSwap(false, true) {
 		inputPath := program.config.InputPath
 		logs.Out("\n>>> Queued `%s`...\n", inputPath)
 		go func() {

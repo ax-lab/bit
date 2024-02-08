@@ -58,6 +58,12 @@ func (args *BindArgs) ParentNodes() (out []*Node) {
 	return
 }
 
+func (args *BindArgs) UndoNodes() {
+	for _, it := range args.Nodes {
+		it.Undo()
+	}
+}
+
 type Binding interface {
 	IsSame(other Binding) bool
 	Precedence() Precedence
