@@ -23,7 +23,7 @@ func (sym Symbol) IsEqual(key Key) bool {
 	return false
 }
 
-func (sym Symbol) Repr() string {
+func (sym Symbol) Repr(oneline bool) string {
 	return fmt.Sprintf("Symbol(`%s`)", string(sym))
 }
 
@@ -36,7 +36,7 @@ func (w Word) IsEqual(key Key) bool {
 	return false
 }
 
-func (w Word) Repr() string {
+func (w Word) Repr(oneline bool) string {
 	return fmt.Sprintf("Word(%s)", string(w))
 }
 
@@ -69,7 +69,7 @@ func (typ TokenType) IsEqual(key Key) bool {
 	return false
 }
 
-func (typ TokenType) Repr() string {
+func (typ TokenType) Repr(oneline bool) string {
 	return fmt.Sprintf("Token%s", string(typ))
 }
 

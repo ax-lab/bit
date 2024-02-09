@@ -33,7 +33,7 @@ func (val Group) Bind(node *Node) {
 	node.Bind(Group{})
 }
 
-func (val Group) Repr() string {
+func (val Group) Repr(oneline bool) string {
 	return "Group"
 }
 

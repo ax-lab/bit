@@ -6,7 +6,8 @@ type IsCode interface {
 
 type Expr interface {
 	Eval(rt *RuntimeContext)
-	Repr() string
+	Repr(oneline bool) string
+	OutputCpp(ctx *CppContext, node *Node)
 }
 
 type Code struct {
@@ -18,8 +19,23 @@ func (code Code) Span() Span {
 	return code.Node.Span()
 }
 
-func (code Code) Repr() string {
-	return code.Expr.Repr()
+func (code Code) Repr(oneline bool) string {
+	return code.Expr.Repr(oneline)
+}
+
+func (code Code) OutputCpp(ctx *CppContext) {
+	if ctx.OutputExpr == nil {
+		expr := CppContext{}
+		expr.InitExpr(ctx)
+		code.Expr.OutputCpp(&expr, code.Node)
+		if txt := expr.OutputExpr.Text(); txt != "" {
+			ctx.OutputFunc.EndStatement()
+			ctx.OutputFunc.Write(txt)
+			ctx.OutputFunc.EndStatement()
+		}
+	} else {
+		code.Expr.OutputCpp(ctx, code.Node)
+	}
 }
 
 func (program *Program) CompileOutput() Code {
@@ -68,7 +84,7 @@ func (ctx *CodeContext) Output(node *Node) (out Code) {
 			out = code.Output(&sub)
 			ctx.Valid = sub.Valid
 		} else {
-			node.AddError("cannot output code for node `%s`", node.Value().Repr())
+			node.AddError("cannot output code for node `%s`", node.Value().Repr(true))
 		}
 	}
 
@@ -95,7 +111,7 @@ func (ctx *CodeContext) OutputChild(node *Node) Code {
 	} else if len(nodes) == 1 {
 		return ctx.Output(nodes[0])
 	} else {
-		node.AddError("node `%s` cannot have multiple children", node.Value().Repr())
+		node.AddError("node `%s` cannot have multiple children", node.Value().Repr(true))
 		return Code{}
 	}
 }
@@ -118,6 +134,12 @@ func (Invalid) Eval(rt *RuntimeContext) {
 	rt.Panic("cannot evaluate invalid code")
 }
 
-func (Invalid) Repr() string {
+func (Invalid) OutputCpp(ctx *CppContext, node *Node) {
+	out := ctx.OutputFilePrefix
+	out.NewLine()
+	out.Write("#error Trying to output invalid code\n")
+}
+
+func (Invalid) Repr(oneline bool) string {
 	return "Invalid"
 }

@@ -9,7 +9,7 @@ func (val Line) IsEqual(other Key) bool {
 	return false
 }
 
-func (val Line) Repr() string {
+func (val Line) Repr(oneline bool) string {
 	return "Line"
 }
 

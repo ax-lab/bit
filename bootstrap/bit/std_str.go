@@ -15,7 +15,7 @@ func (str Str) String() string {
 	return string(str)
 }
 
-func (str Str) Repr() string {
+func (str Str) Repr(oneline bool) string {
 	return fmt.Sprintf("Str(%v)", string(str))
 }
 
@@ -31,12 +31,17 @@ func (val Str) Eval(rt *RuntimeContext) {
 	rt.Result = val
 }
 
-func (val Str) OutputPrint(out *CppWriter) {
+func (val Str) OutputCpp(ctx *CppContext, node *Node) {
+	ctx.OutputExpr.WriteLiteralString(string(val))
+}
+
+func (val Str) OutputCppPrint(out *CppWriter, node *Node) {
 	out.Context.IncludeSystem("stdio.h")
 	out.NewLine()
 	out.Write(`printf("%s", `)
 	out.WriteLiteralString((string(val)))
-	out.Write(`);\n`)
+	out.Write(`);`)
+	out.NewLine()
 }
 
 type ParseString struct{}

@@ -15,7 +15,7 @@ func (val Print) IsEqual(other Key) bool {
 	return false
 }
 
-func (val Print) Repr() string {
+func (val Print) Repr(oneline bool) string {
 	return "Print"
 }
 
@@ -26,6 +26,10 @@ func (val Print) Bind(node *Node) {
 func (val Print) Output(ctx *CodeContext) Code {
 	code := ctx.OutputChild(ctx.Node)
 	return Code{PrintExpr{code}, nil}
+}
+
+type PrintCpp interface {
+	OutputCppPrint(out *CppWriter, node *Node)
 }
 
 type ParsePrint struct{}
@@ -68,6 +72,20 @@ func (expr PrintExpr) Eval(rt *RuntimeContext) {
 	rt.OutputStd("\n")
 }
 
-func (expr PrintExpr) Repr() string {
-	return fmt.Sprintf("print(%s)", text.Indented(expr.args.Repr()))
+func (val PrintExpr) OutputCpp(ctx *CppContext, node *Node) {
+	if v, ok := val.args.Expr.(PrintCpp); ok {
+		out := ctx.OutputFunc
+		v.OutputCppPrint(out, val.args.Node)
+		out.EndStatement()
+		out.Write(`printf("\n");`)
+		out.NewLine()
+	} else {
+		out := ctx.OutputFunc
+		out.NewLine()
+		out.Write("#error Cannot output print for %s", node.Describe())
+	}
+}
+
+func (expr PrintExpr) Repr(oneline bool) string {
+	return fmt.Sprintf("print(%s)", text.Indented(expr.args.Repr(oneline)))
 }

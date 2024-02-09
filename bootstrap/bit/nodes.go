@@ -11,11 +11,11 @@ import (
 
 type Key interface {
 	IsEqual(other Key) bool
-	Repr() string
+	Repr(oneline bool) string
 }
 
 type Value interface {
-	Repr() string
+	Repr(oneline bool) string
 	Bind(node *Node)
 }
 
@@ -63,15 +63,19 @@ func (node *Node) Declare(key Key, binding Binding) {
 	node.program.bindings.Bind(key, node.span, binding)
 }
 
+func (node *Node) Describe() string {
+	return fmt.Sprintf("%s at %s", node.value.Repr(true), node.span.String())
+}
+
 func (node *Node) String() string {
-	return fmt.Sprintf("Node(%s#%d @%s)", node.value.Repr(), node.id, node.span.String())
+	return fmt.Sprintf("Node(%s#%d @%s)", node.value.Repr(true), node.id, node.span.String())
 }
 
 func (node *Node) Dump() string {
 	header := fmt.Sprintf("#%d = ", node.id)
 	out := strings.Builder{}
 	out.WriteString(header)
-	out.WriteString(node.value.Repr())
+	out.WriteString(text.Indented(node.value.Repr(false)))
 	if diff := 30 - out.Len(); diff > 0 {
 		out.WriteString(strings.Repeat(" ", diff))
 	} else {

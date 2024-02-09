@@ -10,6 +10,7 @@ import (
 
 	"axlab.dev/bit/files"
 	"axlab.dev/bit/logs"
+	"axlab.dev/bit/proc"
 )
 
 const MaxErrorOutput = 16
@@ -172,15 +173,31 @@ func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 			defer program.buildMutex.Unlock()
 
 			startTime := time.Now()
-			defer func() {
+			outputDuration := func(header string) {
 				duration := time.Since(startTime)
-				logs.Out("<<< Finished `%s` in %s\n", inputPath, duration.String())
-			}()
+				logs.Out("%s%s\n", header, duration.String())
+			}
+			defer outputDuration(fmt.Sprintf("<<< Finished `%s` in ", inputPath))
 
 			compiler := program.compiler
 			if source, err := compiler.LoadSource(inputPath); err == nil {
 				logs.Out("... Compiling `%s`...\n", inputPath)
 				program.Compile(source)
+				outputDuration("... Compilation took ")
+
+				if program.Valid() {
+					logs.Out("... Generating C output...\n")
+					if ok, main := program.OutputCpp(); ok {
+						outputCpp := program.outputPath("main.exe")
+						outputCppFull := compiler.buildDir.GetFullPath(outputCpp)
+						mainPath := compiler.buildDir.GetFullPath(main)
+						logs.Out("... Compiling C output to `%s`...\n", outputCpp)
+
+						if !proc.Run("CC", "gcc", mainPath, "-o", outputCppFull) {
+							logs.Out("\nCompilation failed\n")
+						}
+					}
+				}
 
 				const resultFile = "result.txt"
 				if program.Valid() {
@@ -216,7 +233,7 @@ func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 						}
 					}
 
-					program.writeOutput(resultFile, res.String())
+					program.writeOutput(resultFile, res.String(), true)
 				} else {
 					program.removeOutput(resultFile)
 				}

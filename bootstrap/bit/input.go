@@ -33,7 +33,7 @@ func (src *Source) IsEqual(key Key) bool {
 	return false
 }
 
-func (src *Source) Repr() string {
+func (src *Source) Repr(oneline bool) string {
 	return fmt.Sprintf("Source(%s)", src.name)
 }
 
