@@ -24,3 +24,7 @@ func (mod Module) Repr() string {
 	}
 	return fmt.Sprintf("Module(%s)", mod.Source.Name())
 }
+
+func (mod Module) Output(ctx *CodeContext) Code {
+	return ctx.OutputChildren(ctx.Node)
+}

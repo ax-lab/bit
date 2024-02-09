@@ -1,5 +1,11 @@
 package bit
 
+import (
+	"fmt"
+
+	"axlab.dev/bit/text"
+)
+
 type Print struct{}
 
 func (val Print) IsEqual(other Key) bool {
@@ -15,6 +21,11 @@ func (val Print) Repr() string {
 
 func (val Print) Bind(node *Node) {
 	node.Bind(Print{})
+}
+
+func (val Print) Output(ctx *CodeContext) Code {
+	code := ctx.OutputChild(ctx.Node)
+	return Code{PrintExpr{code}, nil}
 }
 
 type ParsePrint struct{}
@@ -45,4 +56,17 @@ func (op ParsePrint) Process(args *BindArgs) {
 
 func (op ParsePrint) String() string {
 	return "ParsePrint"
+}
+
+type PrintExpr struct {
+	args Code
+}
+
+func (expr PrintExpr) Eval(rt *RuntimeContext) {
+	rt.Result = rt.Eval(expr.args)
+	rt.OutputStd(rt.Result.String())
+}
+
+func (expr PrintExpr) Repr() string {
+	return fmt.Sprintf("print(%s)", text.Indented(expr.args.Repr()))
 }

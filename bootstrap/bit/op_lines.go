@@ -9,13 +9,17 @@ func (val Line) IsEqual(other Key) bool {
 	return false
 }
 
+func (val Line) Repr() string {
+	return "Line"
+}
+
 func (val Line) Bind(node *Node) {
 	node.Bind(Line{})
 	node.Bind(Indented{})
 }
 
-func (val Line) Repr() string {
-	return "Line"
+func (val Line) Output(ctx *CodeContext) Code {
+	return ctx.OutputChild(ctx.Node)
 }
 
 type SplitLines struct{}

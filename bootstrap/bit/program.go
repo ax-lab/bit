@@ -29,6 +29,7 @@ type Program struct {
 
 	lexer    *Lexer
 	source   *Source
+	mainNode *Node
 	tokens   []Token
 	errors   []error
 	allNodes []*Node
@@ -46,6 +47,10 @@ func NewProgram(compiler *Compiler, config ProgramConfig) *Program {
 		compiler: compiler,
 		config:   config,
 	}
+}
+
+func (program *Program) Valid() bool {
+	return len(program.errors) == 0
 }
 
 func (program *Program) BindNodes(key Key, nodes ...*Node) {
@@ -100,7 +105,7 @@ func (program *Program) Compile(source *Source) {
 		program.bindings.BindGlobal(key, binding)
 	}
 
-	program.loadSource(source)
+	program.mainNode = program.loadSource(source)
 	for program.bindings.StepNext() {
 		if len(program.errors) > 0 {
 			break
@@ -132,6 +137,9 @@ func (program *Program) Compile(source *Source) {
 			checkNodes(it, visited)
 		}
 	}
+
+	output := program.CompileOutput()
+	program.writeOutput("code-output.txt", output.Expr.Repr()+"\n")
 
 	if errFile := "errors.txt"; len(program.errors) > 0 {
 		program.writeOutput(errFile, program.errorsToString(-1))
