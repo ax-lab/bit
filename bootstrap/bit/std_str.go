@@ -31,6 +31,14 @@ func (val Str) Eval(rt *RuntimeContext) {
 	rt.Result = val
 }
 
+func (val Str) OutputPrint(out *CppWriter) {
+	out.Context.IncludeSystem("stdio.h")
+	out.NewLine()
+	out.Write(`printf("%s", `)
+	out.WriteLiteralString((string(val)))
+	out.Write(`);\n`)
+}
+
 type ParseString struct{}
 
 func (ParseString) Get(node *Node) (Value, error) {
