@@ -5,18 +5,6 @@ import (
 	"sort"
 )
 
-const (
-	PrecFirst Precedence = iota
-	PrecBrackets
-	PrecIndent
-	PrecLines
-	PrecReplace
-	PrecOutput
-	PrecLast
-)
-
-type Precedence int
-
 type BindArgs struct {
 	Program  *Program
 	Segments []*Segment

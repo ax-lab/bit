@@ -23,10 +23,6 @@ func (str Str) Bind(node *Node) {
 	node.Bind(Str(""))
 }
 
-func (str Str) Eval(rt *Runtime) (any, error) {
-	return str, nil
-}
-
 type ParseString struct{}
 
 func (ParseString) Get(node *Node) (Value, error) {

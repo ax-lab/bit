@@ -13,11 +13,18 @@ func (program *Program) InitCore() {
 	program.DeclareGlobal(Symbol("{"), ParseBrackets{"{", "}"})
 	program.DeclareGlobal(Symbol("}"), ParseBrackets{"{", "}"})
 
+	program.DeclareGlobal(Word("print"), ParsePrint{})
+
 	program.DeclareGlobal(TokenString, Replace{ParseString{}})
 
-	program.DeclareGlobal(Module{}, Output{})
-	program.DeclareGlobal(Line{}, Output{})
-	program.DeclareGlobal(Str(""), Output{})
+	program.OutputAll(Module{})
+	program.OutputAll(Line{})
+	program.OutputAll(Print{})
+	program.OutputAll(Str(""))
+}
+
+func (program *Program) OutputAll(key Key) {
+	program.DeclareGlobal(key, Output{})
 }
 
 type Group struct{}

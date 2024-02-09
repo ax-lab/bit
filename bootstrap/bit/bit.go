@@ -14,6 +14,19 @@ import (
 
 const MaxErrorOutput = 16
 
+const (
+	PrecFirst Precedence = iota
+	PrecBrackets
+	PrecIndent
+	PrecLines
+	PrecPrint
+	PrecReplace
+	PrecOutput
+	PrecLast
+)
+
+type Precedence int
+
 type Compiler struct {
 	ctx context.Context
 

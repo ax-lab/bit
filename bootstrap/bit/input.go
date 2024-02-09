@@ -301,7 +301,7 @@ type HasSpan interface {
 	Span() Span
 }
 
-func SliceSpan[T HasSpan](elems []T) Span {
+func SpanFromSlice[T HasSpan](elems []T) Span {
 	switch len(elems) {
 	case 0:
 		panic("cannot get span for empty slice")
@@ -312,8 +312,8 @@ func SliceSpan[T HasSpan](elems []T) Span {
 	}
 }
 
-func RangeSpan[T HasSpan](elems ...T) Span {
-	return SliceSpan(elems)
+func SpanFromRange[T HasSpan](elems ...T) Span {
+	return SpanFromSlice(elems)
 }
 
 type Location struct {

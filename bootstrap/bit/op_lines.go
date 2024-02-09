@@ -37,7 +37,7 @@ func (op SplitLines) Process(args *BindArgs) {
 		cur, children := 0, par.RemoveNodes(0, par.Len())
 		push := func(line []*Node) {
 			if len(line) > 0 {
-				span := SliceSpan(line)
+				span := SpanFromSlice(line)
 				node := args.Program.NewNode(Line{}, span)
 				node.AddChildren(line...)
 				par.AddChildren(node)
