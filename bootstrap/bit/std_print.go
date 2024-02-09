@@ -65,6 +65,7 @@ type PrintExpr struct {
 func (expr PrintExpr) Eval(rt *RuntimeContext) {
 	rt.Result = rt.Eval(expr.args)
 	rt.OutputStd(rt.Result.String())
+	rt.OutputStd("\n")
 }
 
 func (expr PrintExpr) Repr() string {

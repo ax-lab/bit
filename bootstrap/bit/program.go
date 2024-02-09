@@ -27,14 +27,15 @@ type Program struct {
 	compiler *Compiler
 	config   ProgramConfig
 
-	lexer    *Lexer
-	source   *Source
-	mainNode *Node
-	tokens   []Token
-	errors   []error
-	allNodes []*Node
-	modules  []*Node
-	bindings *BindingMap
+	lexer      *Lexer
+	source     *Source
+	tokens     []Token
+	errors     []error
+	allNodes   []*Node
+	modules    []*Node
+	mainNode   *Node
+	outputCode *Code
+	bindings   *BindingMap
 
 	compiling  atomic.Bool
 	buildMutex sync.Mutex
@@ -96,6 +97,8 @@ func (program *Program) Compile(source *Source) {
 	program.errors = nil
 	program.allNodes = nil
 	program.modules = nil
+	program.mainNode = nil
+	program.outputCode = nil
 
 	program.bindings = &BindingMap{
 		program: program,
@@ -138,8 +141,9 @@ func (program *Program) Compile(source *Source) {
 		}
 	}
 
-	output := program.CompileOutput()
-	program.writeOutput("code-output.txt", output.Expr.Repr()+"\n")
+	code := program.CompileOutput()
+	program.outputCode = &code
+	program.writeOutput("code-output.txt", program.outputCode.Expr.Repr()+"\n")
 
 	if errFile := "errors.txt"; len(program.errors) > 0 {
 		program.writeOutput(errFile, program.errorsToString(-1))

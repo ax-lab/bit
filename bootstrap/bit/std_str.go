@@ -35,7 +35,8 @@ type ParseString struct{}
 
 func (ParseString) Get(node *Node) (Value, error) {
 	if tok, ok := node.Value().(TokenType); ok && tok == TokenString {
-		return Str(node.Text()), nil
+		str := ParseStringLiteral(node.Text())
+		return Str(str), nil
 	}
 	return nil, nil
 }

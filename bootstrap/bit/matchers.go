@@ -3,6 +3,7 @@ package bit
 import (
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 type Matcher func(cur *Cursor) (TokenType, error)
@@ -57,6 +58,51 @@ func MatchWord(cur *Cursor) (TokenType, error) {
 	}
 
 	return TokenWord, nil
+}
+
+func ParseStringLiteral(str string) string {
+	out := strings.Builder{}
+	raw := false
+	if strings.HasPrefix(str, "r") {
+		str = str[1:]
+		raw = true
+	}
+
+	delim, str, dbl := str[:1], str[1:], ""
+	if raw {
+		dbl = delim + delim
+	}
+
+	if strings.HasSuffix(str, delim) {
+		str = str[:len(str)-1]
+	}
+
+	for len(str) > 0 {
+		if raw {
+			if pos := strings.Index(str, dbl); pos >= 0 {
+				out.WriteString(str[:pos])
+				out.WriteString(delim)
+				str = str[pos+len(dbl):]
+			} else {
+				out.WriteString(str)
+				str = ""
+			}
+		} else {
+			if pos := strings.Index(str, "\\"); pos >= 0 {
+				out.WriteString(str[:pos])
+				str = str[pos+1:]
+				if strings.HasPrefix(str, "\\") {
+					out.WriteString("\\")
+					str = str[1:]
+				}
+			} else {
+				out.WriteString(str)
+				str = ""
+			}
+		}
+	}
+
+	return out.String()
 }
 
 func MatchString(cur *Cursor) (TokenType, error) {

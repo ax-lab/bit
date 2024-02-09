@@ -181,6 +181,45 @@ func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 			if source, err := compiler.LoadSource(inputPath); err == nil {
 				logs.Out("... Compiling `%s`...\n", inputPath)
 				program.Compile(source)
+
+				const resultFile = "result.txt"
+				if program.Valid() {
+					logs.Out("... Running program...\n")
+					rt := NewRuntime(program.mainNode)
+
+					out := strings.Builder{}
+					err := strings.Builder{}
+					rt.StdOut = &out
+					rt.StdErr = &err
+					result := rt.Eval(*program.outputCode)
+
+					res := strings.Builder{}
+					res.WriteString("Result = ")
+					res.WriteString(ResultRepr(result))
+					res.WriteString("\n")
+
+					if out.Len() > 0 {
+						txt := out.String()
+						res.WriteString("\n----- STDOUT -----\n\n")
+						res.WriteString(txt)
+						if c := txt[len(txt)-1]; c != '\n' && c != '\r' {
+							res.WriteString("↵\n")
+						}
+					}
+
+					if err.Len() > 0 {
+						txt := err.String()
+						res.WriteString("\n----- STDERR -----\n\n")
+						res.WriteString(txt)
+						if c := txt[len(txt)-1]; c != '\n' && c != '\r' {
+							res.WriteString("↵\n")
+						}
+					}
+
+					program.writeOutput(resultFile, res.String())
+				} else {
+					program.removeOutput(resultFile)
+				}
 			} else {
 				logs.Err("!!! Failed to load `%s`: %v", inputPath, err)
 			}
