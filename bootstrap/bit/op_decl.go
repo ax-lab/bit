@@ -25,13 +25,8 @@ func (val Var) Bind(node *Node) {
 	node.Bind(Var{})
 }
 
-type HasScope interface {
-	IsScope(node *Node) (is bool, sta, end int)
-}
-
 type BindVar struct {
-	Name string
-	Let  *Node
+	Var *Variable
 }
 
 func (op BindVar) IsSame(other Binding) bool {
@@ -47,16 +42,16 @@ func (op BindVar) Precedence() Precedence {
 
 func (op BindVar) Process(args *BindArgs) {
 	for _, it := range args.Nodes {
-		it.ReplaceWithValue(Var{Name: op.Name, Decl: op.Let})
+		it.ReplaceWithValue(Var{Name: op.Var.Name, Decl: op.Var.Decl})
 	}
 }
 
 func (op BindVar) String() string {
-	return fmt.Sprintf("BindVar(%s)", op.Name)
+	return fmt.Sprintf("BindVar(%s)", op.Var.Name)
 }
 
 type Let struct {
-	Name string
+	Var *Variable
 }
 
 func (val Let) IsEqual(other Key) bool {
@@ -67,7 +62,10 @@ func (val Let) IsEqual(other Key) bool {
 }
 
 func (val Let) Repr(oneline bool) string {
-	return fmt.Sprintf("Let(%s)", val.Name)
+	if val.Var == nil {
+		return "Let()"
+	}
+	return fmt.Sprintf("Let(%s)", val.Var.Name)
 }
 
 func (val Let) Bind(node *Node) {
@@ -89,7 +87,7 @@ func (op ParseLet) Precedence() Precedence {
 
 func (op ParseLet) Process(args *BindArgs) {
 	for _, it := range args.Nodes {
-		if it.Index() != 0 {
+		if it.Index() != 0 || it.Parent() == nil {
 			it.Undo()
 			continue
 		}
@@ -112,28 +110,26 @@ func (op ParseLet) Process(args *BindArgs) {
 		par := it.Parent()
 		split := next.Index() + 1
 		nodes := par.RemoveNodes(it.Index(), par.Len())
+		nodesSpan := SpanFromSlice(nodes)
 
-		node := args.Program.NewNode(Let{name}, SpanFromSlice(nodes))
+		scope := par.GetScope()
+		offset := nodesSpan.End()
+		variable := scope.Declare(it, name, offset)
+
+		node := args.Program.NewNode(Let{variable}, nodesSpan)
+		variable.Decl = node
+
+		par.InsertNodes(it.Index(), node)
+
 		expr := nodes[split:]
+		node.AddChildren(expr...)
+		node.FlagDone()
+
 		for _, it := range nodes[:split] {
 			it.FlagDone()
 		}
 
-		node.AddChildren(expr...)
-		node.FlagDone()
-		par.InsertNodes(it.Index(), node)
-
-		scope, sta, end := par, node.Span().End(), par.Span().End()
-		for scope != nil {
-			if v, ok := scope.Value().(HasScope); ok {
-				if isScope, _, e := v.IsScope(scope); isScope {
-					end = e
-					break
-				}
-			}
-			scope = scope.Parent()
-		}
-		it.DeclareAt(Word(name), sta, end, BindVar{name, node})
+		it.DeclareAt(Word(name), variable.Offset, scope.End, BindVar{variable})
 	}
 }
 

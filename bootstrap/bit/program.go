@@ -39,6 +39,9 @@ type Program struct {
 	outputCode *Code
 	bindings   *BindingMap
 
+	scopeMutex sync.Mutex
+	scopes     map[*Node]*Scope
+
 	coreInit   atomic.Bool
 	compiling  atomic.Bool
 	buildMutex sync.Mutex
@@ -50,6 +53,26 @@ func NewProgram(compiler *Compiler, config ProgramConfig) *Program {
 	return &Program{
 		compiler: compiler,
 		config:   config,
+	}
+}
+
+func (program *Program) reset() {
+	program.lexer = program.config.LexerTemplate.CopyOrDefault()
+	program.source = nil
+	program.tokens = nil
+	program.Errors = nil
+	program.allNodes = nil
+	program.modules = nil
+	program.mainNode = nil
+	program.outputCode = nil
+	program.scopes = make(map[*Node]*Scope)
+
+	program.bindings = &BindingMap{
+		program: program,
+	}
+
+	for key, binding := range program.config.Globals {
+		program.bindings.BindGlobal(key, binding)
 	}
 }
 
@@ -95,23 +118,8 @@ func (program *Program) NeedRecompile() bool {
 }
 
 func (program *Program) CompileSource(source *Source) {
-	program.lexer = program.config.LexerTemplate.CopyOrDefault()
+	program.reset()
 	program.source = source
-	program.tokens = nil
-	program.Errors = nil
-	program.allNodes = nil
-	program.modules = nil
-	program.mainNode = nil
-	program.outputCode = nil
-
-	program.bindings = &BindingMap{
-		program: program,
-	}
-
-	for key, binding := range program.config.Globals {
-		program.bindings.BindGlobal(key, binding)
-	}
-
 	program.mainNode = program.loadSource(source)
 	for program.bindings.StepNext() {
 		if len(program.Errors) > 0 {
