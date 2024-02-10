@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"axlab.dev/bit/text"
+	"axlab.dev/bit/common"
 )
 
 type Key interface {
@@ -75,7 +75,7 @@ func (node *Node) Dump() string {
 	header := fmt.Sprintf("#%d = ", node.id)
 	out := strings.Builder{}
 	out.WriteString(header)
-	out.WriteString(text.Indented(node.value.Repr(false)))
+	out.WriteString(common.Indented(node.value.Repr(false)))
 	if diff := 30 - out.Len(); diff > 0 {
 		out.WriteString(strings.Repeat(" ", diff))
 	} else {
@@ -104,7 +104,7 @@ func (node *Node) Dump() string {
 		out.WriteString("{")
 		for n, it := range node.nodes {
 			out.WriteString(fmt.Sprintf("\n\t[%03d] ", n))
-			out.WriteString(text.Indented(it.Dump()))
+			out.WriteString(common.Indented(it.Dump()))
 		}
 		out.WriteString("\n}")
 	}
@@ -286,7 +286,7 @@ func DebugNodes(msg string, nodes ...*Node) {
 	out := strings.Builder{}
 	out.WriteString(msg)
 	for _, it := range nodes {
-		out.WriteString(text.Indented("\n\n"+it.Dump()) + "\n")
+		out.WriteString(common.Indented("\n\n"+it.Dump()) + "\n")
 	}
 
 	if len(nodes) == 0 {

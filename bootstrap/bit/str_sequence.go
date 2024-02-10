@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"axlab.dev/bit/text"
+	"axlab.dev/bit/common"
 )
 
 type Sequence struct {
@@ -28,7 +28,7 @@ func (seq Sequence) Repr(oneline bool) string {
 	out.WriteString("Sequence {")
 	for _, it := range seq.List {
 		out.WriteString("\n")
-		out.WriteString(text.Indent(it.Expr.Repr(false)))
+		out.WriteString(common.Indent(it.Expr.Repr(false)))
 	}
 	if len(seq.List) > 0 {
 		out.WriteString("\n")

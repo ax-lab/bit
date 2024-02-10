@@ -7,8 +7,8 @@ import (
 	"strings"
 	"syscall"
 
+	"axlab.dev/bit/common"
 	"axlab.dev/bit/logs"
-	"axlab.dev/bit/text"
 )
 
 // Spawn a new process "replacing" (not really) the current one.
@@ -83,7 +83,7 @@ func Run(prefix, name string, args ...string) bool {
 			}
 			hasErr = true
 			if strings.ContainsAny(output, "\r\n") {
-				lines := text.Lines(stdErr.String())
+				lines := common.Lines(stdErr.String())
 				for _, line := range lines[:len(lines)-1] {
 					logs.Err("%s | %s\n", prefix, line)
 				}

@@ -3,7 +3,7 @@ package bit
 import (
 	"fmt"
 
-	"axlab.dev/bit/text"
+	"axlab.dev/bit/common"
 )
 
 type Print struct{}
@@ -87,5 +87,5 @@ func (val PrintExpr) OutputCpp(ctx *CppContext, node *Node) {
 }
 
 func (expr PrintExpr) Repr(oneline bool) string {
-	return fmt.Sprintf("print(%s)", text.Indented(expr.args.Repr(oneline)))
+	return fmt.Sprintf("print(%s)", common.Indented(expr.args.Repr(oneline)))
 }

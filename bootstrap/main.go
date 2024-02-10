@@ -8,9 +8,9 @@ import (
 	"time"
 
 	"axlab.dev/bit/bit"
+	"axlab.dev/bit/common"
 	"axlab.dev/bit/logs"
 	"axlab.dev/bit/proc"
-	"axlab.dev/bit/text"
 )
 
 const (
@@ -70,7 +70,7 @@ func main() {
 		}
 
 		if SampleC {
-			main := buildDir.Write("src/main.c", text.Cleanup(`
+			main := buildDir.Write("src/main.c", common.Cleanup(`
 			#include <stdio.h>
 
 			int main() {
