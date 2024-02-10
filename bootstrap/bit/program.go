@@ -121,7 +121,7 @@ func (program *Program) CompileSource(source *Source) {
 
 	var unresolved []*Node
 	for _, it := range program.allNodes {
-		if !it.Done() {
+		if !it.IsDone() {
 			unresolved = append(unresolved, it)
 		}
 	}

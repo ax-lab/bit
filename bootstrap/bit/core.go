@@ -18,6 +18,7 @@ func (program *Program) InitCore() {
 	program.DeclareGlobal(Symbol("}"), ParseBrackets{"{", "}"})
 
 	program.DeclareGlobal(Word("print"), ParsePrint{})
+	program.DeclareGlobal(Word("let"), ParseLet{})
 
 	program.DeclareGlobal(TokenString, Replace{ParseString{}})
 

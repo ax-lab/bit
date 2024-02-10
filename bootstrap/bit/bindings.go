@@ -81,7 +81,7 @@ func (segs *BindingMap) InitSource(src *Source) {
 	if !segs.globalSources[src] {
 		segs.globalSources[src] = true
 		for key, binding := range segs.globals {
-			segs.doBind(key, src.Span(), binding, true)
+			segs.doBindSpan(key, src.Span(), binding, true)
 		}
 	}
 }
@@ -95,7 +95,7 @@ func (segs *BindingMap) BindGlobal(key Key, binding Binding) {
 	segs.globals[key] = binding
 
 	for src := range segs.globalSources {
-		segs.doBind(key, src.Span(), binding, true)
+		segs.doBindSpan(key, src.Span(), binding, true)
 	}
 }
 
@@ -104,7 +104,11 @@ func (segs *BindingMap) BindStatic(key Key, src *Source, binding Binding) {
 }
 
 func (segs *BindingMap) Bind(key Key, span Span, binding Binding) {
-	segs.doBind(key, span, binding, false)
+	segs.doBindSpan(key, span, binding, false)
+}
+
+func (segs *BindingMap) BindAt(key Key, sta, end int, src *Source, binding Binding) {
+	segs.doBind(key, sta, end, src, binding, false)
 }
 
 func (segs *BindingMap) Dump() string {
@@ -180,9 +184,13 @@ func (segs *BindingMap) Dump() string {
 	return out.String()
 }
 
-func (segs *BindingMap) doBind(key Key, span Span, binding Binding, global bool) {
-	segments := segs.getByKey(key).getBySource(span.Source())
-	sta, end := span.Sta(), span.End()
+func (segs *BindingMap) doBindSpan(key Key, span Span, binding Binding, global bool) {
+	sta, end, src := span.Sta(), span.End(), span.Source()
+	segs.doBind(key, sta, end, src, binding, global)
+}
+
+func (segs *BindingMap) doBind(key Key, sta, end int, src *Source, binding Binding, global bool) {
+	segments := segs.getByKey(key).getBySource(src)
 	if global {
 		sta = 0
 		end = math.MaxInt
@@ -194,7 +202,7 @@ func (segs *BindingMap) doBind(key Key, span Span, binding Binding, global bool)
 		val:    binding,
 		repr:   binding.String(),
 		key:    key,
-		src:    span.Source(),
+		src:    src,
 		sta:    sta,
 		end:    end,
 	})

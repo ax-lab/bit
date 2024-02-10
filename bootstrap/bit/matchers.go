@@ -8,6 +8,10 @@ import (
 
 type Matcher func(cur *Cursor) (TokenType, error)
 
+func MatchInteger() Matcher {
+	return MatchWithRE(TokenInteger, `\d+`)
+}
+
 func MatchWithRE(token TokenType, reExpr string) Matcher {
 	reExpr = fmt.Sprintf(`^(%s)`, reExpr)
 	re := regexp.MustCompile(reExpr)

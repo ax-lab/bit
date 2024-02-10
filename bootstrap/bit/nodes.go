@@ -63,6 +63,10 @@ func (node *Node) Declare(key Key, binding Binding) {
 	node.program.bindings.Bind(key, node.span, binding)
 }
 
+func (node *Node) DeclareAt(key Key, sta, end int, binding Binding) {
+	node.program.bindings.BindAt(key, sta, end, node.Span().Source(), binding)
+}
+
 func (node *Node) Describe() string {
 	return fmt.Sprintf("%s at %s", node.value.Repr(true), node.span.String())
 }
@@ -83,16 +87,17 @@ func (node *Node) Dump() string {
 	}
 	out.WriteString("@ ")
 	out.WriteString(node.span.String())
+	hasTxt := false
 	if txt := node.span.DisplayText(120); txt != "" {
+		hasTxt = true
 		if len(txt) <= 20 {
 			if diff := 60 - out.Len(); diff > 0 {
 				out.WriteString(strings.Repeat(" ", diff))
 			} else {
 				out.WriteString("  ")
 			}
-			out.WriteString("# ")
+			out.WriteString(" # ")
 			out.WriteString(txt)
-			out.WriteString(" ")
 		} else {
 			indent := strings.Repeat(" ", len(header))
 			out.WriteString(fmt.Sprintf("\n%s> ", indent))
@@ -101,6 +106,9 @@ func (node *Node) Dump() string {
 		}
 	}
 	if len(node.nodes) > 0 {
+		if hasTxt {
+			out.WriteString("\n")
+		}
 		out.WriteString("{")
 		for n, it := range node.nodes {
 			out.WriteString(fmt.Sprintf("\n\t[%03d] ", n))
@@ -156,11 +164,25 @@ func (node *Node) Parent() *Node {
 	return node.parent
 }
 
-func (node *Node) Done() bool {
+func (node *Node) IsDone() bool {
 	return node.done.Load()
 }
 
+func (node *Node) FlagDone() {
+	node.done.Store(true)
+}
+
 func (node *Node) Undo() {
+	/*
+		TODO: correct the behavior for node undoing with same-key bindings
+
+		- Equal or more specific bindings will override the pre-existing one.
+		- Even if the previous binding has evaluation precedence, it must not
+		  pick the nodes bound to the more specific binding.
+		- However, if the more specific binding undoes any node, those should
+		  become available to the previous bindings.
+		- This should work regardless of the evaluation order of the bindings.
+	*/
 	node.done.Store(false)
 }
 

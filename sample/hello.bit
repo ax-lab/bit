@@ -1,2 +1,2 @@
-print 'hello world'
-print 'from bit'
+let x = 42
+print x

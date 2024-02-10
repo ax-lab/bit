@@ -105,6 +105,7 @@ func NewLexer() *Lexer {
 
 	lex.AddMatcher(MatchWord)
 	lex.AddMatcher(MatchString)
+	lex.AddMatcher(MatchInteger())
 
 	return lex
 }

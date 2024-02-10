@@ -45,6 +45,10 @@ func (src *Source) Text() string {
 	return src.text
 }
 
+func (src *Source) Len() int {
+	return len(src.text)
+}
+
 func (src *Source) Dir() files.Dir {
 	return src.dir
 }

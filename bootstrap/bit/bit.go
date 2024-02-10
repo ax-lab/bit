@@ -22,6 +22,7 @@ const (
 	PrecIndent
 	PrecLines
 	PrecPrint
+	PrecLet
 	PrecReplace
 	PrecOutput
 	PrecLast
