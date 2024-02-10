@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
+	"axlab.dev/bit/common"
 	"axlab.dev/bit/files"
-	"axlab.dev/bit/logs"
 	"axlab.dev/bit/proc"
 )
 
@@ -79,7 +79,7 @@ func (comp *Compiler) Watch(once bool) {
 	if once {
 		header = "Build"
 	}
-	logs.Out("\n○○○ %s: compiling from at `%s` to `%s`...\n", header, input.Name(), comp.buildDir.Name())
+	common.Out("\n○○○ %s: compiling from at `%s` to `%s`...\n", header, input.Name(), comp.buildDir.Name())
 
 	var programs []*Program
 	for _, it := range watcher.List() {
@@ -163,7 +163,7 @@ func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 	recompile := force || program.NeedRecompile()
 	if recompile && program.compiling.CompareAndSwap(false, true) {
 		inputPath := program.config.InputPath
-		logs.Out("\n>>> Queued `%s`...\n", inputPath)
+		common.Out("\n>>> Queued `%s`...\n", inputPath)
 		program.compiler.pending.Add(1)
 		go func() {
 			defer close(wait)
@@ -175,33 +175,33 @@ func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 			startTime := time.Now()
 			outputDuration := func(header string) {
 				duration := time.Since(startTime)
-				logs.Out("%s%s\n", header, duration.String())
+				common.Out("%s%s\n", header, duration.String())
 			}
 			defer outputDuration(fmt.Sprintf("<<< Finished `%s` in ", inputPath))
 
 			compiler := program.compiler
 			if source, err := compiler.LoadSource(inputPath); err == nil {
-				logs.Out("... Compiling `%s`...\n", inputPath)
+				common.Out("... Compiling `%s`...\n", inputPath)
 				program.Compile(source)
 				outputDuration("... Compilation took ")
 
 				if program.Valid() {
-					logs.Out("... Generating C output...\n")
+					common.Out("... Generating C output...\n")
 					if ok, main := program.OutputCpp(); ok {
 						outputCpp := program.outputPath("main.exe")
 						outputCppFull := compiler.buildDir.GetFullPath(outputCpp)
 						mainPath := compiler.buildDir.GetFullPath(main)
-						logs.Out("... Compiling C output to `%s`...\n", outputCpp)
+						common.Out("... Compiling C output to `%s`...\n", outputCpp)
 
 						if !proc.Run("CC", "gcc", mainPath, "-o", outputCppFull) {
-							logs.Out("\nCompilation failed\n")
+							common.Out("\nCompilation failed\n")
 						}
 					}
 				}
 
 				const resultFile = "result.txt"
 				if program.Valid() {
-					logs.Out("... Running program...\n")
+					common.Out("... Running program...\n")
 					rt := NewRuntime(program.mainNode)
 
 					out := strings.Builder{}
@@ -238,7 +238,7 @@ func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 					program.removeOutput(resultFile)
 				}
 			} else {
-				logs.Err("!!! Failed to load `%s`: %v", inputPath, err)
+				common.Err("!!! Failed to load `%s`: %v", inputPath, err)
 			}
 		}()
 	} else {
@@ -253,7 +253,7 @@ func (program *Program) ClearBuild() {
 		defer program.compiling.Store(false)
 		defer program.buildMutex.Unlock()
 
-		logs.Out("\n>>> Removing `%s`\n", program.config.InputPath)
+		common.Out("\n>>> Removing `%s`\n", program.config.InputPath)
 		program.compiler.buildDir.RemoveAll(program.config.BuildPath)
 	}()
 }

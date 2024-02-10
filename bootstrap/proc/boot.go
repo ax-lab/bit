@@ -10,8 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"axlab.dev/bit/common"
 	"axlab.dev/bit/files"
-	"axlab.dev/bit/logs"
 )
 
 var (
@@ -38,7 +38,7 @@ func HandleInterrupt() chan struct{} {
 func Bootstrap() {
 	if rebuild, _ := NeedRebuild(); rebuild {
 		if Rebuild() {
-			logs.Out("▸▸▸ bootstrap: restarting...\n\n")
+			common.Out("▸▸▸ bootstrap: restarting...\n\n")
 			trap_interrupt := make(chan os.Signal, 1)
 			signal.Notify(trap_interrupt, os.Interrupt)
 			os.Exit(RunSelf(context.Background(), os.Args))
@@ -53,7 +53,7 @@ func NeedRebuild() (rebuild bool, newest time.Time) {
 	}
 
 	rootDir := filepath.Join(files.ProjectDir(), "bootstrap")
-	exeTime := logs.Handle(os.Stat(exe)).ModTime()
+	exeTime := common.Handle(os.Stat(exe)).ModTime()
 	queue := []string{rootDir}
 	for len(queue) > 0 {
 		entry := queue[len(queue)-1]
@@ -65,7 +65,7 @@ func NeedRebuild() (rebuild bool, newest time.Time) {
 					newest = mod
 				}
 			} else if stat.IsDir() {
-				for _, it := range logs.Handle(os.ReadDir(entry)) {
+				for _, it := range common.Handle(os.ReadDir(entry)) {
 					queue = append(queue, filepath.Join(entry, it.Name()))
 				}
 			}
@@ -76,7 +76,7 @@ func NeedRebuild() (rebuild bool, newest time.Time) {
 }
 
 func Rebuild() bool {
-	logs.Out("\n▸▸▸ bootstrap: detected changes, rebuilding...\n")
+	common.Out("\n▸▸▸ bootstrap: detected changes, rebuilding...\n")
 
 	exe := GetBootstrapExe(true)
 	mainFile := filepath.Join(files.ProjectDir(), "bootstrap", "main.go")
@@ -84,13 +84,13 @@ func Rebuild() bool {
 	success := Run("▸▸▸ GO", "go", "build", "-o", exe, mainFile)
 
 	if !success {
-		logs.Out("\n")
-		logs.Err("▸▸▸ ERR: *******************************\n")
-		logs.Err("▸▸▸ ERR: *                             *\n")
-		logs.Err("▸▸▸ ERR: *   BOOTSTRAP BUILD FAILED!   *\n")
-		logs.Err("▸▸▸ ERR: *                             *\n")
-		logs.Err("▸▸▸ ERR: *******************************\n")
-		logs.Out("\n")
+		common.Out("\n")
+		common.Err("▸▸▸ ERR: *******************************\n")
+		common.Err("▸▸▸ ERR: *                             *\n")
+		common.Err("▸▸▸ ERR: *   BOOTSTRAP BUILD FAILED!   *\n")
+		common.Err("▸▸▸ ERR: *                             *\n")
+		common.Err("▸▸▸ ERR: *******************************\n")
+		common.Out("\n")
 	}
 
 	return success
@@ -104,7 +104,7 @@ func RunSelf(ctx context.Context, args []string) int {
 	fps[syscall.Stdout] = os.Stdout
 	fps[syscall.Stderr] = os.Stderr
 
-	proc := logs.Handle(os.StartProcess(exe, args, &os.ProcAttr{
+	proc := common.Handle(os.StartProcess(exe, args, &os.ProcAttr{
 		Dir:   files.WorkingDir(),
 		Env:   os.Environ(),
 		Files: fps,
@@ -128,7 +128,7 @@ func RunSelf(ctx context.Context, args []string) int {
 		}()
 	}
 
-	status := logs.Handle(proc.Wait())
+	status := common.Handle(proc.Wait())
 	close(procFinished)
 	return status.ExitCode()
 }
@@ -138,10 +138,10 @@ var bootstrapExe *string
 func GetBootstrapExe(force bool) string {
 
 	compute := func() string {
-		exeFile := logs.Handle(os.Executable())
+		exeFile := common.Handle(os.Executable())
 
 		if exeFile != "" {
-			exeFile = logs.Handle(filepath.EvalSymlinks(exeFile))
+			exeFile = common.Handle(filepath.EvalSymlinks(exeFile))
 		}
 
 		if exeFile != "" {

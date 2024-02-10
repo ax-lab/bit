@@ -7,11 +7,11 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"axlab.dev/bit/logs"
+	"axlab.dev/bit/common"
 )
 
 func WorkingDir() string {
-	return logs.Handle(filepath.Abs("."))
+	return common.Handle(filepath.Abs("."))
 }
 
 func IsDir(path string) bool {
@@ -22,7 +22,7 @@ func IsDir(path string) bool {
 }
 
 func MakeDir(path string) {
-	logs.Check(os.MkdirAll(path, fs.ModePerm))
+	common.Check(os.MkdirAll(path, fs.ModePerm))
 }
 
 func IsFile(path string) bool {

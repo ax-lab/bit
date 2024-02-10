@@ -8,7 +8,6 @@ import (
 	"syscall"
 
 	"axlab.dev/bit/common"
-	"axlab.dev/bit/logs"
 )
 
 // Spawn a new process "replacing" (not really) the current one.
@@ -26,7 +25,7 @@ func Spawn(name string, args ...string) int {
 	fullPath, err := exec.LookPath(name)
 	if err != nil {
 		if !errors.Is(err, exec.ErrDot) {
-			logs.Check(err)
+			common.Check(err)
 		}
 	}
 
@@ -37,13 +36,13 @@ func Spawn(name string, args ...string) int {
 
 	argv := []string{fullPath}
 	argv = append(argv, args...)
-	proc := logs.Handle(os.StartProcess(fullPath, argv, &os.ProcAttr{
+	proc := common.Handle(os.StartProcess(fullPath, argv, &os.ProcAttr{
 		Dir:   ".",
 		Env:   os.Environ(),
 		Files: files,
 	}))
 
-	status := logs.Handle(proc.Wait())
+	status := common.Handle(proc.Wait())
 	return status.ExitCode()
 }
 
@@ -79,13 +78,13 @@ func Run(prefix, name string, args ...string) bool {
 		if isError {
 			stdErr.WriteString(output)
 			if !hasErr {
-				logs.Out("\n")
+				common.Out("\n")
 			}
 			hasErr = true
 			if strings.ContainsAny(output, "\r\n") {
 				lines := common.Lines(stdErr.String())
 				for _, line := range lines[:len(lines)-1] {
-					logs.Err("%s | %s\n", prefix, line)
+					common.Err("%s | %s\n", prefix, line)
 				}
 				stdErr.Reset()
 				stdErr.WriteString(lines[len(lines)-1])
@@ -100,17 +99,17 @@ func Run(prefix, name string, args ...string) bool {
 	ok := err == nil && status == 0 && !hasErr
 
 	if !ok {
-		logs.Out("\n")
+		common.Out("\n")
 	}
 
 	if err != nil {
-		logs.Err("%s command error: %v\n", prefix, err)
+		common.Err("%s command error: %v\n", prefix, err)
 	}
 
 	if status != 0 {
-		logs.Err("%s exited with %d\n", prefix, status)
+		common.Err("%s exited with %d\n", prefix, status)
 	} else if hasErr {
-		logs.Err("%s output errors", prefix)
+		common.Err("%s output errors", prefix)
 	}
 
 	return ok

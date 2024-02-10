@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"axlab.dev/bit/logs"
+	"axlab.dev/bit/common"
 )
 
 type Entry struct {
@@ -57,10 +57,10 @@ func (info *Entry) String() string {
 
 func List(dirPath string, options ListOptions) (out []*Entry) {
 	dir := os.DirFS(dirPath)
-	basePath := logs.Handle(filepath.Abs(dirPath))
+	basePath := common.Handle(filepath.Abs(dirPath))
 	err := fs.WalkDir(dir, ".", func(entryPath string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
-			logs.Warn(err, "listing `%s`", dirPath)
+			common.Warn(err, "listing `%s`", dirPath)
 			return nil
 		}
 
@@ -83,7 +83,7 @@ func List(dirPath string, options ListOptions) (out []*Entry) {
 		if !skip {
 			if _, err := entry.Info(); err != nil {
 				if !errors.Is(err, fs.ErrNotExist) {
-					logs.Warn(err, "listing `%s`", dirPath)
+					common.Warn(err, "listing `%s`", dirPath)
 				}
 				skip = true
 			}
@@ -100,6 +100,6 @@ func List(dirPath string, options ListOptions) (out []*Entry) {
 		out = append(out, entry)
 		return nil
 	})
-	logs.Check(err)
+	common.Check(err)
 	return out
 }

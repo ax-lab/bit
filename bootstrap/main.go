@@ -9,7 +9,6 @@ import (
 
 	"axlab.dev/bit/bit"
 	"axlab.dev/bit/common"
-	"axlab.dev/bit/logs"
 	"axlab.dev/bit/proc"
 )
 
@@ -61,12 +60,12 @@ func main() {
 		inputDir := compiler.InputDir()
 		buildDir := compiler.BuildDir()
 
-		logs.Out("○○○ Input: %s\n", inputDir.FullPath())
-		logs.Out("○○○ Build: %s\n", buildDir.FullPath())
+		common.Out("○○○ Input: %s\n", inputDir.FullPath())
+		common.Out("○○○ Build: %s\n", buildDir.FullPath())
 
 		compiler.Watch(once)
 		if once {
-			logs.Out("\n")
+			common.Out("\n")
 		}
 
 		if SampleC {
@@ -81,14 +80,14 @@ func main() {
 
 			output := buildDir.GetFullPath("output.exe")
 			if proc.Run("CC", "gcc", main.FullPath(), "-o", output) {
-				logs.Out("\n")
+				common.Out("\n")
 				if exitCode := proc.Spawn(output); exitCode != 0 {
-					logs.Out("\n(exited with %d)\n", exitCode)
+					common.Out("\n(exited with %d)\n", exitCode)
 				} else {
-					logs.Out("\n")
+					common.Out("\n")
 				}
 			} else {
-				logs.Out("\nCompilation failed\n")
+				common.Out("\nCompilation failed\n")
 			}
 		}
 	}
@@ -98,7 +97,7 @@ func BootWatcher(newArgs []string) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 
-	logs.Out("▸▸▸ bootstrap: watching for changes...\n")
+	common.Out("▸▸▸ bootstrap: watching for changes...\n")
 
 	runSelf := func() (cancel func()) {
 		ctx, cancelCtx := context.WithCancel(context.Background())
@@ -107,7 +106,7 @@ func BootWatcher(newArgs []string) {
 		done := make(chan struct{})
 		go func() {
 			defer close(done)
-			logs.Out("▸▸▸ STARTING...\n\n")
+			common.Out("▸▸▸ STARTING...\n\n")
 			exitCode := proc.RunSelf(ctx, newArgs)
 
 			mode := ""
@@ -115,7 +114,7 @@ func BootWatcher(newArgs []string) {
 				mode = " (cancelled)"
 			}
 
-			logs.Out("\n▸▸▸ EXIT STATUS %d%s\n\n", exitCode, mode)
+			common.Out("\n▸▸▸ EXIT STATUS %d%s\n\n", exitCode, mode)
 			cancelCtx()
 		}()
 
@@ -135,14 +134,14 @@ mainLoop:
 	for {
 		select {
 		case <-interrupt:
-			logs.Out("\n▸▸▸ INTERRUPTED\n\n")
+			common.Out("\n▸▸▸ INTERRUPTED\n\n")
 			cancel()
 			break mainLoop
 		case <-time.After(500 * time.Millisecond):
 			if rebuild, timestamp := proc.NeedRebuild(); rebuild && timestamp.After(lastCheck) {
 				lastCheck = timestamp
 				if proc.Rebuild() {
-					logs.Out("▸▸▸ bootstrap: restarting child...\n\n")
+					common.Out("▸▸▸ bootstrap: restarting child...\n\n")
 					cancel()
 					cancel = runSelf()
 				}
