@@ -2,6 +2,29 @@ package bit
 
 import "fmt"
 
+type Var struct {
+	Name string
+	Decl *Node
+}
+
+func (val Var) IsEqual(other Key) bool {
+	if v, ok := other.(Var); ok {
+		return v == val
+	}
+	return false
+}
+
+func (val Var) Repr(oneline bool) string {
+	if val.Name == "" && val.Decl == nil {
+		return "Var()"
+	}
+	return fmt.Sprintf("Var(%s@%s)", val.Name, val.Decl.Span().Location().String())
+}
+
+func (val Var) Bind(node *Node) {
+	node.Bind(Var{})
+}
+
 type HasScope interface {
 	IsScope(node *Node) (is bool, sta, end int)
 }
@@ -23,9 +46,8 @@ func (op BindVar) Precedence() Precedence {
 }
 
 func (op BindVar) Process(args *BindArgs) {
-	DebugNodes("BindVar", args.Nodes...)
 	for _, it := range args.Nodes {
-		it.AddError("variable binding is not implemented yet")
+		it.ReplaceWithValue(Var{Name: op.Name, Decl: op.Let})
 	}
 }
 
@@ -111,7 +133,7 @@ func (op ParseLet) Process(args *BindArgs) {
 			}
 			scope = scope.Parent()
 		}
-		it.DeclareAt(Word(name), sta, end, BindVar{name, it})
+		it.DeclareAt(Word(name), sta, end, BindVar{name, node})
 	}
 }
 

@@ -26,6 +26,8 @@ func (program *Program) InitCore() {
 	program.OutputAll(Line{})
 	program.OutputAll(Print{})
 	program.OutputAll(Str(""))
+	program.OutputAll(Var{})
+	program.OutputAll(Let{})
 }
 
 func (program *Program) OutputAll(key Key) {
