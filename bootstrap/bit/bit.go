@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"os"
+	"path"
 	"strings"
 	"sync"
 	"time"
@@ -80,8 +80,9 @@ func (comp *Compiler) Run(file string, options RunOptions) (out RunResult) {
 	}
 
 	if options.Cpp {
-		mainFile := program.generateCpp("cpp", "main.c")
-		exeFile := program.outputPath("main.exe")
+		baseName := path.Base(file)
+		mainFile := program.generateCpp("cpp", baseName+".c")
+		exeFile := program.outputPath(baseName + ".exe")
 		exePath := comp.buildDir.GetFullPath(exeFile)
 		gcc := proc.Cmd("gcc", mainFile, "-o", exePath)
 		if !gcc.Success {
@@ -136,7 +137,7 @@ func (comp *Compiler) BuildDir() files.Dir {
 	return comp.buildDir
 }
 
-func (comp *Compiler) Watch(once bool) {
+func (comp *Compiler) Watch() {
 	input := comp.inputDir
 	inputPath := input.FullPath()
 
@@ -150,12 +151,8 @@ func (comp *Compiler) Watch(once bool) {
 	inputEvents := watcher.Start(100 * time.Millisecond)
 
 	header := "Watcher"
-	if once {
-		header = "Build"
-	}
 	common.Out("\n○○○ %s: compiling from at `%s` to `%s`...\n", header, input.Name(), comp.buildDir.Name())
 
-	var programs []*Program
 	for _, it := range watcher.List() {
 		if it.IsDir {
 			continue
@@ -163,14 +160,11 @@ func (comp *Compiler) Watch(once bool) {
 
 		buildPath := it.Path
 		program := comp.GetProgram(it.Path, buildPath)
-		programs = append(programs, program)
-
-		force := once
-		program.QueueCompile(force)
+		program.QueueCompile()
 	}
 
 mainLoop:
-	for !once {
+	for {
 		select {
 		case events := <-inputEvents:
 			comp.FlushSources()
@@ -182,7 +176,7 @@ mainLoop:
 				buildPath := ev.Entry.Path
 				program := comp.GetProgram(ev.Entry.Path, buildPath)
 				if ev.Type != files.EventRemove {
-					program.QueueCompile(false)
+					program.QueueCompile()
 				} else {
 					program.ClearBuild()
 				}
@@ -193,14 +187,6 @@ mainLoop:
 	}
 
 	comp.pending.Wait()
-	if once {
-		for _, it := range programs {
-			if len(it.Errors) > 0 {
-				os.Stderr.WriteString(fmt.Sprintf("\n>>> Program %s <<<\n\n", it.source.Name()))
-			}
-			it.ShowErrors()
-		}
-	}
 }
 
 func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
@@ -250,10 +236,9 @@ func (program *Program) Compile() (err error) {
 	return
 }
 
-func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
+func (program *Program) QueueCompile() (wait chan struct{}) {
 	wait = make(chan struct{})
-	recompile := force || program.NeedRecompile()
-	if recompile && program.compiling.CompareAndSwap(false, true) {
+	if program.NeedRecompile() && program.compiling.CompareAndSwap(false, true) {
 		inputPath := program.config.InputPath
 		common.Out("\n>>> Queued `%s`...\n", inputPath)
 		program.compiler.pending.Add(1)
@@ -277,15 +262,11 @@ func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 				program.CompileSource(source)
 				outputDuration("... Compilation took ")
 
+				var mainCppFile string
 				if program.Valid() {
 					common.Out("... Generating C output...\n")
-					mainFile := program.generateCpp("cpp", "main.c")
-					exeFile := program.outputPath("main.exe")
-					exePath := compiler.buildDir.GetFullPath(exeFile)
-					common.Out("... Compiling C output to `%s`...\n", exeFile)
-					if !proc.Run("CC", "gcc", mainFile, "-o", exePath) {
-						common.Out("\nCompilation failed\n")
-					}
+					baseName := path.Base(inputPath)
+					mainCppFile = program.generateCpp("cpp", baseName+".c")
 				}
 
 				const resultFile = "result.txt"
@@ -325,6 +306,15 @@ func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 					program.writeOutput(resultFile, res.String(), true)
 				} else {
 					program.removeOutput(resultFile)
+				}
+
+				if program.Valid() {
+					exeFile := program.outputPath("main.exe")
+					exePath := compiler.buildDir.GetFullPath(exeFile)
+					common.Out("... Compiling C output to `%s`...\n", exeFile)
+					if !proc.Run("CC", "gcc", mainCppFile, "-o", exePath) {
+						common.Out("\nCompilation failed\n")
+					}
 				}
 			} else {
 				common.Err("!!! Failed to load `%s`: %v", inputPath, err)

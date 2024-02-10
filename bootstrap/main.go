@@ -13,29 +13,42 @@ import (
 )
 
 const (
-	SampleC = false
-
 	FlagBoot   = "--boot"
 	FlagBooted = "--bootstrapped"
-	FlagOnce   = "--once"
+	FlagWatch  = "--watch"
+	FlagCpp    = "--cpp"
+
+	BuildDir = "build"
 )
 
 func main() {
 
 	args := os.Args
 
-	var boot, booted, once bool
+	var boot, booted, watch, cpp bool
+	var files []string
 	if len(args) > 1 {
+		skip := true
 		switch args[1] {
 		case FlagBoot:
 			boot = true
 		case FlagBooted:
 			booted = true
-		case FlagOnce:
-			once = true
+		case FlagWatch:
+			watch = true
+		case FlagCpp:
+			cpp = true
+		default:
+			skip = false
+		}
+		if skip {
+			files = args[2:]
+		} else {
+			files = args[1:]
 		}
 	}
 
+	// recompile the binary before running, unless we are running from the watcher
 	if !booted {
 		proc.Bootstrap()
 	}
@@ -43,57 +56,61 @@ func main() {
 	if boot {
 		newArgs := append([]string{}, args...)
 		newArgs[1] = FlagBooted
-		BootWatcher(newArgs)
+		BootstrapWatcher(newArgs)
+	} else if booted || watch {
+		WatchAndCompile()
 	} else {
-
-		ctx, cancel := context.WithCancel(context.Background())
-
-		interrupt := make(chan os.Signal, 1)
-		signal.Notify(interrupt, os.Interrupt)
-
-		go func() {
-			<-interrupt
-			cancel()
-		}()
-
-		compiler := bit.NewCompiler(ctx, "sample", "build")
-		inputDir := compiler.InputDir()
-		buildDir := compiler.BuildDir()
-
-		common.Out("○○○ Input: %s\n", inputDir.FullPath())
-		common.Out("○○○ Build: %s\n", buildDir.FullPath())
-
-		compiler.Watch(once)
-		if once {
-			common.Out("\n")
+		if len(files) == 0 {
+			common.Out("\nNo files giving, exiting\n\n")
+			return
 		}
-
-		if SampleC {
-			main := buildDir.Write("src/main.c", common.CleanupText(`
-			#include <stdio.h>
-
-			int main() {
-				printf("hello world\n");
-				return 42;
-			}
-		`))
-
-			output := buildDir.GetFullPath("output.exe")
-			if proc.Run("CC", "gcc", main.FullPath(), "-o", output) {
-				common.Out("\n")
-				if exitCode := proc.Spawn(output); exitCode != 0 {
-					common.Out("\n(exited with %d)\n", exitCode)
-				} else {
-					common.Out("\n")
+		compiler := bit.NewCompiler(context.Background(), ".", BuildDir+"/run")
+		for _, it := range files {
+			res := compiler.Run(it, bit.RunOptions{Cpp: cpp})
+			if len(files) > 1 {
+				common.Out("\n>>> %s <<<\n", it)
+				if res.Err != nil {
+					common.Err("\nError: %v\n", res.Err)
 				}
-			} else {
-				common.Out("\nCompilation failed\n")
+
+				if len(res.Log) > 0 {
+					common.Err("\nLog:\n")
+					for n, it := range res.Log {
+						common.Err("\n    [%d] %s\n", n, common.Indented(it.Error()))
+					}
+				}
+
+				if res.Value != nil {
+					common.Out("\nResult = %v\n\n", bit.ResultRepr(res.Value))
+				}
 			}
 		}
 	}
 }
 
-func BootWatcher(newArgs []string) {
+func WatchAndCompile() {
+	ctx, cancel := context.WithCancel(context.Background())
+
+	interrupt := make(chan os.Signal, 1)
+	signal.Notify(interrupt, os.Interrupt)
+
+	go func() {
+		<-interrupt
+		cancel()
+	}()
+
+	compiler := bit.NewCompiler(ctx, "sample", BuildDir+"/sample")
+	inputDir := compiler.InputDir()
+	buildDir := compiler.BuildDir()
+
+	common.Out("○○○ Input: %s\n", inputDir.FullPath())
+	common.Out("○○○ Build: %s\n", buildDir.FullPath())
+
+	compiler.Watch()
+	common.Out("\n")
+}
+
+func BootstrapWatcher(newArgs []string) {
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 

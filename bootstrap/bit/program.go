@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"axlab.dev/bit/common"
 	"axlab.dev/bit/proc"
 )
 
@@ -75,7 +76,8 @@ func (program *Program) NeedRecompile() bool {
 	}
 
 	baseName := path.Base(program.config.InputPath)
-	output := compiler.buildDir.Stat(program.outputPath(baseName + ".src"))
+	checkPath := program.outputPath(program.srcCopyName(baseName))
+	output := compiler.buildDir.Stat(checkPath)
 	if output == nil {
 		return true
 	}
@@ -151,6 +153,9 @@ func (program *Program) CompileSource(source *Source) {
 
 	if errFile := "errors.txt"; len(program.Errors) > 0 {
 		program.writeOutput(errFile, program.errorsToString(-1), true)
+		common.Out("\n")
+		program.ShowErrors()
+		common.Out("\n")
 	} else {
 		program.removeOutput(errFile)
 	}
@@ -203,11 +208,15 @@ func (program *Program) errorsToString(max int) string {
 	return txt.String()
 }
 
+func (program *Program) srcCopyName(baseName string) string {
+	return "src/" + baseName + ".txt"
+}
+
 func (program *Program) loadSource(source *Source) *Node {
 	program.bindings.InitSource(source)
 
 	baseName := source.Name()
-	program.writeOutput("src/"+baseName+".txt", source.Text(), true)
+	program.writeOutput(program.srcCopyName(baseName), source.Text(), true)
 
 	tokens, err := program.lexer.Tokenize(source)
 	program.tokens = tokens
