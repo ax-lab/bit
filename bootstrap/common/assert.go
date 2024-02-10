@@ -29,9 +29,11 @@ func Try[T any](input T, err error) T {
 	return input
 }
 
-func Assert(cond bool, msgAndArgs ...interface{}) {
+func Assert(cond bool, msg string, args ...any) {
 	if !cond {
-		msg := fmt.Sprint(msgAndArgs...)
+		if len(args) > 0 {
+			msg = fmt.Sprintf(msg, args...)
+		}
 		if msg == "" {
 			msg = "assertion failed"
 		}

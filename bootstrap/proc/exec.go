@@ -18,6 +18,22 @@ func ExecInDir(prefix, dir string, callback func() bool) bool {
 	return success
 }
 
+func ExecWithStream(name string, args []string, stdOut io.Writer, stdErr io.Writer) (int, error) {
+	if stdOut == nil {
+		stdOut = os.Stdout
+	}
+	if stdErr == nil {
+		stdErr = os.Stderr
+	}
+	return Exec(name, args, func(output string, isError bool) {
+		if isError {
+			io.WriteString(stdErr, output)
+		} else {
+			io.WriteString(stdOut, output)
+		}
+	})
+}
+
 // Exec a process using a callback to process output.
 func Exec(name string, args []string, callback func(output string, isError bool)) (int, error) {
 	cmd := exec.Command(name, args...)

@@ -1,6 +1,10 @@
 package bit
 
 func (program *Program) InitCore() {
+	if !program.coreInit.CompareAndSwap(false, true) {
+		return
+	}
+
 	program.DeclareGlobal(TokenBreak, SplitLines{})
 	program.DeclareGlobal(Indented{}, ParseIndent{})
 

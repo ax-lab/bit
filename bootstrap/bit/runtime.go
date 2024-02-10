@@ -21,8 +21,14 @@ func ResultRepr(res Result) string {
 }
 
 func IsError(res Result) bool {
-	_, ok := res.(error)
-	return ok
+	return GetResultError(res) != nil
+}
+
+func GetResultError(res Result) error {
+	if v, ok := res.(error); ok && v != nil {
+		return v
+	}
+	return nil
 }
 
 func NewRuntime(node *Node) *RuntimeContext {

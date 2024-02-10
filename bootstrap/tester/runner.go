@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"axlab.dev/bit/common"
+	"axlab.dev/bit/files"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,10 +23,11 @@ type TestRunner interface {
 
 // Output from a TestRunner.
 type Output struct {
-	Error  error
-	StdOut string
-	StdErr string
-	Data   any
+	Error      error
+	StdOut     string
+	StdErr     string
+	Data       any
+	IgnoreData bool
 }
 
 // Input to a TestRunner.
@@ -75,12 +77,17 @@ type Runner struct {
 
 func NewRunner(t *testing.T, dir string, runner TestRunner) Runner {
 	path := common.Try(filepath.Abs(dir))
+	common.Assert(files.IsDir(path), "test path must exist: %s", path)
 	return Runner{
 		t:       t,
 		inner:   runner,
 		rootDir: path,
 		glob:    "*.in",
 	}
+}
+
+func (runner *Runner) SetGlob(glob string) {
+	runner.glob = glob
 }
 
 func (runner Runner) Run() (out []RunOutput) {
@@ -150,9 +157,11 @@ func (run *RunOutput) runSingle(runner TestRunner) {
 	run.ExpectOutput = common.TrimLines(common.Lines(expectText))
 	run.ActualOutput = common.TrimLines(common.Lines(output.StdOut))
 
-	expectJson := common.ReadJson(run.outJson(), nil)
-	if expectJson != nil {
-		run.Expected = expectJson
+	if !run.Output.IgnoreData {
+		expectJson := common.ReadJson(run.outJson(), nil)
+		if expectJson != nil {
+			run.Expected = expectJson
+		}
 	}
 
 	run.checkResult()

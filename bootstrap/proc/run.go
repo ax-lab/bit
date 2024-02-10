@@ -2,6 +2,7 @@ package proc
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"strings"
@@ -54,6 +55,22 @@ type CmdOutput struct {
 	ExitCode int
 }
 
+func (out CmdOutput) GetError() error {
+	if out.Error != nil {
+		return out.Error
+	}
+
+	if out.ExitCode != 0 {
+		return fmt.Errorf("command exited with status %d", out.ExitCode)
+	}
+
+	if strings.TrimSpace(out.StdErr) != "" {
+		return fmt.Errorf("command generated error output")
+	}
+
+	return nil
+}
+
 func Cmd(name string, args ...string) (out CmdOutput) {
 	stdErr := strings.Builder{}
 	stdOut := strings.Builder{}
@@ -67,7 +84,9 @@ func Cmd(name string, args ...string) (out CmdOutput) {
 
 	out.StdOut = stdOut.String()
 	out.StdErr = stdErr.String()
-	out.Success = out.Error == nil && out.ExitCode == 0 && len(out.StdErr) == 0
+
+	hasStdErr := strings.TrimSpace(out.StdErr) != ""
+	out.Success = out.Error == nil && out.ExitCode == 0 && !hasStdErr
 	return out
 }
 

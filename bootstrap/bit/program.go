@@ -24,19 +24,21 @@ type ProgramConfig struct {
 }
 
 type Program struct {
+	Errors []error
+
 	compiler *Compiler
 	config   ProgramConfig
 
 	lexer      *Lexer
 	source     *Source
 	tokens     []Token
-	errors     []error
 	allNodes   []*Node
 	modules    []*Node
 	mainNode   *Node
 	outputCode *Code
 	bindings   *BindingMap
 
+	coreInit   atomic.Bool
 	compiling  atomic.Bool
 	buildMutex sync.Mutex
 
@@ -51,7 +53,7 @@ func NewProgram(compiler *Compiler, config ProgramConfig) *Program {
 }
 
 func (program *Program) Valid() bool {
-	return len(program.errors) == 0
+	return len(program.Errors) == 0
 }
 
 func (program *Program) BindNodes(key Key, nodes ...*Node) {
@@ -90,11 +92,11 @@ func (program *Program) NeedRecompile() bool {
 	return false
 }
 
-func (program *Program) Compile(source *Source) {
+func (program *Program) CompileSource(source *Source) {
 	program.lexer = program.config.LexerTemplate.CopyOrDefault()
 	program.source = source
 	program.tokens = nil
-	program.errors = nil
+	program.Errors = nil
 	program.allNodes = nil
 	program.modules = nil
 	program.mainNode = nil
@@ -110,7 +112,7 @@ func (program *Program) Compile(source *Source) {
 
 	program.mainNode = program.loadSource(source)
 	for program.bindings.StepNext() {
-		if len(program.errors) > 0 {
+		if len(program.Errors) > 0 {
 			break
 		}
 	}
@@ -145,7 +147,7 @@ func (program *Program) Compile(source *Source) {
 	program.outputCode = &code
 	program.writeOutput("code-output.txt", program.outputCode.Expr.Repr(false)+"\n", true)
 
-	if errFile := "errors.txt"; len(program.errors) > 0 {
+	if errFile := "errors.txt"; len(program.Errors) > 0 {
 		program.writeOutput(errFile, program.errorsToString(-1), true)
 	} else {
 		program.removeOutput(errFile)
@@ -157,22 +159,20 @@ func (program *Program) Compile(source *Source) {
 	}
 }
 
-func (program *Program) OutputCpp() (ok bool, mainFile string) {
-	if program.Valid() {
-		ctx := NewCppContext(program)
-		ctx.WriteFunc("int main(int argc, char *argv[])", func(ctx *CppContext) {
-			program.outputCode.OutputCpp(ctx)
-			ctx.OutputFunc.EndStatement()
-			ctx.OutputFunc.Write("return 0;")
-		})
+func (program *Program) generateCpp(outputDir, outputFile string) (mainPath string) {
+	ctx := NewCppContext(program)
+	ctx.WriteFunc("int main(int argc, char *argv[])", func(ctx *CppContext) {
+		program.outputCode.OutputCpp(ctx)
+		ctx.OutputFunc.EndStatement()
+		ctx.OutputFunc.Write("return 0;")
+	})
 
-		for name, text := range ctx.GetOutputFiles("main.c") {
-			program.writeOutput("cpp/"+name, text, false)
-		}
-		return true, program.outputPath("cpp/main.c")
-	} else {
-		return false, ""
+	for name, text := range ctx.GetOutputFiles(outputFile) {
+		program.writeOutput(path.Join(outputDir, name), text, false)
 	}
+
+	mainFile := program.outputPath(path.Join(outputDir, outputFile))
+	return program.compiler.buildDir.GetFullPath(mainFile)
 }
 
 func (program *Program) ShowErrors() bool {
@@ -184,17 +184,17 @@ func (program *Program) ShowErrors() bool {
 }
 
 func (program *Program) errorsToString(max int) string {
-	SortErrors(program.errors)
+	SortErrors(program.Errors)
 	txt := strings.Builder{}
-	for n, err := range program.errors {
+	for n, err := range program.Errors {
 		if n > 0 {
 			txt.WriteString("\n")
 		}
 		if max > 0 && n == max {
-			txt.WriteString(fmt.Sprintf("Too many errors, omitting %d errors...\n", len(program.errors)-n))
+			txt.WriteString(fmt.Sprintf("Too many errors, omitting %d errors...\n", len(program.Errors)-n))
 			break
 		}
-		txt.WriteString(fmt.Sprintf("[%d of %d] ", n+1, len(program.errors)))
+		txt.WriteString(fmt.Sprintf("[%d of %d] ", n+1, len(program.Errors)))
 		txt.WriteString(err.Error())
 		txt.WriteString("\n")
 	}
@@ -248,7 +248,7 @@ func (program *Program) HandleError(err error) {
 	if err != nil {
 		program.errMutex.Lock()
 		defer program.errMutex.Unlock()
-		program.errors = append(program.errors, err)
+		program.Errors = append(program.Errors, err)
 	}
 }
 

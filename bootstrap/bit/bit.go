@@ -3,6 +3,7 @@ package bit
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"sync"
@@ -46,12 +47,83 @@ type Compiler struct {
 	}
 }
 
+type RunOptions struct {
+	Cpp    bool
+	StdOut io.Writer
+	StdErr io.Writer
+}
+
+type RunResult struct {
+	Err   error
+	Log   []error
+	Value Result
+}
+
 func NewCompiler(ctx context.Context, inputPath, buildPath string) *Compiler {
 	return &Compiler{
 		ctx:      ctx,
 		inputDir: files.OpenDir(inputPath).MustExist("compiler input"),
 		buildDir: files.OpenDir(buildPath).Create("compiler build"),
 	}
+}
+
+func (comp *Compiler) Run(file string, options RunOptions) (out RunResult) {
+	buildPath := file
+	program := comp.GetProgram(file, buildPath)
+	program.InitCore()
+	if err := program.Compile(); err != nil || !program.Valid() {
+		out.Err = err
+		out.Log = program.Errors
+		return
+	}
+
+	if options.Cpp {
+		mainFile := program.generateCpp("cpp", "main.c")
+		exeFile := program.outputPath("main.exe")
+		exePath := comp.buildDir.GetFullPath(exeFile)
+		gcc := proc.Cmd("gcc", mainFile, "-o", exePath)
+		if !gcc.Success {
+			out.Err = gcc.GetError()
+			if len(gcc.StdErr) > 0 {
+				out.Log = append(out.Log, fmt.Errorf("CC error output:\n\n%s", common.Indent(gcc.StdErr)))
+			}
+			return
+		}
+
+		stdOut, stdErr := options.StdOut, options.StdErr
+		status, err := proc.ExecWithStream(exePath, nil, stdOut, stdErr)
+		if status != 0 {
+			statusErr := fmt.Errorf("executable exited with status %d", status)
+			if err == nil {
+				err = statusErr
+			} else {
+				out.Log = append(out.Log, err)
+			}
+		}
+
+		out.Err = err
+	} else {
+		rt := NewRuntime(program.mainNode)
+
+		if options.StdOut != nil {
+			rt.StdOut = options.StdOut
+		}
+		if options.StdErr != nil {
+			rt.StdErr = options.StdErr
+		}
+
+		out.Value = rt.Eval(*program.outputCode)
+		if out.Value != nil {
+			program.writeOutput("result.txt", ResultRepr(out.Value), true)
+		}
+
+		if err := GetResultError(out.Value); err != nil {
+			out.Err = err
+			out.Value = nil
+		}
+	}
+
+	return
 }
 
 func (comp *Compiler) InputDir() files.Dir {
@@ -121,7 +193,7 @@ mainLoop:
 	comp.pending.Wait()
 	if once {
 		for _, it := range programs {
-			if len(it.errors) > 0 {
+			if len(it.Errors) > 0 {
 				os.Stderr.WriteString(fmt.Sprintf("\n>>> Program %s <<<\n\n", it.source.Name()))
 			}
 			it.ShowErrors()
@@ -158,6 +230,24 @@ func (comp *Compiler) GetProgram(rootFile, outputDir string) *Program {
 	return program
 }
 
+func (program *Program) Compile() (err error) {
+	if program.source == nil {
+		compiler := program.compiler
+		program.source, err = compiler.LoadSource(program.config.InputPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	program.CompileSource(program.source)
+	if !program.Valid() {
+		err = fmt.Errorf("compilation failed with %d errors", len(program.Errors))
+		return err
+	}
+
+	return
+}
+
 func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 	wait = make(chan struct{})
 	recompile := force || program.NeedRecompile()
@@ -182,20 +272,17 @@ func (program *Program) QueueCompile(force bool) (wait chan struct{}) {
 			compiler := program.compiler
 			if source, err := compiler.LoadSource(inputPath); err == nil {
 				common.Out("... Compiling `%s`...\n", inputPath)
-				program.Compile(source)
+				program.CompileSource(source)
 				outputDuration("... Compilation took ")
 
 				if program.Valid() {
 					common.Out("... Generating C output...\n")
-					if ok, main := program.OutputCpp(); ok {
-						outputCpp := program.outputPath("main.exe")
-						outputCppFull := compiler.buildDir.GetFullPath(outputCpp)
-						mainPath := compiler.buildDir.GetFullPath(main)
-						common.Out("... Compiling C output to `%s`...\n", outputCpp)
-
-						if !proc.Run("CC", "gcc", mainPath, "-o", outputCppFull) {
-							common.Out("\nCompilation failed\n")
-						}
+					mainFile := program.generateCpp("cpp", "main.c")
+					exeFile := program.outputPath("main.exe")
+					exePath := compiler.buildDir.GetFullPath(exeFile)
+					common.Out("... Compiling C output to `%s`...\n", exeFile)
+					if !proc.Run("CC", "gcc", mainFile, "-o", exePath) {
+						common.Out("\nCompilation failed\n")
 					}
 				}
 
