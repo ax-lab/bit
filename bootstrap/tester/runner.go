@@ -89,7 +89,7 @@ func (runner Runner) Run() (out []RunOutput) {
 		run := RunOutput{
 			t:     runner.t,
 			root:  runner.rootDir,
-			Name:  common.WithExtension(path.Base(it), ""),
+			Name:  common.PathWithExtension(path.Base(it), ""),
 			File:  it,
 			Input: Input{path: runner.rootDir, name: it},
 		}
@@ -131,7 +131,7 @@ type RunOutput struct {
 }
 
 func (run *RunOutput) outFile() string {
-	return filepath.Join(run.root, common.WithExtension(run.File, ".out"))
+	return filepath.Join(run.root, common.PathWithExtension(run.File, ".out"))
 }
 
 func (run *RunOutput) outJson() string {

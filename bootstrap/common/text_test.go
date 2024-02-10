@@ -10,15 +10,15 @@ import (
 func TestCleanupText(t *testing.T) {
 	test := require.New(t)
 	test.Equal("",
-		common.Cleanup(""))
+		common.CleanupText(""))
 	test.Equal("A\nB\nC\nD\n",
-		common.Cleanup("A\nB\r\nC\rD\n"))
+		common.CleanupText("A\nB\r\nC\rD\n"))
 	test.Equal("A\nB\nC\n",
-		common.Cleanup("A  \nB  \nC  \n  "))
+		common.CleanupText("A  \nB  \nC  \n  "))
 	test.Equal("A\nB\n  C\n  D\nE\n",
-		common.Cleanup("  \n  A\n  B\n    C\n    D\n  E\n  "))
+		common.CleanupText("  \n  A\n  B\n    C\n    D\n  E\n  "))
 	test.Equal("A\nB\n    C\n    D\nE\n",
-		common.Cleanup(common.ExpandTabs("  \n\tA\n\tB\n\t\tC\n\t\tD\n\tE\n  ", 4)))
+		common.CleanupText(common.ExpandTabs("  \n\tA\n\tB\n\t\tC\n\t\tD\n\tE\n  ", 4)))
 }
 
 func TestIndent(t *testing.T) {

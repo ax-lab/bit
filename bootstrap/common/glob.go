@@ -50,7 +50,7 @@ func Glob(root, pattern string) (out []string) {
 			return err
 		}
 
-		path = Relative(root, path)
+		path = PathRelative(root, path)
 		path = strings.Replace(path, "\\", "/", -1)
 
 		var name string
@@ -66,21 +66,4 @@ func Glob(root, pattern string) (out []string) {
 		return nil
 	})
 	return out
-}
-
-func Relative(base, path string) string {
-	fullBase, err := filepath.Abs(base)
-	NoError(err, "getting absolute base path for relative")
-
-	fullPath, err := filepath.Abs(path)
-	NoError(err, "getting absolute path for relative")
-
-	rel, err := filepath.Rel(fullBase, fullPath)
-	NoError(err, "getting relative path")
-	return rel
-}
-
-func WithExtension(filename string, ext string) string {
-	out := strings.TrimSuffix(filename, filepath.Ext(filename))
-	return out + ext
 }

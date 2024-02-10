@@ -69,7 +69,7 @@ func main() {
 		}
 
 		if SampleC {
-			main := buildDir.Write("src/main.c", common.Cleanup(`
+			main := buildDir.Write("src/main.c", common.CleanupText(`
 			#include <stdio.h>
 
 			int main() {

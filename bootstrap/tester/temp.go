@@ -44,7 +44,7 @@ func TryMakeDir(pattern string, input map[string]string) (out TestDir, err error
 			return
 		}
 
-		if _, err = fp.WriteString(common.Cleanup(v)); err != nil {
+		if _, err = fp.WriteString(common.CleanupText(v)); err != nil {
 			return
 		}
 	}

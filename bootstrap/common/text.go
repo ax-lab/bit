@@ -23,7 +23,7 @@ func TrimEnd(str string) string {
 	return strings.TrimRightFunc(str, IsSpace)
 }
 
-func Cleanup(input string) string {
+func CleanupText(input string) string {
 	out := make([]string, 0)
 	pre := ""
 	for _, it := range TrimLines(Lines(input)) {

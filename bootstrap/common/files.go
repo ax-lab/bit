@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -46,4 +47,21 @@ func WriteJson(filepath string, data any) {
 	json, err := json.MarshalIndent(data, "", "    ")
 	NoError(err, "WriteJson serialization failed")
 	WriteText(filepath, string(json))
+}
+
+func PathRelative(base, path string) string {
+	fullBase, err := filepath.Abs(base)
+	NoError(err, "getting absolute base path for relative")
+
+	fullPath, err := filepath.Abs(path)
+	NoError(err, "getting absolute path for relative")
+
+	rel, err := filepath.Rel(fullBase, fullPath)
+	NoError(err, "getting relative path")
+	return rel
+}
+
+func PathWithExtension(filename string, ext string) string {
+	out := strings.TrimSuffix(filename, filepath.Ext(filename))
+	return out + ext
 }
