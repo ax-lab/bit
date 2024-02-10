@@ -2,6 +2,10 @@ package bit
 
 import "fmt"
 
+type HasScope interface {
+	IsScope(node *Node) (is bool, sta, end int)
+}
+
 type BindVar struct {
 	Name string
 	Let  *Node
@@ -15,10 +19,11 @@ func (op BindVar) IsSame(other Binding) bool {
 }
 
 func (op BindVar) Precedence() Precedence {
-	return PrecLet
+	return PrecVar
 }
 
 func (op BindVar) Process(args *BindArgs) {
+	DebugNodes("BindVar", args.Nodes...)
 	for _, it := range args.Nodes {
 		it.AddError("variable binding is not implemented yet")
 	}
@@ -96,9 +101,17 @@ func (op ParseLet) Process(args *BindArgs) {
 		node.FlagDone()
 		par.InsertNodes(it.Index(), node)
 
-		// TODO: this is not strictly correct, need to bind to the scope
-		span := it.Span()
-		it.DeclareAt(Word(name), span.End(), span.Source().Len(), BindVar{name, it})
+		scope, sta, end := par, node.Span().End(), par.Span().End()
+		for scope != nil {
+			if v, ok := scope.Value().(HasScope); ok {
+				if isScope, _, e := v.IsScope(scope); isScope {
+					end = e
+					break
+				}
+			}
+			scope = scope.Parent()
+		}
+		it.DeclareAt(Word(name), sta, end, BindVar{name, it})
 	}
 }
 

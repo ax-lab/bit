@@ -151,7 +151,7 @@ func (segs *BindingMap) Dump() string {
 					out.WriteString("  # ")
 					out.WriteString(txt)
 				}
-				out.WriteString("\n")
+				out.WriteString(fmt.Sprintf("  --  %d\n", it.Offset()))
 			}
 			out.WriteString("\t\t}\n")
 
@@ -162,7 +162,7 @@ func (segs *BindingMap) Dump() string {
 				if seg.end == math.MaxInt {
 					end = "MAX"
 				} else {
-					end = fmt.Sprint(end)
+					end = fmt.Sprint(seg.end)
 				}
 				out.WriteString(fmt.Sprintf("\t\t\t[%03d] %d..%s = ", n, seg.sta, end))
 				binding := seg.binding
@@ -291,7 +291,8 @@ func (seg *Segment) takeNodes() (out []*Node) {
 
 	sta, _ := findNodeAt(seg.sta, src.nodes)
 	end, _ := findNodeAt(seg.end, src.nodes[sta:])
-	if end > sta {
+	if end > 0 {
+		end += sta
 		all := src.nodes
 		src.nodes = nil
 		src.nodes = append(src.nodes, all[:sta]...)

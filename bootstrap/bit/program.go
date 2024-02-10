@@ -128,7 +128,9 @@ func (program *Program) CompileSource(source *Source) {
 
 	const unresolvedFile = "errors-unresolved.txt"
 	if cnt := len(unresolved); cnt > 0 {
-		program.HandleError(fmt.Errorf("there are %d unresolved nodes", cnt))
+		if program.Valid() {
+			program.HandleError(fmt.Errorf("there are %d unresolved nodes", cnt))
+		}
 		program.writeOutput(unresolvedFile, "# UNRESOLVED NODES\n\n"+program.dumpNodes(unresolved), true)
 	} else {
 		program.removeOutput(unresolvedFile)
@@ -155,7 +157,7 @@ func (program *Program) CompileSource(source *Source) {
 
 	for _, it := range program.modules {
 		mod := it.Value().(Module)
-		program.writeOutput("src/"+mod.Source.Name()+".dump.txt", it.Dump()+"\n", true)
+		program.writeOutput("src/"+mod.Source.Name()+".dump.txt", it.Dump(true)+"\n", true)
 	}
 }
 

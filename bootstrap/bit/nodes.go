@@ -75,7 +75,7 @@ func (node *Node) String() string {
 	return fmt.Sprintf("Node(%s#%d @%s)", node.value.Repr(true), node.id, node.span.String())
 }
 
-func (node *Node) Dump() string {
+func (node *Node) Dump(full bool) string {
 	header := fmt.Sprintf("#%d = ", node.id)
 	out := strings.Builder{}
 	out.WriteString(header)
@@ -105,14 +105,14 @@ func (node *Node) Dump() string {
 			out.WriteString("\n")
 		}
 	}
-	if len(node.nodes) > 0 {
+	if len(node.nodes) > 0 && full {
 		if hasTxt {
 			out.WriteString("\n")
 		}
 		out.WriteString("{")
 		for n, it := range node.nodes {
 			out.WriteString(fmt.Sprintf("\n\t[%03d] ", n))
-			out.WriteString(common.Indented(it.Dump()))
+			out.WriteString(common.Indented(it.Dump(true)))
 		}
 		out.WriteString("\n}")
 	}
@@ -307,8 +307,11 @@ func SortNodes(nodes []*Node) {
 func DebugNodes(msg string, nodes ...*Node) {
 	out := strings.Builder{}
 	out.WriteString(msg)
-	for _, it := range nodes {
-		out.WriteString(common.Indented("\n\n"+it.Dump()) + "\n")
+	for n, it := range nodes {
+		if n == 0 {
+			out.WriteString("\n\n")
+		}
+		out.WriteString(common.Indent(it.Dump(false)) + "\n")
 	}
 
 	if len(nodes) == 0 {
