@@ -3,13 +3,22 @@ package bit
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+
+	"axlab.dev/bit/common"
 )
 
 type Matcher func(cur *Cursor) (TokenType, error)
 
 func MatchInteger() Matcher {
 	return MatchWithRE(TokenInteger, `\d+`)
+}
+
+func ParseIntegerLiteral(str string) int {
+	val, err := strconv.ParseInt(str, 10, 64)
+	common.NoError(err, "failed to parse int literal")
+	return int(val)
 }
 
 func MatchWithRE(token TokenType, reExpr string) Matcher {

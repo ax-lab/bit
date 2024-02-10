@@ -21,11 +21,14 @@ func (program *Program) InitCore() {
 	program.DeclareGlobal(Word("let"), ParseLet{})
 
 	program.DeclareGlobal(TokenString, Replace{ParseString{}})
+	program.DeclareGlobal(TokenInteger, Replace{ParseInt{}})
+
+	program.OutputAll(Str(""))
+	program.OutputAll(Int(0))
 
 	program.OutputAll(Module{})
 	program.OutputAll(Line{})
 	program.OutputAll(Print{})
-	program.OutputAll(Str(""))
 	program.OutputAll(Var{})
 	program.OutputAll(Let{})
 }
