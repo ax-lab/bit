@@ -170,9 +170,14 @@ func (code WithScope) Eval(rt *RuntimeContext) {
 }
 
 func (code WithScope) OutputCpp(ctx *CppContext, node *Node) {
-	out := ctx.OutputFilePrefix
-	out.NewLine()
-	out.Write("#error Scope evaluation not implemented\n")
+	block := CppContext{}
+	block.NewBody(ctx)
+
+	for _, it := range code.Vars {
+		block.Body.Decl.Push("%s %s; // %s @%s", it.Type.CppType(), it.EncodedName(), it.Name, it.Decl.Span().String())
+	}
+	code.Inner.OutputCpp(&block)
+	block.Body.AppendTo(&ctx.Body.CppLines)
 }
 
 func (code WithScope) Repr(oneline bool) string {

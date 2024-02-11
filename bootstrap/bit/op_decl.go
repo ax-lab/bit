@@ -42,9 +42,7 @@ func (val Var) Eval(rt *RuntimeContext) {
 }
 
 func (val Var) OutputCpp(ctx *CppContext, node *Node) {
-	out := ctx.OutputFilePrefix
-	out.NewLine()
-	out.Write("#error Variable not implemented\n")
+	ctx.Expr.WriteString(val.Var.EncodedName())
 }
 
 type BindVar struct {
@@ -94,6 +92,13 @@ func (val Let) Bind(node *Node) {
 	node.Bind(Let{})
 }
 
+func (val Let) Output(ctx *CodeContext) Code {
+	expr := ctx.OutputChild(ctx.Node)
+	val.Var.Type = expr.Type()
+	val.Var.EncodedName() // generate name
+	return Code{LetExpr{val.Var, expr}, nil}
+}
+
 type LetExpr struct {
 	Var  *Variable
 	Expr Code
@@ -109,9 +114,14 @@ func (code LetExpr) Eval(rt *RuntimeContext) {
 }
 
 func (code LetExpr) OutputCpp(ctx *CppContext, node *Node) {
-	out := ctx.OutputFilePrefix
-	out.NewLine()
-	out.Write("#error Let binding not implemented\n")
+	name := code.Var.EncodedName()
+
+	expr := CppContext{}
+	expr.NewExpr(ctx)
+	code.Expr.OutputCpp(&expr)
+
+	ctx.Body.Push("%s = %s;", name, expr.Expr.String())
+	ctx.Expr.WriteString(name)
 }
 
 func (code LetExpr) Repr(oneline bool) string {

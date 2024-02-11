@@ -29,7 +29,7 @@ func (val Print) Output(ctx *CodeContext) Code {
 }
 
 type PrintCpp interface {
-	OutputCppPrint(out *CppWriter, node *Node)
+	OutputCppPrint(out *CppContext, node *Node)
 }
 
 type ParsePrint struct{}
@@ -78,15 +78,9 @@ func (expr PrintExpr) Eval(rt *RuntimeContext) {
 
 func (val PrintExpr) OutputCpp(ctx *CppContext, node *Node) {
 	if v, ok := val.args.Expr.(PrintCpp); ok {
-		out := ctx.OutputFunc
-		v.OutputCppPrint(out, val.args.Node)
-		out.EndStatement()
-		out.Write(`printf("\n");`)
-		out.NewLine()
+		v.OutputCppPrint(ctx, val.args.Node)
 	} else {
-		out := ctx.OutputFunc
-		out.NewLine()
-		out.Write("#error Cannot output print for %s", node.Describe())
+		ctx.Body.Push("#error Cannot output print for `%s`", val.args.Expr.Repr(true))
 	}
 }
 

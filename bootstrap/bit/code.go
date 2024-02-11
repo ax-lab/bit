@@ -29,18 +29,8 @@ func (code Code) Repr(oneline bool) string {
 }
 
 func (code Code) OutputCpp(ctx *CppContext) {
-	if ctx.OutputExpr == nil {
-		expr := CppContext{}
-		expr.InitExpr(ctx)
-		code.Expr.OutputCpp(&expr, code.Node)
-		if txt := expr.OutputExpr.Text(); txt != "" {
-			ctx.OutputFunc.EndStatement()
-			ctx.OutputFunc.Write(txt)
-			ctx.OutputFunc.EndStatement()
-		}
-	} else {
-		code.Expr.OutputCpp(ctx, code.Node)
-	}
+	ctx.Expr.Reset()
+	code.Expr.OutputCpp(ctx, code.Node)
 }
 
 func (program *Program) CompileOutput() Code {
@@ -159,9 +149,7 @@ func (Invalid) Eval(rt *RuntimeContext) {
 }
 
 func (Invalid) OutputCpp(ctx *CppContext, node *Node) {
-	out := ctx.OutputFilePrefix
-	out.NewLine()
-	out.Write("#error Trying to output invalid code\n")
+	ctx.Body.Push("#error Trying to output invalid code")
 }
 
 func (Invalid) Repr(oneline bool) string {

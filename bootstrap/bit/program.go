@@ -174,11 +174,10 @@ func (program *Program) CompileSource(source *Source) {
 
 func (program *Program) generateCpp(outputDir, outputFile string) (mainPath string) {
 	ctx := NewCppContext(program)
-	ctx.WriteFunc("int main(int argc, char *argv[])", func(ctx *CppContext) {
-		program.outputCode.OutputCpp(ctx)
-		ctx.OutputFunc.EndStatement()
-		ctx.OutputFunc.Write("return 0;")
-	})
+	ctx.Func.Decl = "int main(int argc, char *argv[])"
+	program.outputCode.OutputCpp(ctx)
+	ctx.Func.Body.Push("return 0;")
+	ctx.Func.AppendTo(ctx.File)
 
 	for name, text := range ctx.GetOutputFiles(outputFile) {
 		program.writeOutput(path.Join(outputDir, name), text, false)

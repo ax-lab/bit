@@ -36,16 +36,15 @@ func (val Str) Eval(rt *RuntimeContext) {
 }
 
 func (val Str) OutputCpp(ctx *CppContext, node *Node) {
-	ctx.OutputExpr.WriteLiteralString(string(val))
+	WriteLiteralString(ctx.Expr, string(val))
 }
 
-func (val Str) OutputCppPrint(out *CppWriter, node *Node) {
-	out.Context.IncludeSystem("stdio.h")
-	out.NewLine()
-	out.Write(`printf("%s", `)
-	out.WriteLiteralString((string(val)))
-	out.Write(`);`)
-	out.NewLine()
+func (val Str) OutputCppPrint(out *CppContext, node *Node) {
+	out.IncludeSystem("stdio.h")
+	out.Body.EnsureBlank()
+	out.Body.Write(`printf("%s", `)
+	WriteLiteralString(out.Body, string(val))
+	out.Body.Write(`);`)
 }
 
 type ParseString struct{}

@@ -47,13 +47,7 @@ func (seq Sequence) Repr(oneline bool) string {
 
 func (seq Sequence) OutputCpp(ctx *CppContext, node *Node) {
 	for _, it := range seq.List {
-		var expr CppContext
-		expr.InitExpr(ctx)
-		it.OutputCpp(&expr)
-		if txt := expr.OutputExpr.Text(); txt != "" {
-			ctx.OutputFunc.NewLine()
-			ctx.OutputFunc.Write(txt)
-			ctx.OutputFunc.EndStatement()
-		}
+		ctx.Expr.Reset()
+		it.OutputCpp(ctx)
 	}
 }

@@ -36,16 +36,15 @@ func (val Int) Eval(rt *RuntimeContext) {
 }
 
 func (val Int) OutputCpp(ctx *CppContext, node *Node) {
-	ctx.OutputExpr.Write(val.String())
+	ctx.Expr.WriteString(val.String())
 }
 
-func (val Int) OutputCppPrint(out *CppWriter, node *Node) {
-	out.Context.IncludeSystem("stdio.h")
-	out.NewLine()
-	out.Write(`printf("`)
-	out.Write(val.String())
-	out.Write(`");`)
-	out.NewLine()
+func (val Int) OutputCppPrint(out *CppContext, node *Node) {
+	out.IncludeSystem("stdio.h")
+	out.Body.EnsureBlank()
+	out.Body.Write(`printf("`)
+	out.Body.Write(val.String())
+	out.Body.Write(`");`)
 }
 
 type ParseInt struct{}
