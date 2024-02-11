@@ -45,6 +45,16 @@ func (val Var) OutputCpp(ctx *CppContext, node *Node) {
 	ctx.Expr.WriteString(val.Var.EncodedName())
 }
 
+func (val Var) OutputCppPrint(ctx *CppContext, node *Node) {
+	typ := val.Type()
+	if prn, ok := typ.(PrintCpp); ok {
+		val.OutputCpp(ctx, node)
+		prn.OutputCppPrint(ctx, node)
+	} else {
+		ctx.Body.Push("#error type `%s` for variable `%s` does not support print", typ.String(), val.Repr(true))
+	}
+}
+
 type BindVar struct {
 	Var *Variable
 }

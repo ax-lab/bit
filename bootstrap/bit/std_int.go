@@ -39,12 +39,12 @@ func (val Int) OutputCpp(ctx *CppContext, node *Node) {
 	ctx.Expr.WriteString(val.String())
 }
 
-func (val Int) OutputCppPrint(out *CppContext, node *Node) {
-	out.IncludeSystem("stdio.h")
-	out.Body.EnsureBlank()
-	out.Body.Write(`printf("`)
-	out.Body.Write(val.String())
-	out.Body.Write(`");`)
+func (val Int) OutputCppPrint(ctx *CppContext, node *Node) {
+	ctx.IncludeSystem("stdio.h")
+	ctx.Body.EnsureBlank()
+	ctx.Body.Write(`printf("`)
+	ctx.Body.Write(val.String())
+	ctx.Body.Write(`");`)
 }
 
 type ParseInt struct{}

@@ -39,12 +39,12 @@ func (val Str) OutputCpp(ctx *CppContext, node *Node) {
 	WriteLiteralString(ctx.Expr, string(val))
 }
 
-func (val Str) OutputCppPrint(out *CppContext, node *Node) {
-	out.IncludeSystem("stdio.h")
-	out.Body.EnsureBlank()
-	out.Body.Write(`printf("%s", `)
-	WriteLiteralString(out.Body, string(val))
-	out.Body.Write(`);`)
+func (val Str) OutputCppPrint(ctx *CppContext, node *Node) {
+	ctx.IncludeSystem("stdio.h")
+	ctx.Body.EnsureBlank()
+	ctx.Body.Write(`printf("%s", `)
+	WriteLiteralString(ctx.Body, string(val))
+	ctx.Body.Write(`);`)
 }
 
 type ParseString struct{}
