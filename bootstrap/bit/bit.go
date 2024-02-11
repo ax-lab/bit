@@ -86,7 +86,7 @@ func (comp *Compiler) Run(file string, options RunOptions) (out RunResult) {
 		exePath := comp.buildDir.GetFullPath(exeFile)
 		gcc := proc.Cmd("gcc", mainFile, "-o", exePath)
 		if !gcc.Success {
-			out.Err = gcc.GetError()
+			out.Err = gcc.GetError("CC")
 			if len(gcc.StdErr) > 0 {
 				out.Log = append(out.Log, fmt.Errorf("CC error output:\n\n%s", common.Indent(gcc.StdErr)))
 			}

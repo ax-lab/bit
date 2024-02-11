@@ -55,17 +55,17 @@ type CmdOutput struct {
 	ExitCode int
 }
 
-func (out CmdOutput) GetError() error {
+func (out CmdOutput) GetError(name string) error {
 	if out.Error != nil {
 		return out.Error
 	}
 
 	if out.ExitCode != 0 {
-		return fmt.Errorf("command exited with status %d", out.ExitCode)
+		return fmt.Errorf("%s: command exited with status %d", name, out.ExitCode)
 	}
 
 	if strings.TrimSpace(out.StdErr) != "" {
-		return fmt.Errorf("command generated error output")
+		return fmt.Errorf("%s: command generated error output", name)
 	}
 
 	return nil

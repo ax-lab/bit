@@ -69,20 +69,21 @@ func main() {
 			res := compiler.Run(it, bit.RunOptions{Cpp: cpp})
 			if len(files) > 1 {
 				common.Out("\n>>> %s <<<\n", it)
-				if res.Err != nil {
-					common.Err("\nError: %v\n", res.Err)
-				}
+			}
 
-				if len(res.Log) > 0 {
-					common.Err("\nLog:\n")
-					for n, it := range res.Log {
-						common.Err("\n    [%d] %s\n", n, common.Indented(it.Error()))
-					}
-				}
+			if res.Err != nil {
+				common.Err("\nError: %v\n", res.Err)
+			}
 
-				if res.Value != nil {
-					common.Out("\nResult = %v\n\n", bit.ResultRepr(res.Value))
+			if len(res.Log) > 0 {
+				common.Err("\nLog:\n")
+				for n, it := range res.Log {
+					common.Err("\n    [%d] %s\n", n, common.Indented(it.Error()))
 				}
+			}
+
+			if res.Value != nil {
+				common.Out("\nResult = %v\n\n", bit.ResultRepr(res.Value))
 			}
 		}
 	}
