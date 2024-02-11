@@ -48,6 +48,7 @@ type Variable struct {
 	Decl   *Node
 	Name   string
 	Offset int
+	Type   Type
 
 	value   Result
 	escaped string
@@ -123,6 +124,10 @@ type WithScope struct {
 	Scope *Scope
 	Inner Code
 	Vars  []*Variable
+}
+
+func (code WithScope) Type() Type {
+	return code.Inner.Type()
 }
 
 func (code *WithScope) initVars() {

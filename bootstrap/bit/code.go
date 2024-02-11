@@ -7,12 +7,17 @@ type IsCode interface {
 type Expr interface {
 	Eval(rt *RuntimeContext)
 	Repr(oneline bool) string
+	Type() Type
 	OutputCpp(ctx *CppContext, node *Node)
 }
 
 type Code struct {
 	Expr Expr
 	Node *Node
+}
+
+func (code Code) Type() Type {
+	return code.Expr.Type()
 }
 
 func (code Code) Span() Span {
@@ -144,6 +149,10 @@ func (ctx *CodeContext) OutputChildren(node *Node) (out Code) {
 }
 
 type Invalid struct{}
+
+func (Invalid) Type() Type {
+	return InvalidType{}
+}
 
 func (Invalid) Eval(rt *RuntimeContext) {
 	rt.Panic("cannot evaluate invalid code")

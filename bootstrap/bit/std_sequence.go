@@ -11,6 +11,14 @@ type Sequence struct {
 	List []Code
 }
 
+func (seq Sequence) Type() Type {
+	if len(seq.List) == 0 {
+		return NoneType{}
+	} else {
+		return seq.List[len(seq.List)-1].Type()
+	}
+}
+
 func (seq Sequence) Eval(rt *RuntimeContext) {
 	for _, it := range seq.List {
 		rt.Result = rt.Eval(it)

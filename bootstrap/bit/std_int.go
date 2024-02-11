@@ -4,6 +4,10 @@ import "fmt"
 
 type Int int
 
+func (val Int) Type() Type {
+	return IntType{}
+}
+
 func (val Int) IsEqual(other Key) bool {
 	if v, ok := other.(Int); ok {
 		return v == val

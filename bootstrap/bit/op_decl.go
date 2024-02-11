@@ -6,6 +6,10 @@ type Var struct {
 	Var *Variable
 }
 
+func (val Var) Type() Type {
+	return val.Var.Type
+}
+
 func (val Var) IsEqual(other Key) bool {
 	if v, ok := other.(Var); ok {
 		return v == val
@@ -95,9 +99,8 @@ type LetExpr struct {
 	Expr Code
 }
 
-func (val Let) Output(ctx *CodeContext) Code {
-	expr := ctx.OutputChild(ctx.Node)
-	return Code{LetExpr{val.Var, expr}, nil}
+func (code LetExpr) Type() Type {
+	return code.Var.Type
 }
 
 func (code LetExpr) Eval(rt *RuntimeContext) {

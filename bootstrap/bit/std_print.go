@@ -66,6 +66,10 @@ type PrintExpr struct {
 	args Code
 }
 
+func (expr PrintExpr) Type() Type {
+	return expr.args.Type()
+}
+
 func (expr PrintExpr) Eval(rt *RuntimeContext) {
 	rt.Result = rt.Eval(expr.args)
 	rt.OutputStd(rt.Result.String())
