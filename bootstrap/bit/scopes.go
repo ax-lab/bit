@@ -15,10 +15,27 @@ type HasScope interface {
 }
 
 type Scope struct {
-	Node *Node
+	Node   *Node
+	Parent *Scope
+	Names  *NameScope
 
 	mutex sync.Mutex
 	vars  map[varKey]*Variable
+}
+
+func newScope(node *Node) *Scope {
+	out := &Scope{
+		Node:   node,
+		Parent: node.GetParentScope(),
+	}
+
+	if out.Parent != nil {
+		out.Names = out.Parent.Names.NewChild()
+	} else {
+		out.Names = node.program.names.NewChild()
+	}
+
+	return out
 }
 
 type varKey struct {
@@ -32,11 +49,19 @@ type Variable struct {
 	Name   string
 	Offset int
 
-	value Result
+	value   Result
+	escaped string
 }
 
 func (v *Variable) String() string {
 	return fmt.Sprintf("Var(%s@%s)", v.Name, v.Decl.Span().Location().String())
+}
+
+func (v *Variable) EncodedName() string {
+	if v.escaped == "" {
+		v.escaped = v.Scope.DeclareUnique(v.Name)
+	}
+	return v.escaped
 }
 
 func (scope *Scope) Len() int {
@@ -49,6 +74,21 @@ func (scope *Scope) Sta() int {
 
 func (scope *Scope) End() int {
 	return scope.Node.Span().End()
+}
+
+func (scope *Scope) DeclareGlobal(name string, node *Node) {
+	encoded := EncodeIdentifier(name)
+	if !scope.Names.globals.DeclareGlobal(encoded) {
+		if node == nil {
+			node = scope.Node
+		}
+		node.AddError("the global name `%s` was already declared", name)
+	}
+}
+
+func (scope *Scope) DeclareUnique(name string) string {
+	name = EncodeIdentifier(name)
+	return scope.Names.DeclareUnique(name)
 }
 
 func (scope *Scope) Declare(decl *Node, name string, offset int) *Variable {

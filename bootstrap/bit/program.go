@@ -38,6 +38,7 @@ type Program struct {
 	mainNode   *Node
 	outputCode *Code
 	bindings   *BindingMap
+	names      *NameMap
 
 	coreInit   atomic.Bool
 	compiling  atomic.Bool
@@ -62,6 +63,7 @@ func (program *Program) reset() {
 	program.modules = nil
 	program.mainNode = nil
 	program.outputCode = nil
+	program.names = &NameMap{}
 
 	program.bindings = &BindingMap{
 		program: program,

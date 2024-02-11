@@ -44,7 +44,7 @@ func (program *Program) NewNode(value Value, span Span) *Node {
 
 	if v, ok := value.(HasScope); ok {
 		if v.IsScope(node) {
-			node.scope = &Scope{Node: node}
+			node.scope = newScope(node)
 		}
 	}
 
