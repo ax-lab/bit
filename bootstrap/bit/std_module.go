@@ -6,8 +6,8 @@ type Module struct {
 	Source *Source
 }
 
-func (mod Module) IsScope(node *Node) (is bool, sta, end int) {
-	return true, node.Span().Sta(), node.Span().End()
+func (mod Module) IsScope(node *Node) bool {
+	return true
 }
 
 func (mod Module) IsEqual(other Key) bool {

@@ -39,9 +39,6 @@ type Program struct {
 	outputCode *Code
 	bindings   *BindingMap
 
-	scopeMutex sync.Mutex
-	scopes     map[*Node]*Scope
-
 	coreInit   atomic.Bool
 	compiling  atomic.Bool
 	buildMutex sync.Mutex
@@ -65,7 +62,6 @@ func (program *Program) reset() {
 	program.modules = nil
 	program.mainNode = nil
 	program.outputCode = nil
-	program.scopes = make(map[*Node]*Scope)
 
 	program.bindings = &BindingMap{
 		program: program,

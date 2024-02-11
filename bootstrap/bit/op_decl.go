@@ -172,7 +172,7 @@ func (op ParseLet) Process(args *BindArgs) {
 			it.FlagDone()
 		}
 
-		it.DeclareAt(Word(name), variable.Offset, scope.End, BindVar{variable})
+		it.DeclareAt(Word(name), variable.Offset, scope.End(), BindVar{variable})
 	}
 }
 

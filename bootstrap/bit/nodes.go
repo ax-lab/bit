@@ -29,6 +29,7 @@ type Node struct {
 	nodes  []*Node
 	parent *Node
 	index  int
+	scope  *Scope
 }
 
 var idCounter atomic.Int32
@@ -39,6 +40,12 @@ func (program *Program) NewNode(value Value, span Span) *Node {
 		value:   value,
 		span:    span,
 		id:      int(idCounter.Add(1)),
+	}
+
+	if v, ok := value.(HasScope); ok {
+		if v.IsScope(node) {
+			node.scope = &Scope{Node: node}
+		}
 	}
 
 	program.allNodes = append(program.allNodes, node)

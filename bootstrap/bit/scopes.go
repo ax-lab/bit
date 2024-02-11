@@ -11,13 +11,11 @@ import (
 
 // Node values that can delimit a scope must implement this.
 type HasScope interface {
-	IsScope(node *Node) (is bool, sta, end int)
+	IsScope(node *Node) bool
 }
 
 type Scope struct {
 	Node *Node
-	Sta  int
-	End  int
 
 	mutex sync.Mutex
 	vars  map[varKey]*Variable
@@ -45,8 +43,16 @@ func (scope *Scope) Len() int {
 	return len(scope.vars)
 }
 
+func (scope *Scope) Sta() int {
+	return scope.Node.Span().Sta()
+}
+
+func (scope *Scope) End() int {
+	return scope.Node.Span().End()
+}
+
 func (scope *Scope) Declare(decl *Node, name string, offset int) *Variable {
-	if offset < scope.Sta || scope.End <= offset {
+	if offset < scope.Sta() || scope.End() <= offset {
 		panic("invalid offset for scope variable")
 	}
 
@@ -145,12 +151,7 @@ func (code WithScope) Repr(oneline bool) string {
 }
 
 func (node *Node) getOwnScope() *Scope {
-	if v, ok := node.Value().(HasScope); ok {
-		if isScope, _, _ := v.IsScope(node); isScope {
-			return node.program.scopes[node]
-		}
-	}
-	return nil
+	return node.scope
 }
 
 func (node *Node) GetParentScope() *Scope {
@@ -161,43 +162,11 @@ func (node *Node) GetParentScope() *Scope {
 }
 
 func (node *Node) GetScope() *Scope {
-	program := node.program
-	program.scopeMutex.Lock()
-	defer program.scopeMutex.Unlock()
-
-	var (
-		isScope  bool
-		scope    *Scope
-		sta, end int
-	)
-
-	if scope, ok := program.scopes[node]; ok {
-		return scope
-	}
-
-	cur := node
-	for cur != nil {
-		if scope, ok := program.scopes[cur]; ok {
-			return scope
-		}
-		if v, ok := cur.Value().(HasScope); ok {
-			if isScope, sta, end = v.IsScope(cur); isScope {
-				break
-			}
-		}
+	cur, scope := node, node.scope
+	for scope == nil && cur.Parent() != nil {
 		cur = cur.Parent()
+		scope = cur.scope
 	}
-
-	if isScope {
-		scope = &Scope{
-			Node: cur,
-			Sta:  sta,
-			End:  end,
-		}
-		program.scopes[cur] = scope
-	}
-
-	program.scopes[node] = scope
 
 	if scope == nil {
 		panic(fmt.Sprintf("scope resolution returned nil for node `%s`", node.Describe()))
