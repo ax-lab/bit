@@ -177,6 +177,9 @@ func (node *Node) GetScope() *Scope {
 
 	cur := node
 	for cur != nil {
+		if scope, ok := program.scopes[cur]; ok {
+			return scope
+		}
 		if v, ok := cur.Value().(HasScope); ok {
 			if isScope, sta, end = v.IsScope(cur); isScope {
 				break
