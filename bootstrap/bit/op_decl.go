@@ -3,8 +3,7 @@ package bit
 import "fmt"
 
 type Var struct {
-	Name string
-	Decl *Node
+	Var *Variable
 }
 
 func (val Var) IsEqual(other Key) bool {
@@ -15,14 +14,33 @@ func (val Var) IsEqual(other Key) bool {
 }
 
 func (val Var) Repr(oneline bool) string {
-	if val.Name == "" && val.Decl == nil {
+	if val.Var == nil {
 		return "Var()"
 	}
-	return fmt.Sprintf("Var(%s@%s)", val.Name, val.Decl.Span().Location().String())
+	return val.Var.String()
 }
 
 func (val Var) Bind(node *Node) {
 	node.Bind(Var{})
+}
+
+func (val Var) Output(ctx *CodeContext) Code {
+	return Code{val, nil}
+}
+
+func (val Var) Eval(rt *RuntimeContext) {
+	res := val.Var.value
+	if res == nil {
+		rt.Panic("variable `%s` has not been initialized", val.Var.Name)
+	} else {
+		rt.Result = res
+	}
+}
+
+func (val Var) OutputCpp(ctx *CppContext, node *Node) {
+	out := ctx.OutputFilePrefix
+	out.NewLine()
+	out.Write("#error Variable not implemented\n")
 }
 
 type BindVar struct {
@@ -42,7 +60,7 @@ func (op BindVar) Precedence() Precedence {
 
 func (op BindVar) Process(args *BindArgs) {
 	for _, it := range args.Nodes {
-		it.ReplaceWithValue(Var{Name: op.Var.Name, Decl: op.Var.Decl})
+		it.ReplaceWithValue(Var(op))
 	}
 }
 
@@ -70,6 +88,31 @@ func (val Let) Repr(oneline bool) string {
 
 func (val Let) Bind(node *Node) {
 	node.Bind(Let{})
+}
+
+type LetExpr struct {
+	Var  *Variable
+	Expr Code
+}
+
+func (val Let) Output(ctx *CodeContext) Code {
+	expr := ctx.OutputChild(ctx.Node)
+	return Code{LetExpr{val.Var, expr}, nil}
+}
+
+func (code LetExpr) Eval(rt *RuntimeContext) {
+	rt.Result = rt.Eval(code.Expr)
+	code.Var.value = rt.Result
+}
+
+func (code LetExpr) OutputCpp(ctx *CppContext, node *Node) {
+	out := ctx.OutputFilePrefix
+	out.NewLine()
+	out.Write("#error Let binding not implemented\n")
+}
+
+func (code LetExpr) Repr(oneline bool) string {
+	return fmt.Sprintf("Let(%s) = %s", code.Var.Name, code.Expr.Repr(oneline))
 }
 
 type ParseLet struct{}

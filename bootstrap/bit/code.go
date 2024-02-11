@@ -71,6 +71,18 @@ type CodeContext struct {
 	Valid  bool
 }
 
+func (code Code) wrapScope(node *Node) (out Code) {
+	if _, ok := code.Expr.(WithScope); ok {
+		return code
+	}
+	if scope := node.getOwnScope(); scope != nil && scope.Len() > 0 {
+		expr := WithScope{scope, code, nil}
+		expr.initVars()
+		code.Expr = expr
+	}
+	return code
+}
+
 func (ctx *CodeContext) Output(node *Node) (out Code) {
 	program := node.Program()
 	ctx.Valid = ctx.Valid && program.Valid()
@@ -94,29 +106,31 @@ func (ctx *CodeContext) Output(node *Node) (out Code) {
 		ctx.Valid = false
 	}
 
-	if out.Expr == nil {
-		out.Expr = Invalid{}
-	}
 	if out.Node == nil {
 		out.Node = node
 	}
 
-	return out
+	if out.Expr == nil {
+		out.Expr = Invalid{}
+	}
+
+	return out.wrapScope(node)
 }
 
-func (ctx *CodeContext) OutputChild(node *Node) Code {
+func (ctx *CodeContext) OutputChild(node *Node) (out Code) {
 	nodes := node.Nodes()
 	if len(nodes) == 0 {
-		return Code{Sequence{}, node}
+		out = Code{Sequence{}, node}
 	} else if len(nodes) == 1 {
-		return ctx.Output(nodes[0])
+		out = ctx.Output(nodes[0])
 	} else {
 		node.AddError("node `%s` cannot have multiple children", node.Value().Repr(true))
-		return Code{}
+		out = Code{}
 	}
+	return out.wrapScope(node)
 }
 
-func (ctx *CodeContext) OutputChildren(node *Node) Code {
+func (ctx *CodeContext) OutputChildren(node *Node) (out Code) {
 	list := make([]Code, 0, node.Len())
 	for _, it := range node.Nodes() {
 		if !ctx.Valid {
@@ -125,7 +139,8 @@ func (ctx *CodeContext) OutputChildren(node *Node) Code {
 		list = append(list, ctx.Output(it))
 	}
 
-	return Code{Sequence{list}, node}
+	out = Code{Sequence{list}, node}
+	return out.wrapScope(node)
 }
 
 type Invalid struct{}
