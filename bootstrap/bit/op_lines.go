@@ -1,5 +1,24 @@
 package bit
 
+type CanFlatten interface {
+	Flatten(node *Node) []*Node
+}
+
+func (val Line) Flatten(node *Node) []*Node {
+	return node.Nodes()
+}
+
+func FlattenNodes(nodes ...*Node) (out []*Node) {
+	for _, it := range nodes {
+		if v, ok := it.Value().(CanFlatten); ok {
+			out = append(out, v.Flatten(it)...)
+		} else {
+			out = append(out, it)
+		}
+	}
+	return out
+}
+
 type Line struct{}
 
 func (val Line) IsEqual(other Key) bool {

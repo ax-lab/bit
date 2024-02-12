@@ -1,2 +1,6 @@
-let x = 42
-print x
+let x = true
+if true:
+	print 'x is true'
+	print 'yes'
+else:
+	print 'x is false'

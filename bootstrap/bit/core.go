@@ -7,6 +7,7 @@ func (program *Program) InitCore() {
 
 	program.DeclareGlobal(TokenBreak, SplitLines{})
 	program.DeclareGlobal(Indented{}, ParseIndent{})
+	program.DeclareGlobal(IndentedGroup{}, ParseBlocks{})
 
 	program.DeclareGlobal(Symbol("("), ParseBrackets{"(", ")"})
 	program.DeclareGlobal(Symbol(")"), ParseBrackets{"(", ")"})
@@ -27,7 +28,9 @@ func (program *Program) InitCore() {
 	program.OutputAll(Int(0))
 
 	program.OutputAll(Module{})
+	program.OutputAll(Block{})
 	program.OutputAll(Line{})
+	program.OutputAll(Group{})
 	program.OutputAll(Print{})
 	program.OutputAll(Var{})
 	program.OutputAll(Let{})
@@ -52,4 +55,8 @@ func (val Group) IsEqual(other Key) bool {
 		return val == v
 	}
 	return false
+}
+
+func (val Group) Output(ctx *CodeContext) Code {
+	return ctx.OutputChild(ctx.Node)
 }

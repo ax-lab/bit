@@ -135,26 +135,29 @@ func (program *Program) CompileSource(source *Source) {
 
 	const unresolvedFile = "errors-unresolved.txt"
 	if cnt := len(unresolved); cnt > 0 {
-		if program.Valid() {
+		outputErrors := program.Valid()
+		if outputErrors {
 			program.HandleError(fmt.Errorf("there are %d unresolved nodes", cnt))
 		}
 		program.writeOutput(unresolvedFile, "# UNRESOLVED NODES\n\n"+program.dumpNodes(unresolved), true)
 
-		maxUnresolved := MaxErrorOutput - 1
-		types, cnt := make(map[reflect.Type]bool), 0
-		for _, it := range unresolved {
-			if typ := reflect.TypeOf(it.Value()); !types[typ] {
-				types[typ] = true
-			} else if len(unresolved) > maxUnresolved {
-				continue
-			}
+		if outputErrors {
+			maxUnresolved := MaxErrorOutput - 1
+			types, cnt := make(map[reflect.Type]bool), 0
+			for _, it := range unresolved {
+				if typ := reflect.TypeOf(it.Value()); !types[typ] {
+					types[typ] = true
+				} else if len(unresolved) > maxUnresolved {
+					continue
+				}
 
-			cnt += 1
-			if cnt > maxUnresolved {
-				break
-			}
+				cnt += 1
+				if cnt > maxUnresolved {
+					break
+				}
 
-			it.AddError("node is unresolved -- %s", it.Value().Repr(true))
+				it.AddError("node is unresolved -- %s", it.Value().Repr(true))
+			}
 		}
 	} else {
 		program.removeOutput(unresolvedFile)

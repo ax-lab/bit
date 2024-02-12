@@ -21,6 +21,7 @@ const (
 	PrecBrackets
 	PrecIndent
 	PrecLines
+	PrecBlocks
 	PrecPrint
 	PrecLet
 	PrecVar

@@ -208,9 +208,20 @@ func (node *Node) Prev() *Node {
 	if node.parent != nil {
 		nodes := node.parent.nodes
 		index := node.index - 1
-		if index > 0 && index < len(nodes) {
+		if index >= 0 && index < len(nodes) {
 			return nodes[index]
 		}
+	}
+	return nil
+}
+
+func (node *Node) First() *Node {
+	return node.nodes[0]
+}
+
+func (node *Node) Last() *Node {
+	if l := len(node.nodes); l > 0 {
+		return node.nodes[l-1]
 	}
 	return nil
 }
@@ -273,6 +284,12 @@ func (node *Node) InsertNodes(at int, newNodes ...*Node) {
 		return
 	}
 
+	for _, it := range newNodes {
+		if it.parent != nil {
+			panic(fmt.Sprintf("Node `%s` already has a parent", it.Describe()))
+		}
+	}
+
 	nodes := node.nodes
 	node.nodes = nil
 	node.nodes = append(node.nodes, nodes[:at]...)
@@ -281,6 +298,15 @@ func (node *Node) InsertNodes(at int, newNodes ...*Node) {
 	for n, it := range node.nodes[at:] {
 		it.parent = node
 		it.index = n + at
+	}
+
+	// we can safely modify the node span end since it does not change
+	// its offset or location
+	if last := node.nodes[len(node.nodes)-1]; last != nil {
+		span := last.span
+		if span.src == node.span.src && span.end > node.span.end {
+			node.span.end = span.end
+		}
 	}
 }
 
