@@ -11,6 +11,10 @@ import (
 	"sync/atomic"
 )
 
+var (
+	queueCount = 0
+)
+
 type BindingMap struct {
 	mutex sync.Mutex
 	byKey map[Key]*segmentsByKey
@@ -29,6 +33,13 @@ func (segs *BindingMap) StepNext() bool {
 		segments, nodes := segs.queue.Dequeue()
 		if len(segments) == 0 {
 			return false
+		}
+
+		if debugQueue {
+			queueCount += 1
+			header := fmt.Sprintf("Queue %d - ", queueCount)
+			DebugNodes(header+" Nodes", nodes...)
+			DebugSegments(header+" Segments", segments...)
 		}
 
 		for _, it := range segments {

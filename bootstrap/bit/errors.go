@@ -3,7 +3,9 @@ package bit
 import (
 	"cmp"
 	"fmt"
+	"os"
 	"sort"
+	"strings"
 )
 
 type RuntimeError struct {
@@ -64,4 +66,30 @@ func SortErrors(errs []error) {
 
 		return cmpErrA.Span.Compare(cmpErrB.Span) < 0
 	})
+}
+
+func ShowErrors(errs []error) bool {
+	if errs := ErrorsToString(errs, MaxErrorOutput); len(errs) > 0 {
+		os.Stderr.WriteString(errs)
+		return true
+	}
+	return false
+}
+
+func ErrorsToString(errs []error, max int) string {
+	SortErrors(errs)
+	txt := strings.Builder{}
+	for n, err := range errs {
+		if n > 0 {
+			txt.WriteString("\n")
+		}
+		if max > 0 && n == max {
+			txt.WriteString(fmt.Sprintf("Too many errors, omitting %d errors...\n", len(errs)-n))
+			break
+		}
+		txt.WriteString(fmt.Sprintf("[%d of %d] ", n+1, len(errs)))
+		txt.WriteString(err.Error())
+		txt.WriteString("\n")
+	}
+	return txt.String()
 }

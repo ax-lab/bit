@@ -2,16 +2,29 @@ package bit
 
 type Indented struct{}
 
-func (val Indented) Bind(node *Node) {
-	node.Bind(Indented{})
-}
-
 func (val Indented) Repr(oneline bool) string {
 	return "Indented"
 }
 
 func (val Indented) IsEqual(other Key) bool {
 	if v, ok := other.(Indented); ok {
+		return val == v
+	}
+	return false
+}
+
+type IndentedGroup struct{}
+
+func (val IndentedGroup) Bind(node *Node) {
+	node.Bind(IndentedGroup{})
+}
+
+func (val IndentedGroup) Repr(oneline bool) string {
+	return "IndentedGroup"
+}
+
+func (val IndentedGroup) IsEqual(other Key) bool {
+	if v, ok := other.(IndentedGroup); ok {
 		return val == v
 	}
 	return false
@@ -61,7 +74,7 @@ func (op ParseIndent) Process(args *BindArgs) {
 			pos := nodes[sta].Index()
 
 			list := par.RemoveRange(nodes[sta], nodes[end])
-			block := args.Program.NewNode(Indented{}, SpanFromSlice(list[1:]))
+			block := args.Program.NewNode(IndentedGroup{}, SpanFromSlice(list[1:]))
 			block.AddChildren(list[1:]...)
 
 			group := args.Program.NewNode(Group{}, SpanFromRange(list[0], block))

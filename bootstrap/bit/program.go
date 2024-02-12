@@ -2,14 +2,13 @@ package bit
 
 import (
 	"fmt"
-	"os"
 	"path"
+	"reflect"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"axlab.dev/bit/common"
 	"axlab.dev/bit/proc"
 )
 
@@ -140,6 +139,22 @@ func (program *Program) CompileSource(source *Source) {
 			program.HandleError(fmt.Errorf("there are %d unresolved nodes", cnt))
 		}
 		program.writeOutput(unresolvedFile, "# UNRESOLVED NODES\n\n"+program.dumpNodes(unresolved), true)
+
+		types, cnt := make(map[reflect.Type]bool), 0
+		for _, it := range unresolved {
+			if typ := reflect.TypeOf(it.Value()); !types[typ] {
+				types[typ] = true
+			} else {
+				continue
+			}
+
+			cnt += 1
+			if cnt == MaxErrorOutput {
+				break
+			}
+
+			program.HandleError(fmt.Errorf("unresolved: %s", it.Describe()))
+		}
 	} else {
 		program.removeOutput(unresolvedFile)
 	}
@@ -158,10 +173,7 @@ func (program *Program) CompileSource(source *Source) {
 	program.writeOutput("code-output.txt", program.outputCode.Expr.Repr(false)+"\n", true)
 
 	if errFile := "errors.txt"; len(program.Errors) > 0 {
-		program.writeOutput(errFile, program.errorsToString(-1), true)
-		common.Out("\n")
-		program.ShowErrors()
-		common.Out("\n")
+		program.writeOutput(errFile, ErrorsToString(program.Errors, -1), true)
 	} else {
 		program.removeOutput(errFile)
 	}
@@ -185,32 +197,6 @@ func (program *Program) generateCpp(outputDir, outputFile string) (mainPath stri
 
 	mainFile := program.outputPath(path.Join(outputDir, outputFile))
 	return program.compiler.buildDir.GetFullPath(mainFile)
-}
-
-func (program *Program) ShowErrors() bool {
-	if errs := program.errorsToString(MaxErrorOutput); len(errs) > 0 {
-		os.Stderr.WriteString(errs)
-		return true
-	}
-	return false
-}
-
-func (program *Program) errorsToString(max int) string {
-	SortErrors(program.Errors)
-	txt := strings.Builder{}
-	for n, err := range program.Errors {
-		if n > 0 {
-			txt.WriteString("\n")
-		}
-		if max > 0 && n == max {
-			txt.WriteString(fmt.Sprintf("Too many errors, omitting %d errors...\n", len(program.Errors)-n))
-			break
-		}
-		txt.WriteString(fmt.Sprintf("[%d of %d] ", n+1, len(program.Errors)))
-		txt.WriteString(err.Error())
-		txt.WriteString("\n")
-	}
-	return txt.String()
 }
 
 func (program *Program) srcCopyName(baseName string) string {

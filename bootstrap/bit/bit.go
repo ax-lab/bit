@@ -29,6 +29,10 @@ const (
 	PrecLast
 )
 
+const (
+	debugQueue = false
+)
+
 type Precedence int
 
 type Compiler struct {
@@ -260,6 +264,12 @@ func (program *Program) QueueCompile() (wait chan struct{}) {
 			if source, err := compiler.LoadSource(inputPath); err == nil {
 				common.Out("... Compiling `%s`...\n", inputPath)
 				program.CompileSource(source)
+				if !program.Valid() {
+					common.Out("\n")
+					ShowErrors(program.Errors)
+					common.Out("\n")
+				}
+
 				outputDuration("... Compilation took ")
 
 				var mainCppFile string
