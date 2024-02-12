@@ -585,7 +585,7 @@ func DebugSegments(msg string, segments ...*Segment) {
 		} else {
 			end = fmt.Sprint(it.end)
 		}
-		out.WriteString(fmt.Sprintf("\n\n    @ %d..%s\n    = %s\n", it.sta, end, it.binding.String()))
+		out.WriteString(fmt.Sprintf("\n\n\t@ %d..%s\n\t= %s\n", it.sta, end, it.binding.String()))
 	}
 
 	if len(segments) == 0 {

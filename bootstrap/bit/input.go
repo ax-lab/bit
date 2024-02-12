@@ -7,11 +7,8 @@ import (
 	"unicode"
 	"unsafe"
 
+	"axlab.dev/bit/common"
 	"axlab.dev/bit/files"
-)
-
-const (
-	DefaultTabWidth = 4
 )
 
 func IsSpace(chr rune) bool {
@@ -109,7 +106,7 @@ func (src *Source) Cursor() *Cursor {
 func (src *Source) TabWidth() uint32 {
 	tw := src.tabWidth.Load()
 	if tw == 0 {
-		tw = DefaultTabWidth
+		tw = common.DefaultTabSize
 	}
 	return tw
 }

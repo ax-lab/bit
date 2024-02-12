@@ -13,7 +13,7 @@ func Indented(input string, prefix ...string) string {
 func doIndent(indentNext bool, input string, prefix ...string) string {
 	tab := strings.Join(prefix, "")
 	if len(tab) == 0 {
-		tab = "    "
+		tab = "\t"
 	}
 
 	nonSpace := Trim(tab) != ""

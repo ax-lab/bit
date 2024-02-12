@@ -6,6 +6,8 @@ import (
 	"unicode"
 )
 
+const DefaultTabSize = 4
+
 var (
 	TRAILING_EOL = regexp.MustCompile(`(\r\n?|\n)$`)
 	TABS         = regexp.MustCompile(`^[\t]+`)
@@ -50,6 +52,9 @@ func AddTrailingNewLine(input string) string {
 }
 
 func ExpandTabs(input string, tabSize int) string {
+	if tabSize < 0 {
+		tabSize = DefaultTabSize
+	}
 	tab := strings.Repeat(" ", tabSize)
 	out := make([]string, 0)
 	for _, it := range Lines(input) {

@@ -44,7 +44,7 @@ func WriteText(filepath string, text string) {
 }
 
 func WriteJson(filepath string, data any) {
-	json, err := json.MarshalIndent(data, "", "    ")
+	json, err := json.MarshalIndent(data, "", "\t")
 	NoError(err, "WriteJson serialization failed")
 	WriteText(filepath, string(json))
 }

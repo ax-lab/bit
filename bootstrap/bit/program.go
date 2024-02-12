@@ -140,16 +140,17 @@ func (program *Program) CompileSource(source *Source) {
 		}
 		program.writeOutput(unresolvedFile, "# UNRESOLVED NODES\n\n"+program.dumpNodes(unresolved), true)
 
+		maxUnresolved := MaxErrorOutput - 1
 		types, cnt := make(map[reflect.Type]bool), 0
 		for _, it := range unresolved {
 			if typ := reflect.TypeOf(it.Value()); !types[typ] {
 				types[typ] = true
-			} else {
+			} else if len(unresolved) > maxUnresolved {
 				continue
 			}
 
 			cnt += 1
-			if cnt == MaxErrorOutput {
+			if cnt > maxUnresolved {
 				break
 			}
 

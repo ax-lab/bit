@@ -27,7 +27,7 @@ func Out(msg string, args ...any) {
 		msg = fmt.Sprintf(msg, args...)
 	}
 	if len(msg) > 0 {
-		os.Stdout.WriteString(msg)
+		os.Stdout.WriteString(ExpandTabs(msg, -1))
 	}
 }
 
@@ -36,7 +36,7 @@ func Err(msg string, args ...any) {
 		msg = fmt.Sprintf(msg, args...)
 	}
 	if len(msg) > 0 {
-		os.Stderr.WriteString(msg)
+		os.Stderr.WriteString(ExpandTabs(msg, -1))
 	}
 }
 
