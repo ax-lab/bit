@@ -39,7 +39,7 @@ func (err CompilerError) String() string {
 		msg = fmt.Sprintf(msg, err.Args...)
 	}
 	loc := fmt.Sprintf("%s:%s", err.Span.Source().Name(), err.Span.Location().String())
-	txt := err.Span.DisplayText(0)
+	txt := err.Span.DisplayText(60)
 	if len(txt) > 0 {
 		txt = fmt.Sprintf("\n\n    | %s", txt)
 	}

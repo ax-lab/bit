@@ -53,7 +53,7 @@ func NeedRebuild() (rebuild bool, newest time.Time) {
 	}
 
 	rootDir := filepath.Join(files.ProjectDir(), "bootstrap")
-	exeTime := common.Handle(os.Stat(exe)).ModTime()
+	exeTime := common.Try(os.Stat(exe)).ModTime()
 	queue := []string{rootDir}
 	for len(queue) > 0 {
 		entry := queue[len(queue)-1]
@@ -65,7 +65,7 @@ func NeedRebuild() (rebuild bool, newest time.Time) {
 					newest = mod
 				}
 			} else if stat.IsDir() {
-				for _, it := range common.Handle(os.ReadDir(entry)) {
+				for _, it := range common.Try(os.ReadDir(entry)) {
 					queue = append(queue, filepath.Join(entry, it.Name()))
 				}
 			}
@@ -104,7 +104,7 @@ func RunSelf(ctx context.Context, args []string) int {
 	fps[syscall.Stdout] = os.Stdout
 	fps[syscall.Stderr] = os.Stderr
 
-	proc := common.Handle(os.StartProcess(exe, args, &os.ProcAttr{
+	proc := common.Try(os.StartProcess(exe, args, &os.ProcAttr{
 		Dir:   files.WorkingDir(),
 		Env:   os.Environ(),
 		Files: fps,
@@ -128,7 +128,7 @@ func RunSelf(ctx context.Context, args []string) int {
 		}()
 	}
 
-	status := common.Handle(proc.Wait())
+	status := common.Try(proc.Wait())
 	close(procFinished)
 	return status.ExitCode()
 }
@@ -138,10 +138,10 @@ var bootstrapExe *string
 func GetBootstrapExe(force bool) string {
 
 	compute := func() string {
-		exeFile := common.Handle(os.Executable())
+		exeFile := common.Try(os.Executable())
 
 		if exeFile != "" {
-			exeFile = common.Handle(filepath.EvalSymlinks(exeFile))
+			exeFile = common.Try(filepath.EvalSymlinks(exeFile))
 		}
 
 		if exeFile != "" {

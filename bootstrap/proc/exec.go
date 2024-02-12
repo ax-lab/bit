@@ -11,7 +11,7 @@ import (
 
 func ExecInDir(prefix, dir string, callback func() bool) bool {
 	var success bool
-	cwd := common.Handle(os.Getwd())
+	cwd := common.Try(os.Getwd())
 	common.Check(os.Chdir(dir))
 	success = callback()
 	common.Check(os.Chdir(cwd))

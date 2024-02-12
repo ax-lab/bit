@@ -154,7 +154,7 @@ func (program *Program) CompileSource(source *Source) {
 				break
 			}
 
-			program.HandleError(fmt.Errorf("unresolved: %s", it.Describe()))
+			it.AddError("node is unresolved -- %s", it.Value().Repr(true))
 		}
 	} else {
 		program.removeOutput(unresolvedFile)

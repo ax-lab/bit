@@ -11,7 +11,7 @@ import (
 )
 
 func WorkingDir() string {
-	return common.Handle(filepath.Abs("."))
+	return common.Try(filepath.Abs("."))
 }
 
 func IsDir(path string) bool {

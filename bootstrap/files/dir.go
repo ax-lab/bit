@@ -18,7 +18,7 @@ type Dir struct {
 }
 
 func OpenDir(path string) Dir {
-	fullPath := common.Handle(filepath.Abs(path))
+	fullPath := common.Try(filepath.Abs(path))
 	return Dir{
 		name: path,
 		path: fullPath,
@@ -132,7 +132,7 @@ func (dir Dir) TryResolvePath(path string) (fullPath, relativeName string, err e
 		common.Check(err)
 	}
 
-	filePath := common.Handle(filepath.Rel(base, fullPath))
+	filePath := common.Try(filepath.Rel(base, fullPath))
 	if filePath == "" || strings.Contains(filePath, "..") {
 		err = fmt.Errorf("`%s` is not a valid path within directory `%s`", path, dir.Name())
 		return

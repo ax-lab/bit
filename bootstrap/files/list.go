@@ -57,7 +57,7 @@ func (info *Entry) String() string {
 
 func List(dirPath string, options ListOptions) (out []*Entry) {
 	dir := os.DirFS(dirPath)
-	basePath := common.Handle(filepath.Abs(dirPath))
+	basePath := common.Try(filepath.Abs(dirPath))
 	err := fs.WalkDir(dir, ".", func(entryPath string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
 			common.Warn(err, "listing `%s`", dirPath)

@@ -37,13 +37,13 @@ func Spawn(name string, args ...string) int {
 
 	argv := []string{fullPath}
 	argv = append(argv, args...)
-	proc := common.Handle(os.StartProcess(fullPath, argv, &os.ProcAttr{
+	proc := common.Try(os.StartProcess(fullPath, argv, &os.ProcAttr{
 		Dir:   ".",
 		Env:   os.Environ(),
 		Files: files,
 	}))
 
-	status := common.Handle(proc.Wait())
+	status := common.Try(proc.Wait())
 	return status.ExitCode()
 }
 
