@@ -12,22 +12,22 @@ func (val Str) Type() Type {
 	return bit.StrType{}
 }
 
-func (str Str) IsEqual(other Key) bool {
+func (val Str) IsEqual(other Key) bool {
 	if v, ok := other.(Str); ok {
-		return v == str
+		return v == val
 	}
 	return false
 }
 
-func (str Str) String() string {
-	return string(str)
+func (val Str) String() string {
+	return string(val)
 }
 
-func (str Str) Repr(oneline bool) string {
-	return fmt.Sprintf("Str(%v)", string(str))
+func (val Str) Repr(oneline bool) string {
+	return fmt.Sprintf("Str(%v)", string(val))
 }
 
-func (str Str) Bind(node *Node) {
+func (val Str) Bind(node *Node) {
 	node.Bind(Str(""))
 }
 
