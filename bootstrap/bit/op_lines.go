@@ -4,7 +4,7 @@ type CanFlatten interface {
 	Flatten(node *Node) []*Node
 }
 
-func (val Line) Flatten(node *Node) []*Node {
+func (val Group) Flatten(node *Node) []*Node {
 	return node.Nodes()
 }
 
@@ -17,28 +17,6 @@ func FlattenNodes(nodes ...*Node) (out []*Node) {
 		}
 	}
 	return out
-}
-
-type Line struct{}
-
-func (val Line) IsEqual(other Key) bool {
-	if v, ok := other.(Line); ok {
-		return val == v
-	}
-	return false
-}
-
-func (val Line) Repr(oneline bool) string {
-	return "Line"
-}
-
-func (val Line) Bind(node *Node) {
-	node.Bind(Line{})
-	node.Bind(Indented{})
-}
-
-func (val Line) Output(ctx *CodeContext) Code {
-	return ctx.OutputChild(ctx.Node)
 }
 
 type SplitLines struct{}
@@ -61,7 +39,7 @@ func (op SplitLines) Process(args *BindArgs) {
 		push := func(line []*Node) {
 			if len(line) > 0 {
 				span := SpanFromSlice(line)
-				node := args.Program.NewNode(Line{}, span)
+				node := args.Program.NewNode(Group{}, span)
 				node.AddChildren(line...)
 				par.AddChildren(node)
 			}
