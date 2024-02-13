@@ -31,9 +31,12 @@ func InitCompiler(program *bit.Program) {
 
 	program.DeclareGlobal(bit.TokenString, Replace{ParseString{}})
 	program.DeclareGlobal(bit.TokenInteger, Replace{ParseInt{}})
+	program.DeclareGlobal(Word("true"), Replace{ParseBool{}})
+	program.DeclareGlobal(Word("false"), Replace{ParseBool{}})
 
 	outputAll(program, Str(""))
 	outputAll(program, Int(0))
+	outputAll(program, Bool(false))
 
 	program.DeclareGlobal(Line{}, Simplify{})
 	program.DeclareGlobal(Group{}, Simplify{})

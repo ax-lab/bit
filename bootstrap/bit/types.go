@@ -5,6 +5,25 @@ type Type interface {
 	String() string
 }
 
+type BoolType struct{}
+
+func (BoolType) CppType() string {
+	return "bool"
+}
+
+func (BoolType) String() string {
+	return "bool"
+}
+
+func (BoolType) OutputCppPrint(ctx *CppContext, node *Node) {
+	expr := ctx.Expr.String()
+	ctx.IncludeSystem("stdio.h")
+	ctx.Body.EnsureBlank()
+	ctx.Body.Write(`printf(`)
+	ctx.Body.Write(expr)
+	ctx.Body.Write(` ? "true" : "false");`)
+}
+
 type IntType struct{}
 
 func (IntType) CppType() string {
