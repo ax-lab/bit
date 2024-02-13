@@ -14,18 +14,18 @@ type Replace struct {
 	Pred NodeReplacer
 }
 
-func (op Replace) IsSame(other Binding) bool {
+func (op Replace) IsSame(other bit.Binding) bool {
 	if v, ok := other.(Replace); ok {
 		return v == op
 	}
 	return false
 }
 
-func (op Replace) Precedence() Precedence {
+func (op Replace) Precedence() bit.Precedence {
 	return bit.PrecReplace
 }
 
-func (op Replace) Process(args *BindArgs) {
+func (op Replace) Process(args *bit.BindArgs) {
 	for _, it := range args.Nodes {
 		if v, err := op.Pred.Get(it); err != nil {
 			args.Program.HandleError(err)

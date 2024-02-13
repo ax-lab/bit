@@ -2,24 +2,16 @@ package core
 
 import "axlab.dev/bit/bit"
 
-type Program = bit.Program
-type Symbol = bit.Symbol
-type Key = bit.Key
-type Word = bit.Word
-type Node = bit.Node
-type Binding = bit.Binding
-type BindArgs = bit.BindArgs
-type Precedence = bit.Precedence
 type Code = bit.Code
-type CodeContext = bit.CodeContext
-type RuntimeContext = bit.RuntimeContext
-type CppContext = bit.CppContext
-type TokenType = bit.TokenType
-type Value = bit.Value
-type Type = bit.Type
+type Key = bit.Key
+type Node = bit.Node
 type Span = bit.Span
+type Symbol = bit.Symbol
+type Type = bit.Type
+type Value = bit.Value
+type Word = bit.Word
 
-func InitCompiler(program *Program) {
+func InitCompiler(program *bit.Program) {
 	program.DeclareGlobal(bit.TokenBreak, SplitLines{})
 	program.DeclareGlobal(Indented{}, ParseIndent{})
 	program.DeclareGlobal(IndentedGroup{}, ParseBlocks{})
@@ -54,6 +46,6 @@ func InitCompiler(program *Program) {
 	outputAll(program, If{})
 }
 
-func outputAll(program *Program, key Key) {
+func outputAll(program *bit.Program, key Key) {
 	program.DeclareGlobal(key, Output{})
 }

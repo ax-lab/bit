@@ -4,18 +4,18 @@ import "axlab.dev/bit/bit"
 
 type ParseBlocks struct{}
 
-func (op ParseBlocks) IsSame(other Binding) bool {
+func (op ParseBlocks) IsSame(other bit.Binding) bool {
 	if v, ok := other.(ParseBlocks); ok {
 		return v == op
 	}
 	return false
 }
 
-func (op ParseBlocks) Precedence() Precedence {
+func (op ParseBlocks) Precedence() bit.Precedence {
 	return bit.PrecBlocks
 }
 
-func (op ParseBlocks) Process(args *BindArgs) {
+func (op ParseBlocks) Process(args *bit.BindArgs) {
 	for _, it := range args.Nodes {
 		par, prev := it.Parent(), it.Prev()
 
@@ -61,6 +61,6 @@ func (val Block) Bind(node *Node) {
 	node.Bind(Block{})
 }
 
-func (val Block) Output(ctx *CodeContext) Code {
+func (val Block) Output(ctx *bit.CodeContext) Code {
 	return ctx.OutputChildren(ctx.Node)
 }

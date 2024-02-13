@@ -1,5 +1,7 @@
 package core
 
+import "axlab.dev/bit/bit"
+
 type Line struct{}
 
 func (val Line) Bind(node *Node) {
@@ -18,6 +20,6 @@ func (val Line) IsEqual(other Key) bool {
 	return false
 }
 
-func (val Line) Output(ctx *CodeContext) Code {
+func (val Line) Output(ctx *bit.CodeContext) Code {
 	return ctx.OutputChild(ctx.Node)
 }

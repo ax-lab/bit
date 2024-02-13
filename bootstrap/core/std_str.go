@@ -31,19 +31,19 @@ func (str Str) Bind(node *Node) {
 	node.Bind(Str(""))
 }
 
-func (val Str) Output(ctx *CodeContext) Code {
+func (val Str) Output(ctx *bit.CodeContext) Code {
 	return Code{Expr: val}
 }
 
-func (val Str) Eval(rt *RuntimeContext) {
+func (val Str) Eval(rt *bit.RuntimeContext) {
 	rt.Result = val
 }
 
-func (val Str) OutputCpp(ctx *CppContext, node *Node) {
+func (val Str) OutputCpp(ctx *bit.CppContext, node *Node) {
 	bit.WriteLiteralString(ctx.Expr, string(val))
 }
 
-func (val Str) OutputCppPrint(ctx *CppContext, node *Node) {
+func (val Str) OutputCppPrint(ctx *bit.CppContext, node *Node) {
 	ctx.IncludeSystem("stdio.h")
 	ctx.Body.EnsureBlank()
 	ctx.Body.Write(`printf("%s", `)
@@ -54,7 +54,7 @@ func (val Str) OutputCppPrint(ctx *CppContext, node *Node) {
 type ParseString struct{}
 
 func (ParseString) Get(node *Node) (Value, error) {
-	if tok, ok := node.Value().(TokenType); ok && tok == bit.TokenString {
+	if tok, ok := node.Value().(bit.TokenType); ok && tok == bit.TokenString {
 		str := bit.ParseStringLiteral(node.Text())
 		return Str(str), nil
 	}

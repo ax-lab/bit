@@ -1,5 +1,7 @@
 package core
 
+import "axlab.dev/bit/bit"
+
 type Group struct{}
 
 func (val Group) Bind(node *Node) {
@@ -17,6 +19,6 @@ func (val Group) IsEqual(other Key) bool {
 	return false
 }
 
-func (val Group) Output(ctx *CodeContext) Code {
+func (val Group) Output(ctx *bit.CodeContext) Code {
 	return ctx.OutputChild(ctx.Node)
 }

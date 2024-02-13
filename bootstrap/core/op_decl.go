@@ -32,11 +32,11 @@ func (val Var) Bind(node *Node) {
 	node.Bind(Var{})
 }
 
-func (val Var) Output(ctx *CodeContext) Code {
+func (val Var) Output(ctx *bit.CodeContext) Code {
 	return Code{Expr: val}
 }
 
-func (val Var) Eval(rt *RuntimeContext) {
+func (val Var) Eval(rt *bit.RuntimeContext) {
 	res := val.Var.Value()
 	if res == nil {
 		rt.Panic("variable `%s` has not been initialized", val.Var.Name)
@@ -45,11 +45,11 @@ func (val Var) Eval(rt *RuntimeContext) {
 	}
 }
 
-func (val Var) OutputCpp(ctx *CppContext, node *Node) {
+func (val Var) OutputCpp(ctx *bit.CppContext, node *Node) {
 	ctx.Expr.WriteString(val.Var.EncodedName())
 }
 
-func (val Var) OutputCppPrint(ctx *CppContext, node *Node) {
+func (val Var) OutputCppPrint(ctx *bit.CppContext, node *Node) {
 	typ := val.Type()
 	if prn, ok := typ.(PrintCpp); ok {
 		val.OutputCpp(ctx, node)
@@ -63,18 +63,18 @@ type BindVar struct {
 	Var *bit.Variable
 }
 
-func (op BindVar) IsSame(other Binding) bool {
+func (op BindVar) IsSame(other bit.Binding) bool {
 	if v, ok := other.(BindVar); ok {
 		return v == op
 	}
 	return false
 }
 
-func (op BindVar) Precedence() Precedence {
+func (op BindVar) Precedence() bit.Precedence {
 	return bit.PrecVar
 }
 
-func (op BindVar) Process(args *BindArgs) {
+func (op BindVar) Process(args *bit.BindArgs) {
 	for _, it := range args.Nodes {
 		it.ReplaceWithValue(Var(op))
 	}
@@ -106,7 +106,7 @@ func (val Let) Bind(node *Node) {
 	node.Bind(Let{})
 }
 
-func (val Let) Output(ctx *CodeContext) Code {
+func (val Let) Output(ctx *bit.CodeContext) Code {
 	expr := ctx.OutputChild(ctx.Node)
 	val.Var.Type = expr.Type()
 	val.Var.EncodedName() // generate name
@@ -122,15 +122,15 @@ func (code LetExpr) Type() Type {
 	return code.Var.Type
 }
 
-func (code LetExpr) Eval(rt *RuntimeContext) {
+func (code LetExpr) Eval(rt *bit.RuntimeContext) {
 	rt.Result = rt.Eval(code.Expr)
 	code.Var.SetValue(rt.Result)
 }
 
-func (code LetExpr) OutputCpp(ctx *CppContext, node *Node) {
+func (code LetExpr) OutputCpp(ctx *bit.CppContext, node *Node) {
 	name := code.Var.EncodedName()
 
-	expr := CppContext{}
+	expr := bit.CppContext{}
 	expr.NewExpr(ctx)
 	code.Expr.OutputCpp(&expr)
 
@@ -144,18 +144,18 @@ func (code LetExpr) Repr(oneline bool) string {
 
 type ParseLet struct{}
 
-func (op ParseLet) IsSame(other Binding) bool {
+func (op ParseLet) IsSame(other bit.Binding) bool {
 	if v, ok := other.(ParseLet); ok {
 		return v == op
 	}
 	return false
 }
 
-func (op ParseLet) Precedence() Precedence {
+func (op ParseLet) Precedence() bit.Precedence {
 	return bit.PrecLet
 }
 
-func (op ParseLet) Process(args *BindArgs) {
+func (op ParseLet) Process(args *bit.BindArgs) {
 	for _, it := range args.Nodes {
 		if it.Index() != 0 || it.Parent() == nil {
 			it.Undo()

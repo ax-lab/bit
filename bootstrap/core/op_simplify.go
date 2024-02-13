@@ -4,18 +4,18 @@ import "axlab.dev/bit/bit"
 
 type Simplify struct{}
 
-func (op Simplify) IsSame(other Binding) bool {
+func (op Simplify) IsSame(other bit.Binding) bool {
 	if v, ok := other.(Simplify); ok {
 		return v == op
 	}
 	return false
 }
 
-func (op Simplify) Precedence() Precedence {
+func (op Simplify) Precedence() bit.Precedence {
 	return bit.PrecSimplify
 }
 
-func (op Simplify) Process(args *BindArgs) {
+func (op Simplify) Process(args *bit.BindArgs) {
 	for _, it := range args.Nodes {
 		par := it.Parent()
 		if par == nil {

@@ -19,25 +19,25 @@ func (val If) Bind(node *Node) {
 	node.Bind(If{})
 }
 
-func (val If) Output(ctx *CodeContext) Code {
+func (val If) Output(ctx *bit.CodeContext) Code {
 	return Code{Expr: bit.Invalid{}}
 }
 
 // TODO: (resolution) this should have precedence even over more specific bindings, we need a general mechanism for that
 type ParseIf struct{}
 
-func (op ParseIf) IsSame(other Binding) bool {
+func (op ParseIf) IsSame(other bit.Binding) bool {
 	if v, ok := other.(ParseIf); ok {
 		return v == op
 	}
 	return false
 }
 
-func (op ParseIf) Precedence() Precedence {
+func (op ParseIf) Precedence() bit.Precedence {
 	return bit.PrecParseIf
 }
 
-func (op ParseIf) Process(args *BindArgs) {
+func (op ParseIf) Process(args *bit.BindArgs) {
 	// Parse in reverse order so that the innermost `if` takes precedence
 	for _, it := range args.ReverseNodes() {
 		par, idx := it.Parent(), it.Index()

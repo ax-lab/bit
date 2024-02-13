@@ -34,11 +34,11 @@ func (val IndentedGroup) IsEqual(other Key) bool {
 
 type ParseIndent struct{}
 
-func (op ParseIndent) Precedence() Precedence {
+func (op ParseIndent) Precedence() bit.Precedence {
 	return bit.PrecIndent
 }
 
-func (op ParseIndent) IsSame(other Binding) bool {
+func (op ParseIndent) IsSame(other bit.Binding) bool {
 	if v, ok := other.(ParseIndent); ok {
 		return op == v
 	}
@@ -49,7 +49,7 @@ func (op ParseIndent) String() string {
 	return "ParseIndent"
 }
 
-func (op ParseIndent) Process(args *BindArgs) {
+func (op ParseIndent) Process(args *bit.BindArgs) {
 
 	type stackItem struct {
 		base  int

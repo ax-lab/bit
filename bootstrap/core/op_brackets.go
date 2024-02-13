@@ -22,11 +22,11 @@ type ParseBrackets struct {
 	End string
 }
 
-func (op ParseBrackets) Precedence() Precedence {
+func (op ParseBrackets) Precedence() bit.Precedence {
 	return bit.PrecBrackets
 }
 
-func (op ParseBrackets) IsSame(other Binding) bool {
+func (op ParseBrackets) IsSame(other bit.Binding) bool {
 	if v, ok := other.(ParseBrackets); ok {
 		return op == v
 	}
@@ -37,7 +37,7 @@ func (op ParseBrackets) String() string {
 	return fmt.Sprintf("ParseBrackets(`%s%s`)", op.Sta, op.End)
 }
 
-func (op ParseBrackets) Process(args *BindArgs) {
+func (op ParseBrackets) Process(args *bit.BindArgs) {
 	var stack []*Node
 	for _, it := range args.Nodes {
 		if it.Text() == op.Sta {

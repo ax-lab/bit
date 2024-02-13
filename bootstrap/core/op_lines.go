@@ -29,18 +29,18 @@ func FlattenNodes(nodes ...*Node) (out []*Node) {
 
 type SplitLines struct{}
 
-func (op SplitLines) IsSame(other Binding) bool {
+func (op SplitLines) IsSame(other bit.Binding) bool {
 	if v, ok := other.(SplitLines); ok {
 		return v == op
 	}
 	return false
 }
 
-func (op SplitLines) Precedence() Precedence {
+func (op SplitLines) Precedence() bit.Precedence {
 	return bit.PrecLines
 }
 
-func (op SplitLines) Process(args *BindArgs) {
+func (op SplitLines) Process(args *bit.BindArgs) {
 	for _, nodes := range args.NodesByParent() {
 		par := nodes[0].Parent()
 		cur, children := 0, par.RemoveNodes(0, par.Len())

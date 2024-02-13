@@ -30,7 +30,7 @@ func ParseName(node *Node) (name string, next *Node) {
 
 func IsName(node *Node) bool {
 	if node != nil {
-		if v, ok := node.Value().(TokenType); ok {
+		if v, ok := node.Value().(bit.TokenType); ok {
 			return v == bit.TokenWord
 		}
 	}
@@ -39,7 +39,7 @@ func IsName(node *Node) bool {
 
 func IsSymbol(node *Node, symbol string) bool {
 	if node != nil {
-		if v, ok := node.Value().(TokenType); ok {
+		if v, ok := node.Value().(bit.TokenType); ok {
 			return v == bit.TokenSymbol && node.Text() == symbol
 		}
 	}
@@ -48,7 +48,7 @@ func IsSymbol(node *Node, symbol string) bool {
 
 func IsWord(node *Node, word string) bool {
 	if node != nil {
-		if v, ok := node.Value().(TokenType); ok {
+		if v, ok := node.Value().(bit.TokenType); ok {
 			return v == bit.TokenWord && node.Text() == word
 		}
 	}

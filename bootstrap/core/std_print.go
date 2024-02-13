@@ -24,29 +24,29 @@ func (val Print) Bind(node *Node) {
 	node.Bind(Print{})
 }
 
-func (val Print) Output(ctx *CodeContext) Code {
+func (val Print) Output(ctx *bit.CodeContext) Code {
 	code := ctx.OutputChild(ctx.Node)
 	return Code{Expr: PrintExpr{code}}
 }
 
 type PrintCpp interface {
-	OutputCppPrint(ctx *CppContext, node *Node)
+	OutputCppPrint(ctx *bit.CppContext, node *Node)
 }
 
 type ParsePrint struct{}
 
-func (op ParsePrint) IsSame(other Binding) bool {
+func (op ParsePrint) IsSame(other bit.Binding) bool {
 	if v, ok := other.(ParsePrint); ok {
 		return v == op
 	}
 	return false
 }
 
-func (op ParsePrint) Precedence() Precedence {
+func (op ParsePrint) Precedence() bit.Precedence {
 	return bit.PrecPrint
 }
 
-func (op ParsePrint) Process(args *BindArgs) {
+func (op ParsePrint) Process(args *bit.BindArgs) {
 	for _, it := range args.Nodes {
 		par, idx := it.Parent(), it.Index()
 		if par == nil {
@@ -72,13 +72,13 @@ func (expr PrintExpr) Type() Type {
 	return expr.args.Type()
 }
 
-func (expr PrintExpr) Eval(rt *RuntimeContext) {
+func (expr PrintExpr) Eval(rt *bit.RuntimeContext) {
 	rt.Result = rt.Eval(expr.args)
 	rt.OutputStd(rt.Result.String())
 	rt.OutputStd("\n")
 }
 
-func (val PrintExpr) OutputCpp(ctx *CppContext, node *Node) {
+func (val PrintExpr) OutputCpp(ctx *bit.CppContext, node *Node) {
 	if v, ok := val.args.Expr.(PrintCpp); ok {
 		ctx.IncludeSystem("stdio.h")
 		v.OutputCppPrint(ctx, val.args.Node)
