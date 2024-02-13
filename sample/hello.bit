@@ -1,6 +1,11 @@
-let x = true
-if true:
-	print 'x is true'
-	print 'yes'
+if x == 1:
+	print 'x is 1'
+	print 'x is the first'
+else if x == 2:
+	print 'x is 2'
+	print 'x is even'
+else if x == 3:
+	print 'x is 3'
 else:
-	print 'x is false'
+	print 'x is something else'
+	print x

@@ -111,10 +111,8 @@ func (node *Node) Dump(full bool) string {
 			out.WriteString(" # ")
 			out.WriteString(txt)
 		} else {
-			indent := strings.Repeat(" ", len(header))
-			out.WriteString(fmt.Sprintf("\n%s> ", indent))
-			out.WriteString(txt)
-			out.WriteString("\n")
+			indent := strings.Repeat(".", len(header)-3)
+			out.WriteString(fmt.Sprintf("\n[%s] %s", indent, txt))
 		}
 	}
 	if len(node.nodes) > 0 && full {
@@ -220,7 +218,7 @@ func (node *Node) Prev() *Node {
 	return nil
 }
 
-func (node *Node) First() *Node {
+func (node *Node) Head() *Node {
 	return node.nodes[0]
 }
 
@@ -229,6 +227,25 @@ func (node *Node) Last() *Node {
 		return node.nodes[l-1]
 	}
 	return nil
+}
+
+func (node *Node) Succ() *Node {
+	if next := node.Next(); next != nil {
+		return next.EnterGroup()
+	}
+	if par := node.Parent(); par != nil {
+		return par.Succ()
+	}
+	return nil
+}
+
+func (node *Node) EnterGroup() *Node {
+	if node.Len() > 0 {
+		if _, ok := node.Value().(CanFlatten); ok {
+			return node.Head().EnterGroup()
+		}
+	}
+	return node
 }
 
 func (node *Node) Compare(other *Node) int {
@@ -356,22 +373,4 @@ func DebugNodes(msg string, nodes ...*Node) {
 		out.WriteString("  (no nodes)\n")
 	}
 	fmt.Println(out.String())
-}
-
-func SymbolIndex(nodes []*Node, symbol string) int {
-	for n, it := range nodes {
-		if it.IsSymbol(symbol) {
-			return n
-		}
-	}
-	return -1
-}
-
-func LastSymbolIndex(nodes []*Node, symbol string) int {
-	for n := len(nodes) - 1; n >= 0; n-- {
-		if it := nodes[n]; it.IsSymbol(symbol) {
-			return n
-		}
-	}
-	return -1
 }

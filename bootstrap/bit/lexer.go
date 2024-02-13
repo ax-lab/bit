@@ -152,7 +152,7 @@ func (lexer *Lexer) AddSymbols(symbols ...string) {
 	if changed {
 		sort.Slice(list, func(i, j int) bool {
 			a, b := list[i], list[j]
-			return len(a) < len(b)
+			return len(a) > len(b)
 		})
 
 		re := strings.Builder{}

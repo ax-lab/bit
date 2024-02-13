@@ -24,7 +24,7 @@ const (
 	PrecBlocks
 	PrecPrint
 	PrecLet
-	PrecIf
+	PrecParseIf
 	PrecVar
 	PrecReplace
 	PrecSimplify

@@ -1,5 +1,7 @@
 package bit
 
+// Implemented by non-semantic group nodes that can be "flattened" without
+// losing meaning.
 type CanFlatten interface {
 	Flatten(node *Node) []*Node
 }
