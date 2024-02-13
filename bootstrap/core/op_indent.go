@@ -76,10 +76,10 @@ func (op ParseIndent) Process(args *BindArgs) {
 			pos := nodes[sta].Index()
 
 			list := par.RemoveRange(nodes[sta], nodes[end])
-			block := args.Program.NewNode(IndentedGroup{}, bit.SpanFromSlice(list[1:]))
+			block := args.Program.NewNode(IndentedGroup{}, SpanFromSlice(list[1:]))
 			block.AddChildren(list[1:]...)
 
-			group := args.Program.NewNode(Group{}, bit.SpanFromRange(list[0], block))
+			group := args.Program.NewNode(Group{}, SpanFromRange(list[0], block))
 			group.AddChildren(list[0], block)
 
 			par.InsertNodes(pos, group)

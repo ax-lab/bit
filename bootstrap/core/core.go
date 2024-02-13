@@ -17,6 +17,7 @@ type CppContext = bit.CppContext
 type TokenType = bit.TokenType
 type Value = bit.Value
 type Type = bit.Type
+type Span = bit.Span
 
 func InitCompiler(program *Program) {
 	program.DeclareGlobal(bit.TokenBreak, SplitLines{})

@@ -180,7 +180,7 @@ func (op ParseLet) Process(args *BindArgs) {
 		par := it.Parent()
 		split := next.Index() + 1
 		nodes := par.RemoveNodes(it.Index(), par.Len())
-		nodesSpan := bit.SpanFromSlice(nodes)
+		nodesSpan := SpanFromSlice(nodes)
 
 		scope := par.GetScope()
 		offset := nodesSpan.End()

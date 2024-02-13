@@ -54,7 +54,7 @@ func (op ParsePrint) Process(args *BindArgs) {
 			continue
 		}
 		src := par.RemoveNodes(idx, par.Len())
-		node := args.Program.NewNode(Print{}, bit.SpanFromSlice(src))
+		node := args.Program.NewNode(Print{}, SpanFromSlice(src))
 		node.AddChildren(src[1:]...)
 		par.InsertNodes(idx, node)
 	}
