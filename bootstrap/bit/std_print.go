@@ -49,6 +49,7 @@ func (op ParsePrint) Process(args *BindArgs) {
 	for _, it := range args.Nodes {
 		par, idx := it.Parent(), it.Index()
 		if par == nil {
+			it.Undo()
 			continue
 		}
 		src := par.RemoveNodes(idx, par.Len())
