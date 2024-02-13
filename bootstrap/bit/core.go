@@ -28,6 +28,7 @@ func (program *Program) InitCore() {
 	program.OutputAll(Str(""))
 	program.OutputAll(Int(0))
 
+	program.DeclareGlobal(Line{}, Simplify{})
 	program.DeclareGlobal(Group{}, Simplify{})
 
 	program.OutputAll(Module{})

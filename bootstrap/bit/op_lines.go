@@ -8,6 +8,10 @@ func (val Group) Flatten(node *Node) []*Node {
 	return node.Nodes()
 }
 
+func (val Line) Flatten(node *Node) []*Node {
+	return node.Nodes()
+}
+
 func FlattenNodes(nodes ...*Node) (out []*Node) {
 	for _, it := range nodes {
 		if v, ok := it.Value().(CanFlatten); ok {
@@ -39,7 +43,7 @@ func (op SplitLines) Process(args *BindArgs) {
 		push := func(line []*Node) {
 			if len(line) > 0 {
 				span := SpanFromSlice(line)
-				node := args.Program.NewNode(Group{}, span)
+				node := args.Program.NewNode(Line{}, span)
 				node.AddChildren(line...)
 				par.AddChildren(node)
 			}
