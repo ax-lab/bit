@@ -24,8 +24,10 @@ const (
 	PrecBlocks
 	PrecPrint
 	PrecLet
+	PrecIf
 	PrecVar
 	PrecReplace
+	PrecSimplify
 	PrecOutput
 	PrecLast
 )

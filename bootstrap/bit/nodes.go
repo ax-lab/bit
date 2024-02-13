@@ -54,6 +54,11 @@ func (program *Program) NewNode(value Value, span Span) *Node {
 	return node
 }
 
+func (node *Node) WithChildren(nodes ...*Node) *Node {
+	node.AddChildren(nodes...)
+	return node
+}
+
 func (node *Node) Program() *Program {
 	return node.program
 }
@@ -351,4 +356,22 @@ func DebugNodes(msg string, nodes ...*Node) {
 		out.WriteString("  (no nodes)\n")
 	}
 	fmt.Println(out.String())
+}
+
+func SymbolIndex(nodes []*Node, symbol string) int {
+	for n, it := range nodes {
+		if it.IsSymbol(symbol) {
+			return n
+		}
+	}
+	return -1
+}
+
+func LastSymbolIndex(nodes []*Node, symbol string) int {
+	for n := len(nodes) - 1; n >= 0; n-- {
+		if it := nodes[n]; it.IsSymbol(symbol) {
+			return n
+		}
+	}
+	return -1
 }

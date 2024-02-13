@@ -12,6 +12,18 @@ type BindArgs struct {
 	Requeue  []*Node
 }
 
+func (args *BindArgs) ReverseNodes() (out []*Node) {
+	len := len(args.Nodes)
+	if len == 0 {
+		return nil
+	}
+	out = make([]*Node, len)
+	for i, it := range args.Nodes {
+		out[len-i-1] = it
+	}
+	return out
+}
+
 func (args *BindArgs) NodesByParent() (out [][]*Node) {
 	set := make(map[*Node][]*Node)
 	for _, it := range args.Nodes {

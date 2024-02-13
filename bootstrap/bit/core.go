@@ -20,6 +20,7 @@ func (program *Program) InitCore() {
 
 	program.DeclareGlobal(Word("print"), ParsePrint{})
 	program.DeclareGlobal(Word("let"), ParseLet{})
+	program.DeclareGlobal(Word("if"), ParseIf{})
 
 	program.DeclareGlobal(TokenString, Replace{ParseString{}})
 	program.DeclareGlobal(TokenInteger, Replace{ParseInt{}})
@@ -27,13 +28,15 @@ func (program *Program) InitCore() {
 	program.OutputAll(Str(""))
 	program.OutputAll(Int(0))
 
+	program.DeclareGlobal(Line{}, Simplify{})
+	program.DeclareGlobal(Group{}, Simplify{})
+
 	program.OutputAll(Module{})
 	program.OutputAll(Block{})
-	program.OutputAll(Line{})
-	program.OutputAll(Group{})
 	program.OutputAll(Print{})
 	program.OutputAll(Var{})
 	program.OutputAll(Let{})
+	program.OutputAll(If{})
 }
 
 func (program *Program) OutputAll(key Key) {
