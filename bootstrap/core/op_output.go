@@ -1,4 +1,6 @@
-package bit
+package core
+
+import "axlab.dev/bit/bit"
 
 type Output struct{}
 
@@ -10,7 +12,7 @@ func (op Output) IsSame(other Binding) bool {
 }
 
 func (op Output) Precedence() Precedence {
-	return PrecOutput
+	return bit.PrecOutput
 }
 
 func (op Output) Process(args *BindArgs) {

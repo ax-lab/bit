@@ -1,4 +1,6 @@
-package bit
+package core
+
+import "axlab.dev/bit/bit"
 
 type Simplify struct{}
 
@@ -10,7 +12,7 @@ func (op Simplify) IsSame(other Binding) bool {
 }
 
 func (op Simplify) Precedence() Precedence {
-	return PrecSimplify
+	return bit.PrecSimplify
 }
 
 func (op Simplify) Process(args *BindArgs) {

@@ -1,4 +1,6 @@
-package bit
+package core
+
+import "axlab.dev/bit/bit"
 
 type ParseBlocks struct{}
 
@@ -10,7 +12,7 @@ func (op ParseBlocks) IsSame(other Binding) bool {
 }
 
 func (op ParseBlocks) Precedence() Precedence {
-	return PrecBlocks
+	return bit.PrecBlocks
 }
 
 func (op ParseBlocks) Process(args *BindArgs) {
@@ -24,7 +26,7 @@ func (op ParseBlocks) Process(args *BindArgs) {
 		}
 
 		nodes := it.RemoveNodes(0, it.Len())
-		if last := prev.Last(); last.IsSymbol(":") {
+		if last := prev.Last(); IsSymbol(last, ":") {
 			last.FlagDone()
 			last.Remove()
 			block := it.ReplaceWithValue(Block{})

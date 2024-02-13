@@ -54,6 +54,14 @@ type Variable struct {
 	escaped string
 }
 
+func (v *Variable) Value() Result {
+	return v.value
+}
+
+func (v *Variable) SetValue(val Result) {
+	v.value = val
+}
+
 func (v *Variable) String() string {
 	return fmt.Sprintf("Var(%s@%s)", v.Name, v.Decl.Span().Location().String())
 }

@@ -1,9 +1,13 @@
-package bit
+package core
 
-import "fmt"
+import (
+	"fmt"
+
+	"axlab.dev/bit/bit"
+)
 
 type Var struct {
-	Var *Variable
+	Var *bit.Variable
 }
 
 func (val Var) Type() Type {
@@ -29,11 +33,11 @@ func (val Var) Bind(node *Node) {
 }
 
 func (val Var) Output(ctx *CodeContext) Code {
-	return Code{val, nil}
+	return Code{Expr: val}
 }
 
 func (val Var) Eval(rt *RuntimeContext) {
-	res := val.Var.value
+	res := val.Var.Value()
 	if res == nil {
 		rt.Panic("variable `%s` has not been initialized", val.Var.Name)
 	} else {
@@ -56,7 +60,7 @@ func (val Var) OutputCppPrint(ctx *CppContext, node *Node) {
 }
 
 type BindVar struct {
-	Var *Variable
+	Var *bit.Variable
 }
 
 func (op BindVar) IsSame(other Binding) bool {
@@ -67,7 +71,7 @@ func (op BindVar) IsSame(other Binding) bool {
 }
 
 func (op BindVar) Precedence() Precedence {
-	return PrecVar
+	return bit.PrecVar
 }
 
 func (op BindVar) Process(args *BindArgs) {
@@ -81,7 +85,7 @@ func (op BindVar) String() string {
 }
 
 type Let struct {
-	Var *Variable
+	Var *bit.Variable
 }
 
 func (val Let) IsEqual(other Key) bool {
@@ -106,11 +110,11 @@ func (val Let) Output(ctx *CodeContext) Code {
 	expr := ctx.OutputChild(ctx.Node)
 	val.Var.Type = expr.Type()
 	val.Var.EncodedName() // generate name
-	return Code{LetExpr{val.Var, expr}, nil}
+	return Code{Expr: LetExpr{val.Var, expr}}
 }
 
 type LetExpr struct {
-	Var  *Variable
+	Var  *bit.Variable
 	Expr Code
 }
 
@@ -120,7 +124,7 @@ func (code LetExpr) Type() Type {
 
 func (code LetExpr) Eval(rt *RuntimeContext) {
 	rt.Result = rt.Eval(code.Expr)
-	code.Var.value = rt.Result
+	code.Var.SetValue(rt.Result)
 }
 
 func (code LetExpr) OutputCpp(ctx *CppContext, node *Node) {
@@ -148,7 +152,7 @@ func (op ParseLet) IsSame(other Binding) bool {
 }
 
 func (op ParseLet) Precedence() Precedence {
-	return PrecLet
+	return bit.PrecLet
 }
 
 func (op ParseLet) Process(args *BindArgs) {
@@ -158,13 +162,13 @@ func (op ParseLet) Process(args *BindArgs) {
 			continue
 		}
 
-		name, next := it.Next().ParseName()
+		name, next := ParseName(it.Next())
 		if name == "" {
 			it.Undo()
 			continue
 		}
 
-		if !next.IsSymbol("=") {
+		if !IsSymbol(next, "=") {
 			it.Undo()
 			continue
 		}
@@ -176,7 +180,7 @@ func (op ParseLet) Process(args *BindArgs) {
 		par := it.Parent()
 		split := next.Index() + 1
 		nodes := par.RemoveNodes(it.Index(), par.Len())
-		nodesSpan := SpanFromSlice(nodes)
+		nodesSpan := bit.SpanFromSlice(nodes)
 
 		scope := par.GetScope()
 		offset := nodesSpan.End()

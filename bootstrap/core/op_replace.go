@@ -1,6 +1,10 @@
-package bit
+package core
 
-import "fmt"
+import (
+	"fmt"
+
+	"axlab.dev/bit/bit"
+)
 
 type NodeReplacer interface {
 	Get(node *Node) (Value, error)
@@ -18,7 +22,7 @@ func (op Replace) IsSame(other Binding) bool {
 }
 
 func (op Replace) Precedence() Precedence {
-	return PrecReplace
+	return bit.PrecReplace
 }
 
 func (op Replace) Process(args *BindArgs) {

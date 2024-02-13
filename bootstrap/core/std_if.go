@@ -1,4 +1,6 @@
-package bit
+package core
+
+import "axlab.dev/bit/bit"
 
 type If struct{}
 
@@ -18,7 +20,7 @@ func (val If) Bind(node *Node) {
 }
 
 func (val If) Output(ctx *CodeContext) Code {
-	return Code{Invalid{}, nil}
+	return Code{Expr: bit.Invalid{}}
 }
 
 // TODO: (resolution) this should have precedence even over more specific bindings, we need a general mechanism for that
@@ -32,7 +34,7 @@ func (op ParseIf) IsSame(other Binding) bool {
 }
 
 func (op ParseIf) Precedence() Precedence {
-	return PrecParseIf
+	return bit.PrecParseIf
 }
 
 func (op ParseIf) Process(args *BindArgs) {
@@ -49,7 +51,7 @@ func (op ParseIf) Process(args *BindArgs) {
 				return node
 			}
 			src := par.RemoveNodes(idx, par.Len())
-			node = args.Program.NewNode(If{}, SpanFromSlice(src))
+			node = args.Program.NewNode(If{}, bit.SpanFromSlice(src))
 			par.InsertNodes(idx, node)
 			return node
 		}
@@ -71,7 +73,7 @@ func (op ParseIf) Process(args *BindArgs) {
 				list[split].AddError("if..else branch cannot be empty")
 				continue
 			}
-			elseNode = args.Program.NewNode(Group{}, SpanFromSlice(rest)).WithChildren(rest...)
+			elseNode = args.Program.NewNode(Group{}, bit.SpanFromSlice(rest)).WithChildren(rest...)
 		}
 
 		// parse an if : block
@@ -80,7 +82,7 @@ func (op ParseIf) Process(args *BindArgs) {
 			node = makeNode(node)
 			expr, body := list[:len(list)-1], list[len(list)-1]
 			node.AddChildren(
-				args.Program.NewNode(Group{}, SpanFromSlice(expr)).WithChildren(expr...),
+				args.Program.NewNode(Group{}, bit.SpanFromSlice(expr)).WithChildren(expr...),
 				body,
 			)
 		} else if split := SymbolIndex(list, ":"); split >= 0 {
@@ -94,8 +96,8 @@ func (op ParseIf) Process(args *BindArgs) {
 			}
 
 			node.AddChildren(
-				args.Program.NewNode(Group{}, SpanFromSlice(expr)).WithChildren(expr...),
-				args.Program.NewNode(Group{}, SpanFromSlice(body)).WithChildren(body...),
+				args.Program.NewNode(Group{}, bit.SpanFromSlice(expr)).WithChildren(expr...),
+				args.Program.NewNode(Group{}, bit.SpanFromSlice(body)).WithChildren(body...),
 			)
 		} else {
 			it.Undo()
@@ -103,11 +105,11 @@ func (op ParseIf) Process(args *BindArgs) {
 		}
 
 		if elseNode == nil {
-			if next := node.Succ(); next != nil && next.IsWord("else") {
+			if next := Succ(node); next != nil && IsWord(next, "else") {
 				next.FlagDone()
 				parent := next.Parent()
 				children := parent.RemoveNodes(next.Index(), parent.Len())[1:]
-				elseNode = args.Program.NewNode(Group{}, SpanFromSlice(children)).WithChildren(children...)
+				elseNode = args.Program.NewNode(Group{}, bit.SpanFromSlice(children)).WithChildren(children...)
 			}
 		}
 

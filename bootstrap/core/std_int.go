@@ -1,11 +1,15 @@
-package bit
+package core
 
-import "fmt"
+import (
+	"fmt"
+
+	"axlab.dev/bit/bit"
+)
 
 type Int int
 
 func (val Int) Type() Type {
-	return IntType{}
+	return bit.IntType{}
 }
 
 func (val Int) IsEqual(other Key) bool {
@@ -28,7 +32,7 @@ func (val Int) Bind(node *Node) {
 }
 
 func (val Int) Output(ctx *CodeContext) Code {
-	return Code{val, nil}
+	return Code{Expr: val}
 }
 
 func (val Int) Eval(rt *RuntimeContext) {
@@ -50,8 +54,8 @@ func (val Int) OutputCppPrint(ctx *CppContext, node *Node) {
 type ParseInt struct{}
 
 func (ParseInt) Get(node *Node) (Value, error) {
-	if tok, ok := node.Value().(TokenType); ok && tok == TokenInteger {
-		val := ParseIntegerLiteral(node.Text())
+	if tok, ok := node.Value().(TokenType); ok && tok == bit.TokenInteger {
+		val := bit.ParseIntegerLiteral(node.Text())
 		return Int(val), nil
 	}
 	return nil, nil

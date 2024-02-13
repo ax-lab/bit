@@ -1,6 +1,10 @@
-package bit
+package core
 
-import "fmt"
+import (
+	"fmt"
+
+	"axlab.dev/bit/bit"
+)
 
 type Bracket struct {
 	Sta string
@@ -19,7 +23,7 @@ type ParseBrackets struct {
 }
 
 func (op ParseBrackets) Precedence() Precedence {
-	return PrecBrackets
+	return bit.PrecBrackets
 }
 
 func (op ParseBrackets) IsSame(other Binding) bool {
@@ -45,7 +49,7 @@ func (op ParseBrackets) Process(args *BindArgs) {
 				par := sta.Parent()
 				stack = stack[:l-1]
 				nodes := par.RemoveRange(sta, it)
-				group := args.Program.NewNode(Bracket(op), SpanFromRange(sta, it))
+				group := args.Program.NewNode(Bracket(op), bit.SpanFromRange(sta, it))
 				group.AddChildren(nodes[1 : len(nodes)-1]...)
 				par.InsertNodes(pos, group)
 			} else {

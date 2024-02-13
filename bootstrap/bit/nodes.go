@@ -229,25 +229,6 @@ func (node *Node) Last() *Node {
 	return nil
 }
 
-func (node *Node) Succ() *Node {
-	if next := node.Next(); next != nil {
-		return next.EnterGroup()
-	}
-	if par := node.Parent(); par != nil {
-		return par.Succ()
-	}
-	return nil
-}
-
-func (node *Node) EnterGroup() *Node {
-	if node.Len() > 0 {
-		if _, ok := node.Value().(CanFlatten); ok {
-			return node.Head().EnterGroup()
-		}
-	}
-	return node
-}
-
 func (node *Node) Compare(other *Node) int {
 	if node == other {
 		return 0

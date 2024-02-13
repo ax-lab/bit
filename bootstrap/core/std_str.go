@@ -1,11 +1,15 @@
-package bit
+package core
 
-import "fmt"
+import (
+	"fmt"
+
+	"axlab.dev/bit/bit"
+)
 
 type Str string
 
 func (val Str) Type() Type {
-	return StrType{}
+	return bit.StrType{}
 }
 
 func (str Str) IsEqual(other Key) bool {
@@ -28,7 +32,7 @@ func (str Str) Bind(node *Node) {
 }
 
 func (val Str) Output(ctx *CodeContext) Code {
-	return Code{val, nil}
+	return Code{Expr: val}
 }
 
 func (val Str) Eval(rt *RuntimeContext) {
@@ -36,22 +40,22 @@ func (val Str) Eval(rt *RuntimeContext) {
 }
 
 func (val Str) OutputCpp(ctx *CppContext, node *Node) {
-	WriteLiteralString(ctx.Expr, string(val))
+	bit.WriteLiteralString(ctx.Expr, string(val))
 }
 
 func (val Str) OutputCppPrint(ctx *CppContext, node *Node) {
 	ctx.IncludeSystem("stdio.h")
 	ctx.Body.EnsureBlank()
 	ctx.Body.Write(`printf("%s", `)
-	WriteLiteralString(ctx.Body, string(val))
+	bit.WriteLiteralString(ctx.Body, string(val))
 	ctx.Body.Write(`);`)
 }
 
 type ParseString struct{}
 
 func (ParseString) Get(node *Node) (Value, error) {
-	if tok, ok := node.Value().(TokenType); ok && tok == TokenString {
-		str := ParseStringLiteral(node.Text())
+	if tok, ok := node.Value().(TokenType); ok && tok == bit.TokenString {
+		str := bit.ParseStringLiteral(node.Text())
 		return Str(str), nil
 	}
 	return nil, nil

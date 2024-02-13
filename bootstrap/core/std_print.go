@@ -1,8 +1,9 @@
-package bit
+package core
 
 import (
 	"fmt"
 
+	"axlab.dev/bit/bit"
 	"axlab.dev/bit/common"
 )
 
@@ -25,7 +26,7 @@ func (val Print) Bind(node *Node) {
 
 func (val Print) Output(ctx *CodeContext) Code {
 	code := ctx.OutputChild(ctx.Node)
-	return Code{PrintExpr{code}, nil}
+	return Code{Expr: PrintExpr{code}}
 }
 
 type PrintCpp interface {
@@ -42,7 +43,7 @@ func (op ParsePrint) IsSame(other Binding) bool {
 }
 
 func (op ParsePrint) Precedence() Precedence {
-	return PrecPrint
+	return bit.PrecPrint
 }
 
 func (op ParsePrint) Process(args *BindArgs) {
@@ -53,7 +54,7 @@ func (op ParsePrint) Process(args *BindArgs) {
 			continue
 		}
 		src := par.RemoveNodes(idx, par.Len())
-		node := args.Program.NewNode(Print{}, SpanFromSlice(src))
+		node := args.Program.NewNode(Print{}, bit.SpanFromSlice(src))
 		node.AddChildren(src[1:]...)
 		par.InsertNodes(idx, node)
 	}

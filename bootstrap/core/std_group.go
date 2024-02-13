@@ -1,4 +1,4 @@
-package bit
+package core
 
 type Group struct{}
 

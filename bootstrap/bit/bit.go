@@ -41,6 +41,8 @@ type Precedence int
 type Compiler struct {
 	ctx context.Context
 
+	core func(*Program)
+
 	inputDir files.Dir
 	buildDir files.Dir
 
@@ -74,6 +76,18 @@ func NewCompiler(ctx context.Context, inputPath, buildPath string) *Compiler {
 		inputDir: files.OpenDir(inputPath).MustExist("compiler input"),
 		buildDir: files.OpenDir(buildPath).Create("compiler build"),
 	}
+}
+
+func (program *Program) InitCore() {
+	if program.coreInit.CompareAndSwap(false, true) {
+		if program.compiler.core != nil {
+			program.compiler.core(program)
+		}
+	}
+}
+
+func (comp *Compiler) SetCore(core func(*Program)) {
+	comp.core = core
 }
 
 func (comp *Compiler) Run(file string, options RunOptions) (out RunResult) {

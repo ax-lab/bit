@@ -1,4 +1,6 @@
-package bit
+package core
+
+import "axlab.dev/bit/bit"
 
 // Implemented by non-semantic group nodes that can be "flattened" without
 // losing meaning.
@@ -35,7 +37,7 @@ func (op SplitLines) IsSame(other Binding) bool {
 }
 
 func (op SplitLines) Precedence() Precedence {
-	return PrecLines
+	return bit.PrecLines
 }
 
 func (op SplitLines) Process(args *BindArgs) {
@@ -44,7 +46,7 @@ func (op SplitLines) Process(args *BindArgs) {
 		cur, children := 0, par.RemoveNodes(0, par.Len())
 		push := func(line []*Node) {
 			if len(line) > 0 {
-				span := SpanFromSlice(line)
+				span := bit.SpanFromSlice(line)
 				node := args.Program.NewNode(Line{}, span)
 				node.AddChildren(line...)
 				par.AddChildren(node)
