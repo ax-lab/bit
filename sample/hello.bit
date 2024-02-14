@@ -1,4 +1,5 @@
-if true:
-	print 'x is true'
+let x = if false:
+	1
 else:
-	print 'x is false'
+	2
+print x

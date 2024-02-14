@@ -189,9 +189,8 @@ func (code WithScope) OutputCpp(ctx *CppContext, node *Node) {
 		block.Body.Decl.Push("%s %s; // %s @%s", it.Type.CppType(), it.EncodedName(), it.Name, it.Decl.Span().String())
 	}
 	code.Inner.OutputCpp(&block)
+	block.Body.CppLines.Push("%s = %s;", name, block.Expr.String())
 	block.Body.AppendTo(&ctx.Body.CppLines)
-
-	ctx.Body.Push("%s = %s;", name, block.Expr.String())
 	ctx.Expr.WriteString(name)
 }
 

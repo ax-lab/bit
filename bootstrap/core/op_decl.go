@@ -54,7 +54,6 @@ func (val Var) OutputCpp(ctx *bit.CppContext, node *Node) {
 func (val Var) OutputCppPrint(ctx *bit.CppContext, node *Node) {
 	typ := val.Type()
 	if prn, ok := typ.(PrintCpp); ok {
-		val.OutputCpp(ctx, node)
 		prn.OutputCppPrint(ctx, node)
 	} else {
 		ctx.Body.Push("#error type `%s` for variable `%s` does not support print", typ.String(), val.Repr(true))

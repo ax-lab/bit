@@ -194,6 +194,8 @@ func (val IfExpr) OutputCpp(ctx *bit.CppContext, node *Node) {
 	ctx.Body.Push("%s = %s;", name, expr_else.Expr.String())
 	ctx.Body.Dedent()
 	ctx.Body.Push("}")
+
+	ctx.Expr.WriteString(name)
 }
 
 func (expr IfExpr) Repr(oneline bool) string {
