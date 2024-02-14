@@ -8,7 +8,14 @@ import (
 	"unicode/utf8"
 )
 
+/*
+	TODO: CppContext
+
+	- sub-context init is error prone (return new context instead of init)
+*/
+
 type CppContext struct {
+	Names   *NameScope
 	Parent  *CppContext
 	Program *Program
 	File    *CppFile
@@ -19,6 +26,7 @@ type CppContext struct {
 
 func NewCppContext(program *Program) *CppContext {
 	ctx := &CppContext{
+		Names:   &program.names.root,
 		Program: program,
 		Expr:    &strings.Builder{},
 	}
@@ -36,10 +44,15 @@ func NewCppContext(program *Program) *CppContext {
 func (ctx *CppContext) initFrom(parent *CppContext) {
 	ctx.Parent = parent
 	ctx.Program = parent.Program
+	ctx.Names = parent.Names
 	ctx.File = parent.File
 	ctx.Func = parent.Func
 	ctx.Body = parent.Body
 	ctx.Expr = &strings.Builder{}
+}
+
+func (ctx *CppContext) NewName(base string) string {
+	return ctx.Names.DeclareUnique(base)
 }
 
 func (ctx *CppContext) NewExpr(parent *CppContext) {

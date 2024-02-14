@@ -8,41 +8,41 @@ import (
 )
 
 type NameMap struct {
-	mutex   sync.Mutex
-	globals NameScope
+	mutex sync.Mutex
+	root  NameScope
 }
 
 func (m *NameMap) DeclareGlobal(name string) bool {
 	m.mutex.Lock()
 	defer m.mutex.Unlock()
-	return m.globals.declare(name)
+	return m.root.declare(name)
 }
 
 func (m *NameMap) NewChild() *NameScope {
 	return &NameScope{
-		globals: m,
-		parent:  &m.globals,
+		nameMap: m,
+		parent:  &m.root,
 		names:   nil,
 	}
 }
 
 type NameScope struct {
-	globals *NameMap
+	nameMap *NameMap
 	parent  *NameScope
 	names   map[string]bool
 }
 
 func (m *NameScope) NewChild() *NameScope {
 	return &NameScope{
-		globals: m.globals,
+		nameMap: m.nameMap,
 		parent:  m,
 		names:   nil,
 	}
 }
 
 func (m *NameScope) DeclareUnique(name string) string {
-	m.globals.mutex.Lock()
-	defer m.globals.mutex.Unlock()
+	m.nameMap.mutex.Lock()
+	defer m.nameMap.mutex.Unlock()
 	return m.declareUnique(name)
 }
 

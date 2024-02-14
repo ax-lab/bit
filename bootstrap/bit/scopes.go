@@ -87,7 +87,7 @@ func (scope *Scope) End() int {
 
 func (scope *Scope) DeclareGlobal(name string, node *Node) {
 	encoded := EncodeIdentifier(name)
-	if !scope.Names.globals.DeclareGlobal(encoded) {
+	if !scope.Names.nameMap.DeclareGlobal(encoded) {
 		if node == nil {
 			node = scope.Node
 		}
@@ -178,14 +178,21 @@ func (code WithScope) Eval(rt *RuntimeContext) {
 }
 
 func (code WithScope) OutputCpp(ctx *CppContext, node *Node) {
+	name := ctx.NewName("scope")
+	ctx.Body.Decl.Push("%s %s; // scope at %s", code.Inner.Type().CppType(), name, code.Inner.Span().String())
+
 	block := CppContext{}
 	block.NewBody(ctx)
+	block.Names = code.Scope.Names
 
 	for _, it := range code.Vars {
 		block.Body.Decl.Push("%s %s; // %s @%s", it.Type.CppType(), it.EncodedName(), it.Name, it.Decl.Span().String())
 	}
 	code.Inner.OutputCpp(&block)
 	block.Body.AppendTo(&ctx.Body.CppLines)
+
+	ctx.Body.Push("%s = %s;", name, block.Expr.String())
+	ctx.Expr.WriteString(name)
 }
 
 func (code WithScope) Repr(oneline bool) string {

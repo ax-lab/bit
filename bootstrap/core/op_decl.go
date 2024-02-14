@@ -49,6 +49,8 @@ func (val Var) OutputCpp(ctx *bit.CppContext, node *Node) {
 	ctx.Expr.WriteString(val.Var.EncodedName())
 }
 
+// TODO: CppPrint needs better support for sub expressions
+
 func (val Var) OutputCppPrint(ctx *bit.CppContext, node *Node) {
 	typ := val.Type()
 	if prn, ok := typ.(PrintCpp); ok {
@@ -128,6 +130,7 @@ func (code LetExpr) Eval(rt *bit.RuntimeContext) {
 }
 
 func (code LetExpr) OutputCpp(ctx *bit.CppContext, node *Node) {
+	// TODO: handle keywords here
 	name := code.Var.EncodedName()
 
 	expr := bit.CppContext{}

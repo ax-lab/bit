@@ -25,6 +25,9 @@ func (code Code) Span() Span {
 }
 
 func (code Code) Repr(oneline bool) string {
+	if code.Expr == nil {
+		return "(no code)"
+	}
 	return code.Expr.Repr(oneline)
 }
 

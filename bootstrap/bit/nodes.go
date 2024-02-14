@@ -162,6 +162,13 @@ func (node *Node) Text() string {
 	return node.span.Text()
 }
 
+func (node *Node) Get(index int) *Node {
+	if index < len(node.nodes) {
+		return node.nodes[index]
+	}
+	return nil
+}
+
 func (node *Node) Nodes() []*Node {
 	return node.nodes
 }

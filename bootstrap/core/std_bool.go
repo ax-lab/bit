@@ -6,6 +6,19 @@ import (
 	"axlab.dev/bit/bit"
 )
 
+func ToBool(res bit.Result) bool {
+	switch v := res.(type) {
+	case Bool:
+		return bool(v)
+	case Str:
+		return string(v) != ""
+	case Int:
+		return v != 0
+	default:
+		return true
+	}
+}
+
 type Bool bool
 
 func (val Bool) Type() Type {

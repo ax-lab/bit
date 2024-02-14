@@ -63,6 +63,7 @@ func (program *Program) reset() {
 	program.mainNode = nil
 	program.outputCode = nil
 	program.names = &NameMap{}
+	program.names.root.nameMap = program.names
 
 	program.bindings = &BindingMap{
 		program: program,

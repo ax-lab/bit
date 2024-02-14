@@ -81,6 +81,7 @@ func (expr PrintExpr) Eval(rt *bit.RuntimeContext) {
 func (val PrintExpr) OutputCpp(ctx *bit.CppContext, node *Node) {
 	if v, ok := val.args.Expr.(PrintCpp); ok {
 		ctx.IncludeSystem("stdio.h")
+		val.args.OutputCpp(ctx) // TODO: this is temporary to allow print as expr
 		v.OutputCppPrint(ctx, val.args.Node)
 		ctx.Body.Push(`printf("\n");`)
 	} else {

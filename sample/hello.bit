@@ -1,11 +1,4 @@
-if x == 1:
-	print 'x is 1'
-	print 'x is the first'
-else if x == 2:
-	print 'x is 2'
-	print 'x is even'
-else if x == 3:
-	print 'x is 3'
+if true:
+	print 'x is true'
 else:
-	print 'x is something else'
-	print x
+	print 'x is false'
