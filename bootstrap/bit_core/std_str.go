@@ -29,7 +29,7 @@ func (val Str) Bind(node *Node) {
 }
 
 func (val Str) Type(node *Node) code.Type {
-	return code.StrType{}
+	return code.StrType()
 }
 
 func (val Str) Output(ctx *code.OutputContext, node *Node) {

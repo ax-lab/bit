@@ -29,7 +29,7 @@ func (val Int) Bind(node *Node) {
 }
 
 func (val Int) Type(node *Node) code.Type {
-	return code.IntType{}
+	return code.IntType()
 }
 
 func (val Int) Output(ctx *code.OutputContext, node *Node) {

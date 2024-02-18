@@ -20,7 +20,7 @@ type Bool struct {
 }
 
 func (v *Bool) Type() Type {
-	return BoolType{}
+	return BoolType()
 }
 
 func (v *Bool) Eval(rt *Runtime) (Value, error) {
@@ -54,7 +54,7 @@ type Int struct {
 }
 
 func (v *Int) Type() Type {
-	return IntType{}
+	return IntType()
 }
 
 func (v *Int) Eval(rt *Runtime) (Value, error) {
@@ -83,7 +83,7 @@ type Str struct {
 }
 
 func (v *Str) Type() Type {
-	return StrType{}
+	return StrType()
 }
 
 func (v *Str) Eval(rt *Runtime) (Value, error) {

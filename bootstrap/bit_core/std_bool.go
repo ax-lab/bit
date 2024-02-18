@@ -33,7 +33,7 @@ func (val Bool) Bind(node *Node) {
 }
 
 func (val Bool) Type(node *Node) code.Type {
-	return code.BoolType{}
+	return code.BoolType()
 }
 
 func (val Bool) Output(ctx *code.OutputContext, node *Node) {

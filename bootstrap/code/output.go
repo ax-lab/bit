@@ -16,7 +16,7 @@ func NewOutput(scope *Scope) *Output {
 func (output *Output) NewContext() *OutputContext {
 	return &OutputContext{
 		source: output,
-		block:  output.main,
+		main:   output.main,
 	}
 }
 
@@ -45,32 +45,32 @@ func (output *Output) OutputCpp(mainFile string) map[string]string {
 }
 
 type OutputContext struct {
-	expr  Expr
-	block *Block
+	expr Expr
+	main *Block
 
 	source *Output
 }
 
-func (ctx *OutputContext) WithScope(scope *Scope) *OutputContext {
+func (ctx *OutputContext) NewScope(scope *Scope) *OutputContext {
 	out := *ctx
-	out.block = NewBlockWithScope(scope)
+	out.main = NewBlockWithScope(scope)
 	return &out
 }
 
 func (ctx *OutputContext) NewBlock() *OutputContext {
 	out := *ctx
-	out.block = NewBlock(ctx.block.Decl)
+	out.main = NewBlock(ctx.main.Decl)
 	return &out
 }
 
 func (ctx *OutputContext) GetDecl() *Decl {
-	return ctx.block.Decl
+	return ctx.main.Decl
 }
 
 func (ctx *OutputContext) TempVar(name string, typ Type, source any) *Variable {
-	scope := ctx.block.Scope()
+	scope := ctx.main.Scope()
 	v := scope.DeclareUnique(name, typ, source)
-	ctx.block.Decl.Add(v)
+	ctx.main.Decl.Add(v)
 	return v
 }
 
@@ -87,7 +87,7 @@ func (ctx *OutputContext) OutputExpr(expr Expr) {
 }
 
 func (ctx *OutputContext) Output(stmt ...Stmt) {
-	ctx.block.Body = append(ctx.block.Body, stmt...)
+	ctx.main.Body = append(ctx.main.Body, stmt...)
 }
 
 func (ctx *OutputContext) LastExpr() Expr {
@@ -95,9 +95,9 @@ func (ctx *OutputContext) LastExpr() Expr {
 }
 
 func (ctx *OutputContext) Body() []Stmt {
-	return ctx.block.Body
+	return ctx.main.Body
 }
 
 func (ctx *OutputContext) Block() *Block {
-	return ctx.block
+	return ctx.main
 }

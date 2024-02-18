@@ -72,7 +72,7 @@ func (blk *Block) OutputCpp(ctx *CppContext) {
 }
 
 func (blk *Block) Repr(mode Repr) string {
-	if len(blk.Body) == 0 {
+	if len(blk.Body) == 0 && (!blk.OwnDecl || blk.Decl.Len() == 0) {
 		return "{ }"
 	}
 
@@ -104,6 +104,10 @@ func (blk *Block) Repr(mode Repr) string {
 	default:
 		out := strings.Builder{}
 		out.WriteString("{")
+		if blk.OwnDecl {
+			out.WriteString("\n")
+			out.WriteString(common.Indent(blk.Decl.String()))
+		}
 		for _, it := range blk.Body {
 			out.WriteString("\n")
 			out.WriteString(common.Indent(it.Repr(mode)))

@@ -1,16 +1,20 @@
 package code
 
-import "fmt"
-
-type Type interface {
-	String() string
-	CppType() string
-	CppPrint(ctx *CppContext, expr Expr)
-	CppPrintCondition(ctx *CppContext, expr Expr) string
-}
-
 func AddTypes(types ...Type) Type {
-	panic("TODO: AddTypes")
+	if len(types) == 0 {
+		return VoidType()
+	}
+	if len(types) == 1 {
+		return types[0]
+	}
+
+	t0 := types[0]
+	t1 := AddTypes(types[1:]...)
+	if t0 == t1 {
+		return t0
+	} else {
+		panic("TODO: sum type")
+	}
 }
 
 func InvalidType() Type {
@@ -21,63 +25,56 @@ func VoidType() Type {
 	panic("TODO: VoidType")
 }
 
-type BoolType struct{}
-
-func (BoolType) CppType() string {
-	return "bool"
+type Type struct {
+	*typeData
 }
 
-func (BoolType) String() string {
-	return "bool"
+func (t Type) String() string {
+	if t.typeData == nil {
+		return "(nil)"
+	}
+
+	if t.Name != "" {
+		return t.Name
+	}
+	return t.Impl.String()
 }
 
-func (BoolType) CppPrint(ctx *CppContext, expr Expr) {
-	ctx.Body.Write(`printf(`)
-	expr.OutputCpp(ctx)
-	ctx.Body.Write(` ? "true" : "false");`)
+func (t Type) CppType() string {
+	return t.Impl.CppType()
 }
 
-func (BoolType) CppPrintCondition(ctx *CppContext, expr Expr) string {
-	return ""
+func (t Type) CppPrint(ctx *CppContext, expr Expr) {
+	t.Impl.CppPrint(ctx, expr)
 }
 
-type IntType struct{}
-
-func (IntType) CppType() string {
-	return "int"
+func (t Type) CppPrintCondition(ctx *CppContext, expr Expr) string {
+	return t.Impl.CppPrintCondition(ctx, expr)
 }
 
-func (IntType) String() string {
-	return "int"
+// Implementation
+
+type typeKind int
+
+const (
+	TypeNone typeKind = iota
+	TypeInt
+	TypeStr
+	TypeBool
+	TypeSum
+	TypeNamed
+	TypeError
+)
+
+type typeData struct {
+	Kind typeKind
+	Name string
+	Impl typeImpl
 }
 
-func (IntType) CppPrint(ctx *CppContext, expr Expr) {
-	ctx.Body.Write(`printf("%d", `)
-	expr.OutputCpp(ctx)
-	ctx.Body.Write(`);`)
-}
-
-func (IntType) CppPrintCondition(ctx *CppContext, expr Expr) string {
-	return ""
-}
-
-type StrType struct{}
-
-func (StrType) CppType() string {
-	return "const char *"
-}
-
-func (StrType) String() string {
-	return "str"
-}
-
-func (StrType) CppPrint(ctx *CppContext, expr Expr) {
-	ctx.Body.Write(`printf("%s", `)
-	expr.OutputCpp(ctx)
-	ctx.Body.Write(`);`)
-}
-
-func (StrType) CppPrintCondition(ctx *CppContext, expr Expr) string {
-	code := ctx.ExprString(expr)
-	return fmt.Sprintf("(%s)[0] != 0", code)
+type typeImpl interface {
+	String() string
+	CppType() string
+	CppPrint(ctx *CppContext, expr Expr)
+	CppPrintCondition(ctx *CppContext, expr Expr) string
 }

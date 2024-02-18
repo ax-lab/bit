@@ -3,6 +3,7 @@ package code
 import (
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 )
 
@@ -29,7 +30,7 @@ func (decl *Decl) Add(v *Variable) {
 
 	decl.mutex.Lock()
 	defer decl.mutex.Unlock()
-	index := decl.Len()
+	index := len(decl.slots)
 	v.slot = &varSlot{decl: decl, variable: v, index: index}
 	decl.slots = append(decl.slots, v.slot)
 }
@@ -51,6 +52,17 @@ func (decl *Decl) OutputCpp(ctx *CppContext) {
 	for _, it := range decl.slots {
 		ctx.Body.Push("%s %s;", it.variable.Type().CppType(), it.variable.OutputName())
 	}
+}
+
+func (decl *Decl) String() string {
+	out := strings.Builder{}
+	for n, it := range decl.slots {
+		if n > 0 {
+			out.WriteString("\n")
+		}
+		out.WriteString(fmt.Sprintf("var %s: %s", it.variable.Name(), it.variable.Type().String()))
+	}
+	return out.String()
 }
 
 type varSlot struct {

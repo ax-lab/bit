@@ -417,7 +417,9 @@ func (node *Node) Output(ctx *code.OutputContext) code.Expr {
 	}
 	if v, ok := node.value.(HasOutput); ok {
 		if node.scope != nil {
-			v.Output(ctx.WithScope(node.scope), node)
+			inner := ctx.NewScope(node.scope)
+			v.Output(inner, node)
+			ctx.Output(inner.Block())
 		} else {
 			v.Output(ctx, node)
 		}
