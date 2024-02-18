@@ -70,7 +70,7 @@ func (v *Int) String() string {
 }
 
 func (v *Int) OutputCpp(ctx *CppContext) {
-	ctx.Body.WriteFmt("%d", v)
+	ctx.Body.WriteFmt("%d", v.Val)
 }
 
 func (v *Int) Repr(mode Repr) string {
