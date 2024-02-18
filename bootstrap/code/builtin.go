@@ -74,7 +74,7 @@ func (v *Int) OutputCpp(ctx *CppContext) {
 }
 
 func (v *Int) Repr(mode Repr) string {
-	return fmt.Sprintf("int(%d)", v)
+	return fmt.Sprintf("int(%d)", v.Val)
 }
 
 type Str struct {

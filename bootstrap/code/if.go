@@ -96,7 +96,7 @@ func (ifExpr *If) Repr(mode Repr) string {
 	default:
 		out := strings.Builder{}
 		out.WriteString("if (")
-		out.WriteString(common.Indented(ifExpr.True.Repr(mode)))
+		out.WriteString(common.Indented(ifExpr.Cond.Repr(mode)))
 		out.WriteString(") ")
 		out.WriteString(ifExpr.True.Repr(mode))
 		if ifExpr.Else != nil {
