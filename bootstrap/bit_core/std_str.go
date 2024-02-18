@@ -1,16 +1,13 @@
-package core
+package bit_core
 
 import (
 	"fmt"
 
 	"axlab.dev/bit/bit"
+	"axlab.dev/bit/code"
 )
 
 type Str string
-
-func (val Str) Type() Type {
-	return bit.StrType{}
-}
 
 func (val Str) IsEqual(other Key) bool {
 	if v, ok := other.(Str); ok {
@@ -31,24 +28,13 @@ func (val Str) Bind(node *Node) {
 	node.Bind(Str(""))
 }
 
-func (val Str) Output(ctx *bit.CodeContext) Code {
-	return Code{Expr: val}
+func (val Str) Type(node *Node) code.Type {
+	return code.StrType{}
 }
 
-func (val Str) Eval(rt *bit.RuntimeContext) {
-	rt.Result = val
-}
-
-func (val Str) OutputCpp(ctx *bit.CppContext, node *Node) {
-	bit.WriteLiteralString(ctx.Expr, string(val))
-}
-
-func (val Str) OutputCppPrint(ctx *bit.CppContext, node *Node) {
-	ctx.IncludeSystem("stdio.h")
-	ctx.Body.EnsureBlank()
-	ctx.Body.Write(`printf("%s", `)
-	bit.WriteLiteralString(ctx.Body, string(val))
-	ctx.Body.Write(`);`)
+func (val Str) Output(ctx *code.OutputContext, node *Node) {
+	node.CheckEmpty(ctx)
+	ctx.OutputExpr(code.NewStr(string(val)))
 }
 
 type ParseString struct{}

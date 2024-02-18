@@ -1,6 +1,8 @@
-package core
+package bit_core
 
-import "axlab.dev/bit/bit"
+import (
+	"axlab.dev/bit/code"
+)
 
 type Line struct{}
 
@@ -20,6 +22,10 @@ func (val Line) IsEqual(other Key) bool {
 	return false
 }
 
-func (val Line) Output(ctx *bit.CodeContext) Code {
-	return ctx.OutputChild(ctx.Node)
+func (val Line) Type(node *Node) code.Type {
+	return node.Get(0).Type()
+}
+
+func (val Line) Output(ctx *code.OutputContext, node *Node) {
+	node.OutputChild(ctx, true)
 }

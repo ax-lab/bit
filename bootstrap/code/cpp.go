@@ -1,76 +1,76 @@
-package bit
+package code
 
 import (
 	"fmt"
 	"io"
 	"strings"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
 )
 
-/*
-	TODO: CppContext
-
-	- sub-context init is error prone (return new context instead of init)
-*/
-
-type CppContext struct {
-	Names   *NameScope
-	Parent  *CppContext
-	Program *Program
-	File    *CppFile
-	Func    *CppFunc
-	Body    *CppBody
-	Expr    *strings.Builder
-}
-
-func NewCppContext(program *Program) *CppContext {
+func NewCppContext() *CppContext {
 	ctx := &CppContext{
-		Names:   &program.names.root,
-		Program: program,
-		Expr:    &strings.Builder{},
+		File: &CppFile{},
 	}
-	ctx.File = &CppFile{
-		Context: ctx,
-	}
-	ctx.Func = &CppFunc{
-		Context: ctx,
-		File:    ctx.File,
-	}
-	ctx.Body = &ctx.Func.Body
+	main := ctx.File.NewFunc("int main(int argc, char *argv[])")
+	ctx.Body = &main.Body
 	return ctx
 }
 
-func (ctx *CppContext) initFrom(parent *CppContext) {
-	ctx.Parent = parent
-	ctx.Program = parent.Program
-	ctx.Names = parent.Names
-	ctx.File = parent.File
-	ctx.Func = parent.Func
-	ctx.Body = parent.Body
-	ctx.Expr = &strings.Builder{}
+type CppContext struct {
+	File *CppFile
+	Body *CppLines
+
+	name atomic.Int64
+}
+
+type CppFile struct {
+	Context *CppContext
+	Header  CppLines
+	Footer  CppLines
+	Funcs   []*CppFunc
+
+	includeSystem    []string
+	includeLocal     []string
+	includeSystemMap map[string]bool
+	includeLocalMap  map[string]bool
+}
+
+type CppFunc struct {
+	Context *CppContext
+	File    *CppFile
+	Header  string
+	Body    CppLines
+}
+
+func (file *CppFile) NewFunc(header string) *CppFunc {
+	fn := &CppFunc{
+		Context: file.Context,
+		File:    file,
+		Header:  header,
+	}
+	file.Funcs = append(file.Funcs, fn)
+	return fn
 }
 
 func (ctx *CppContext) NewName(base string) string {
-	return ctx.Names.DeclareUnique(base)
+	count := ctx.name.Add(1)
+	return fmt.Sprintf("$$tmp_%s_%d", base, count)
 }
 
-func (ctx *CppContext) NewExpr(parent *CppContext) {
-	ctx.initFrom(parent)
-}
+func (ctx *CppContext) ExprString(expr Expr) string {
+	body := ctx.Body
 
-func (ctx *CppContext) NewFunc(parent *CppContext) {
-	ctx.initFrom(parent)
-	ctx.Func = &CppFunc{
-		Context: ctx,
-		File:    ctx.File,
+	tmp := CppLines{}
+	ctx.Body = &tmp
+	expr.OutputCpp(ctx)
+	ctx.Body = body
+
+	if len(tmp.lines) != 1 || tmp.lines[0] == "" {
+		panic("invalid expression output")
 	}
-	ctx.Body = &ctx.Func.Body
-}
-
-func (ctx *CppContext) NewBody(parent *CppContext) {
-	ctx.initFrom(parent)
-	ctx.Body = &CppBody{}
+	return tmp.lines[0]
 }
 
 func (ctx *CppContext) IncludeSystem(file string) {
@@ -99,47 +99,6 @@ func (ctx *CppContext) GetOutputFiles(mainFile string) (out map[string]string) {
 	out = make(map[string]string)
 	out[mainFile] = ctx.File.Text()
 	return
-}
-
-type CppFile struct {
-	Context *CppContext
-	Header  CppLines
-	Body    CppLines
-	Footer  CppLines
-
-	includeSystem    []string
-	includeLocal     []string
-	includeSystemMap map[string]bool
-	includeLocalMap  map[string]bool
-}
-
-type CppFunc struct {
-	Context *CppContext
-	Decl    string
-	File    *CppFile
-	Body    CppBody
-}
-
-type CppBody struct {
-	CppLines
-	Decl CppLines
-}
-
-func (body *CppBody) Len() int {
-	return body.Decl.Len() + body.CppLines.Len()
-}
-
-func (body *CppBody) AppendTo(lines *CppLines) {
-	if body.Len() > 0 {
-		lines.Push("{")
-		lines.Indent()
-		body.Decl.AppendTo(lines)
-		body.CppLines.AppendTo(lines)
-		lines.Dedent()
-		lines.Push("}")
-	} else {
-		lines.Push("{ }")
-	}
 }
 
 type CppLines struct {
@@ -192,6 +151,10 @@ func (txt *CppLines) WriteString(s string) (n int, err error) {
 	return len(s), nil
 }
 
+func (txt *CppLines) WriteFmt(s string, args ...any) {
+	txt.Write(fmt.Sprintf(s, args...))
+}
+
 func (txt *CppLines) Write(s string) {
 	if len(txt.lines) == 0 {
 		txt.lines = append(txt.lines, s)
@@ -205,6 +168,19 @@ func (txt *CppLines) Text() string {
 		txt.text = strings.Join(txt.lines, "\n")
 	}
 	return txt.text
+}
+
+func (txt *CppLines) OutputTo(out *strings.Builder, level int) {
+	indent := strings.Repeat("\t", level)
+	for n, it := range txt.lines {
+		if n > 0 {
+			out.WriteString("\n")
+		}
+		if it != "" {
+			out.WriteString(indent)
+		}
+		out.WriteString(it)
+	}
 }
 
 func (file *CppFile) Text() string {
@@ -232,9 +208,15 @@ func (file *CppFile) Text() string {
 		text.WriteString("\n")
 	}
 
-	if txt := file.Body.Text(); len(txt) > 0 {
+	for _, it := range file.Funcs {
 		text.WriteString("\n")
-		text.WriteString(txt)
+		text.WriteString(it.Header)
+		text.WriteString(";\n")
+	}
+
+	for _, it := range file.Funcs {
+		text.WriteString("\n")
+		it.Output(&text)
 		text.WriteString("\n")
 	}
 
@@ -247,13 +229,11 @@ func (file *CppFile) Text() string {
 	return text.String()
 }
 
-func (fn *CppFunc) AppendTo(file *CppFile) {
-	file.Header.EnsureBlank()
-	file.Header.Push(fn.Decl + ";")
-
-	file.Body.EnsureBlank()
-	file.Body.Push(fn.Decl)
-	fn.Body.AppendTo(&file.Body)
+func (fn *CppFunc) Output(out *strings.Builder) {
+	out.WriteString(fn.Header)
+	out.WriteString("\n{\n")
+	fn.Body.OutputTo(out, 1)
+	out.WriteString("\n}")
 }
 
 func WriteLiteralString(out io.StringWriter, str string) {

@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"axlab.dev/bit/bit"
+	"axlab.dev/bit/bit_core"
 	"axlab.dev/bit/common"
-	"axlab.dev/bit/core"
 	"axlab.dev/bit/proc"
 )
 
@@ -66,7 +66,7 @@ func main() {
 			return
 		}
 		compiler := bit.NewCompiler(context.Background(), ".", BuildDir+"/run")
-		compiler.SetCore(core.InitCompiler)
+		compiler.SetCore(bit_core.InitCompiler)
 		for _, it := range files {
 			res := compiler.Run(it, bit.RunOptions{Cpp: cpp})
 			if len(files) > 1 {
@@ -85,14 +85,11 @@ func main() {
 				common.Err("\n\t>>> Error Log <<<\n\n\t" + errText + "\n")
 			}
 
-			if res.Value != nil {
-				hasOutput = true
-				common.Out("\nResult = %v\n", bit.ResultRepr(res.Value))
-			}
-
 			if hasOutput {
 				common.Out("\n")
 			}
+
+			common.Out("\n%s\n\n", res.Repr())
 		}
 	}
 }
@@ -109,7 +106,7 @@ func WatchAndCompile() {
 	}()
 
 	compiler := bit.NewCompiler(ctx, "sample", BuildDir+"/sample")
-	compiler.SetCore(core.InitCompiler)
+	compiler.SetCore(bit_core.InitCompiler)
 	inputDir := compiler.InputDir()
 	buildDir := compiler.BuildDir()
 

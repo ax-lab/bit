@@ -1,17 +1,14 @@
-package core
+package bit_core
 
 import (
 	"fmt"
 
 	"axlab.dev/bit/bit"
+	"axlab.dev/bit/code"
 )
 
 type Var struct {
-	Var *bit.Variable
-}
-
-func (val Var) Type() Type {
-	return val.Var.Type
+	Var *code.Variable
 }
 
 func (val Var) IsEqual(other Key) bool {
@@ -25,43 +22,25 @@ func (val Var) Repr(oneline bool) string {
 	if val.Var == nil {
 		return "Var()"
 	}
-	return val.Var.String()
+	return fmt.Sprintf("Var(%s)", val.Var.Name())
 }
 
 func (val Var) Bind(node *Node) {
 	node.Bind(Var{})
 }
 
-func (val Var) Output(ctx *bit.CodeContext) Code {
-	return Code{Expr: val}
+func (val Var) Type(node *Node) Type {
+	return val.Var.Type()
 }
 
-func (val Var) Eval(rt *bit.RuntimeContext) {
-	res := val.Var.Value()
-	if res == nil {
-		rt.Panic("variable `%s` has not been initialized", val.Var.Name)
-	} else {
-		rt.Result = res
-	}
-}
-
-func (val Var) OutputCpp(ctx *bit.CppContext, node *Node) {
-	ctx.Expr.WriteString(val.Var.EncodedName())
-}
-
-// TODO: CppPrint needs better support for sub expressions
-
-func (val Var) OutputCppPrint(ctx *bit.CppContext, node *Node) {
-	typ := val.Type()
-	if prn, ok := typ.(PrintCpp); ok {
-		prn.OutputCppPrint(ctx, node)
-	} else {
-		ctx.Body.Push("#error type `%s` for variable `%s` does not support print", typ.String(), val.Repr(true))
-	}
+func (val Var) Output(ctx *code.OutputContext, node *Node) {
+	node.CheckEmpty(ctx)
+	val.Var.CheckBound()
+	ctx.OutputExpr(val.Var)
 }
 
 type BindVar struct {
-	Var *bit.Variable
+	Var *code.Variable
 }
 
 func (op BindVar) IsSame(other bit.Binding) bool {
@@ -82,11 +61,11 @@ func (op BindVar) Process(args *bit.BindArgs) {
 }
 
 func (op BindVar) String() string {
-	return fmt.Sprintf("BindVar(%s)", op.Var.Name)
+	return fmt.Sprintf("BindVar(%s)", op.Var.Name())
 }
 
 type Let struct {
-	Var *bit.Variable
+	Var *code.Variable
 }
 
 func (val Let) IsEqual(other Key) bool {
@@ -100,48 +79,22 @@ func (val Let) Repr(oneline bool) string {
 	if val.Var == nil {
 		return "Let()"
 	}
-	return fmt.Sprintf("Let(%s)", val.Var.Name)
+	return fmt.Sprintf("Let(%s)", val.Var.Name())
 }
 
 func (val Let) Bind(node *Node) {
 	node.Bind(Let{})
 }
 
-func (val Let) Output(ctx *bit.CodeContext) Code {
-	expr := ctx.OutputChild(ctx.Node)
-	val.Var.Type = expr.Type()
-	val.Var.EncodedName() // generate name
-	return Code{Expr: LetExpr{val.Var, expr}}
+func (val Let) Type(node *Node) Type {
+	return val.Var.Type()
 }
 
-type LetExpr struct {
-	Var  *bit.Variable
-	Expr Code
-}
-
-func (code LetExpr) Type() Type {
-	return code.Var.Type
-}
-
-func (code LetExpr) Eval(rt *bit.RuntimeContext) {
-	rt.Result = rt.Eval(code.Expr)
-	code.Var.SetValue(rt.Result)
-}
-
-func (code LetExpr) OutputCpp(ctx *bit.CppContext, node *Node) {
-	// TODO: handle keywords here
-	name := code.Var.EncodedName()
-
-	expr := bit.CppContext{}
-	expr.NewExpr(ctx)
-	code.Expr.OutputCpp(&expr)
-
-	ctx.Body.Push("%s = %s;", name, expr.Expr.String())
-	ctx.Expr.WriteString(name)
-}
-
-func (code LetExpr) Repr(oneline bool) string {
-	return fmt.Sprintf("Let(%s) = %s", code.Var.Name, code.Expr.Repr(oneline))
+func (val Let) Output(ctx *code.OutputContext, node *Node) {
+	expr := node.OutputChild(ctx, false)
+	decl := ctx.GetDecl()
+	decl.Add(val.Var)
+	ctx.Output(val.Var.SetVar(expr))
 }
 
 type ParseLet struct{}
@@ -186,10 +139,10 @@ func (op ParseLet) Process(args *bit.BindArgs) {
 
 		scope := par.GetScope()
 		offset := nodesSpan.End()
-		variable := scope.Declare(it, name, offset)
+		variable := scope.Declare(name, offset)
 
 		node := args.Program.NewNode(Let{variable}, nodesSpan)
-		variable.Decl = node
+		variable.Source = node
 
 		par.InsertNodes(it.Index(), node)
 
@@ -201,7 +154,7 @@ func (op ParseLet) Process(args *bit.BindArgs) {
 			it.FlagDone()
 		}
 
-		it.DeclareAt(Word(name), variable.Offset, scope.End(), BindVar{variable})
+		it.DeclareAt(Word(name), variable.Offset(), scope.End(), BindVar{variable})
 	}
 }
 

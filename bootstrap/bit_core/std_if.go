@@ -1,10 +1,8 @@
-package core
+package bit_core
 
 import (
-	"fmt"
-
 	"axlab.dev/bit/bit"
-	"axlab.dev/bit/common"
+	"axlab.dev/bit/code"
 )
 
 type If struct{}
@@ -24,18 +22,41 @@ func (val If) Bind(node *Node) {
 	node.Bind(If{})
 }
 
-func (val If) Output(ctx *bit.CodeContext) Code {
-	common.Assert(2 <= ctx.Node.Len() && ctx.Node.Len() <= 3, "invalid if node length")
-	out := IfExpr{
-		Cond: ctx.Output(ctx.Node.Get(0)),
-		If:   ctx.Output(ctx.Node.Get(1)),
+func (val If) Type(node *Node) Type {
+	switch node.Len() {
+	case 0, 1:
+		return code.InvalidType()
+	case 2:
+		return node.Get(1).Type()
+	default:
+		t1 := node.Get(1).Type()
+		t2 := node.Get(2).Type()
+		return code.AddTypes(t1, t2)
 	}
-	if ctx.Node.Len() == 3 {
-		out.Else = ctx.Output(ctx.Node.Get(2))
-	} else {
-		out.Else = Code{Expr: Void{}, Node: ctx.Node}
+}
+
+func (val If) Output(ctx *code.OutputContext, node *Node) {
+	if !node.CheckRange(ctx, 2, 3) {
+		return
 	}
-	return Code{Expr: out}
+
+	result := ctx.TempVar("if", val.Type(node), node)
+	cond := node.Get(0).Output(ctx)
+
+	ifTrue := ctx.NewBlock()
+	out := node.Get(1).Output(ifTrue)
+	ifTrue.Output(result.SetVar(out))
+
+	var ifFalse code.Stmt
+	if child := node.Get(2); child != nil {
+		block := ctx.NewBlock()
+		out := child.Output(block)
+		block.Output(result.SetVar(out))
+		ifFalse = block.Block()
+	}
+
+	ctx.Output(code.NewIf(cond, ifTrue.Block(), ifFalse))
+	ctx.OutputExpr(result)
 }
 
 // TODO: (resolution) this should have precedence even over more specific bindings, we need a general mechanism for that
@@ -136,68 +157,4 @@ func (op ParseIf) Process(args *bit.BindArgs) {
 
 func (op ParseIf) String() string {
 	return "ParseIf"
-}
-
-type IfExpr struct {
-	Cond Code
-	If   Code
-	Else Code
-}
-
-func (expr IfExpr) Type() Type {
-	// TODO: this should be or of both types
-	return expr.If.Type()
-}
-
-func (expr IfExpr) Eval(rt *bit.RuntimeContext) {
-	cond := rt.Eval(expr.Cond)
-	if bit.IsError(cond) {
-		rt.Result = cond
-	} else if ToBool(cond) {
-		rt.Result = rt.Eval(expr.If)
-	} else {
-		rt.Result = rt.Eval(expr.Else)
-	}
-}
-
-func (val IfExpr) OutputCpp(ctx *bit.CppContext, node *Node) {
-	name := ctx.NewName("if_res")
-	ctx.IncludeSystem("stdbool.h")
-	ctx.Body.Decl.Push("%s %s;", val.Type().CppType(), name)
-
-	cond := bit.CppContext{}
-	cond.NewExpr(ctx)
-	val.Cond.OutputCpp(&cond)
-
-	// If
-
-	ctx.Body.Push("if (%s) {", cond.Expr.String())
-	expr_if := bit.CppContext{}
-	expr_if.NewBody(ctx)
-	val.If.OutputCpp(&expr_if)
-
-	ctx.Body.Indent()
-	expr_if.Body.AppendTo(&ctx.Body.CppLines)
-	ctx.Body.Push("%s = %s;", name, expr_if.Expr.String())
-	ctx.Body.Dedent()
-	ctx.Body.Push("}")
-
-	// Else
-
-	ctx.Body.Push("else {")
-	expr_else := bit.CppContext{}
-	expr_else.NewBody(ctx)
-	val.Else.OutputCpp(&expr_else)
-
-	ctx.Body.Indent()
-	expr_else.Body.AppendTo(&ctx.Body.CppLines)
-	ctx.Body.Push("%s = %s;", name, expr_else.Expr.String())
-	ctx.Body.Dedent()
-	ctx.Body.Push("}")
-
-	ctx.Expr.WriteString(name)
-}
-
-func (expr IfExpr) Repr(oneline bool) string {
-	return fmt.Sprintf("if %s: %s else: %s", expr.Cond.Repr(true), expr.If.Repr(true), expr.Else.Repr(true))
 }

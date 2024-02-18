@@ -1,6 +1,10 @@
 package bit
 
-import "fmt"
+import (
+	"fmt"
+
+	"axlab.dev/bit/code"
+)
 
 type Module struct {
 	Source *Source
@@ -29,6 +33,10 @@ func (mod Module) Repr(oneline bool) string {
 	return fmt.Sprintf("Module(%s)", mod.Source.Name())
 }
 
-func (mod Module) Output(ctx *CodeContext) Code {
-	return ctx.OutputChildren(ctx.Node)
+func (mod Module) Type(node *Node) code.Type {
+	return node.Last().Type()
+}
+
+func (mod Module) Output(code *code.OutputContext, node *Node) {
+	node.OutputChildren(code)
 }

@@ -1,4 +1,4 @@
-package core
+package bit_core
 
 type HasSpan interface {
 	Span() Span

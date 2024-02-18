@@ -4,24 +4,11 @@ import (
 	"fmt"
 	"strings"
 	"sync/atomic"
-	"unicode"
 	"unsafe"
 
 	"axlab.dev/bit/common"
 	"axlab.dev/bit/files"
 )
-
-func IsSpace(chr rune) bool {
-	return chr != '\n' && chr != '\r' && unicode.IsSpace(chr)
-}
-
-func IsDigit(chr rune) bool {
-	return '0' <= chr && chr <= '9'
-}
-
-func IsAlpha(chr rune) bool {
-	return 'A' <= chr && chr <= 'Z' || 'a' <= chr && chr <= 'z'
-}
 
 type Source struct {
 	name     string
@@ -246,12 +233,12 @@ func (span Span) DisplayText(maxChars int) string {
 		trimR = true
 	}
 
-	if trimmed := strings.TrimRightFunc(text, IsSpace); len(trimmed) != len(text) {
+	if trimmed := strings.TrimRightFunc(text, common.IsSpace); len(trimmed) != len(text) {
 		text = trimmed
 		trimR = true
 	}
 
-	if trimmed := strings.TrimLeftFunc(text, IsSpace); len(trimmed) != len(text) {
+	if trimmed := strings.TrimLeftFunc(text, common.IsSpace); len(trimmed) != len(text) {
 		text = trimmed
 		trimL = true
 	}
@@ -342,7 +329,7 @@ func (loc *Location) Advance(tabWidth uint32, text string) {
 			loc.ind = 0
 		} else {
 			wasCR = false
-			indenting := loc.col == loc.ind && IsSpace(chr)
+			indenting := loc.col == loc.ind && common.IsSpace(chr)
 			if chr == '\t' {
 				loc.col += tab - (loc.col % tab)
 			} else {
@@ -438,7 +425,7 @@ func (cur *Cursor) ReadAny(str ...string) string {
 }
 
 func (cur *Cursor) SkipSpaces() bool {
-	return cur.SkipWhile(IsSpace) > 0
+	return cur.SkipWhile(common.IsSpace) > 0
 }
 
 func (cur *Cursor) SkipWhile(cond func(rune) bool) int {

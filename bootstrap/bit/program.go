@@ -9,6 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"axlab.dev/bit/code"
 	"axlab.dev/bit/proc"
 )
 
@@ -29,15 +30,15 @@ type Program struct {
 	compiler *Compiler
 	config   ProgramConfig
 
-	lexer      *Lexer
-	source     *Source
-	tokens     []Token
-	allNodes   []*Node
-	modules    []*Node
-	mainNode   *Node
-	outputCode *Code
-	bindings   *BindingMap
-	names      *NameMap
+	lexer    *Lexer
+	source   *Source
+	tokens   []Token
+	allNodes []*Node
+	modules  []*Node
+	mainNode *Node
+	bindings *BindingMap
+	scope    *code.Scope
+	output   *code.Output
 
 	coreInit   atomic.Bool
 	compiling  atomic.Bool
@@ -61,9 +62,8 @@ func (program *Program) reset() {
 	program.allNodes = nil
 	program.modules = nil
 	program.mainNode = nil
-	program.outputCode = nil
-	program.names = &NameMap{}
-	program.names.root.nameMap = program.names
+	program.scope = code.NewScope(program)
+	program.output = nil
 
 	program.bindings = &BindingMap{
 		program: program,
@@ -173,9 +173,8 @@ func (program *Program) CompileSource(source *Source) {
 		}
 	}
 
-	code := program.CompileOutput()
-	program.outputCode = &code
-	program.writeOutput("code-output.txt", program.outputCode.Expr.Repr(false)+"\n", true)
+	program.CompileOutput()
+	program.writeOutput("code-output.txt", program.output.Repr(code.ReprDebug)+"\n", true)
 
 	if errFile := "errors.txt"; len(program.Errors) > 0 {
 		program.writeOutput(errFile, ErrorsToString(program.Errors, -1), true)
@@ -189,14 +188,28 @@ func (program *Program) CompileSource(source *Source) {
 	}
 }
 
-func (program *Program) generateCpp(outputDir, outputFile string) (mainPath string) {
-	ctx := NewCppContext(program)
-	ctx.Func.Decl = "int main(int argc, char *argv[])"
-	program.outputCode.OutputCpp(ctx)
-	ctx.Func.Body.Push("return 0;")
-	ctx.Func.AppendTo(ctx.File)
+func (program *Program) CompileOutput() {
+	node, valid := program.mainNode, program.Valid()
+	if !valid {
+		return
+	} else if node == nil {
+		panic("valid program must have a main node")
+	}
 
-	for name, text := range ctx.GetOutputFiles(outputFile) {
+	output := code.NewOutput(program.scope)
+	outputCtx := output.NewContext()
+	node.Output(outputCtx)
+	if errs := output.Errors(); len(errs) == 0 {
+		program.output = output
+	} else {
+		node.AddError("failed to output code for program")
+		program.AddErrors(errs...)
+	}
+}
+
+func (program *Program) generateCpp(outputDir, outputFile string) (mainPath string) {
+	cppFiles := program.output.OutputCpp(outputFile)
+	for name, text := range cppFiles {
 		program.writeOutput(path.Join(outputDir, name), text, false)
 	}
 
@@ -253,9 +266,17 @@ func (program *Program) loadSource(source *Source) *Node {
 
 func (program *Program) HandleError(err error) {
 	if err != nil {
-		program.errMutex.Lock()
-		defer program.errMutex.Unlock()
-		program.Errors = append(program.Errors, err)
+		program.AddErrors(err)
+	}
+}
+
+func (program *Program) AddErrors(errs ...error) {
+	program.errMutex.Lock()
+	defer program.errMutex.Unlock()
+	for _, it := range errs {
+		if it != nil {
+			program.Errors = append(program.Errors, it)
+		}
 	}
 }
 

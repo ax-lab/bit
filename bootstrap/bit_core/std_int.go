@@ -1,16 +1,13 @@
-package core
+package bit_core
 
 import (
 	"fmt"
 
 	"axlab.dev/bit/bit"
+	"axlab.dev/bit/code"
 )
 
 type Int int
-
-func (val Int) Type() Type {
-	return bit.IntType{}
-}
 
 func (val Int) IsEqual(other Key) bool {
 	if v, ok := other.(Int); ok {
@@ -31,24 +28,13 @@ func (val Int) Bind(node *Node) {
 	node.Bind(Int(0))
 }
 
-func (val Int) Output(ctx *bit.CodeContext) Code {
-	return Code{Expr: val}
+func (val Int) Type(node *Node) code.Type {
+	return code.IntType{}
 }
 
-func (val Int) Eval(rt *bit.RuntimeContext) {
-	rt.Result = val
-}
-
-func (val Int) OutputCpp(ctx *bit.CppContext, node *Node) {
-	ctx.Expr.WriteString(val.String())
-}
-
-func (val Int) OutputCppPrint(ctx *bit.CppContext, node *Node) {
-	ctx.IncludeSystem("stdio.h")
-	ctx.Body.EnsureBlank()
-	ctx.Body.Write(`printf("`)
-	ctx.Body.Write(val.String())
-	ctx.Body.Write(`");`)
+func (val Int) Output(ctx *code.OutputContext, node *Node) {
+	node.CheckEmpty(ctx)
+	ctx.OutputExpr(code.NewInt(int(val)))
 }
 
 type ParseInt struct{}

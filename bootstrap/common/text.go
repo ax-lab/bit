@@ -13,10 +13,6 @@ var (
 	TABS         = regexp.MustCompile(`^[\t]+`)
 )
 
-func IsSpace(chr rune) bool {
-	return chr != '\r' && chr != '\n' && unicode.IsSpace(chr)
-}
-
 func Trim(str string) string {
 	return strings.TrimFunc(str, IsSpace)
 }

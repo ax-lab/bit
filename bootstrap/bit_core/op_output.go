@@ -1,4 +1,4 @@
-package core
+package bit_core
 
 import "axlab.dev/bit/bit"
 

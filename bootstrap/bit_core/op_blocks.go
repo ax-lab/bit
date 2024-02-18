@@ -1,6 +1,9 @@
-package core
+package bit_core
 
-import "axlab.dev/bit/bit"
+import (
+	"axlab.dev/bit/bit"
+	"axlab.dev/bit/code"
+)
 
 type ParseBlocks struct{}
 
@@ -46,6 +49,10 @@ func (op ParseBlocks) String() string {
 
 type Block struct{}
 
+func (val Block) IsScope(node *Node) bool {
+	return true
+}
+
 func (val Block) IsEqual(other Key) bool {
 	if v, ok := other.(Block); ok {
 		return val == v
@@ -61,6 +68,10 @@ func (val Block) Bind(node *Node) {
 	node.Bind(Block{})
 }
 
-func (val Block) Output(ctx *bit.CodeContext) Code {
-	return ctx.OutputChildren(ctx.Node)
+func (val Block) Type(node *Node) code.Type {
+	return node.Last().Type()
+}
+
+func (val Block) Output(ctx *code.OutputContext, node *Node) {
+	node.OutputChildren(ctx)
 }

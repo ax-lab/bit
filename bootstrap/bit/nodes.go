@@ -6,6 +6,7 @@ import (
 	"strings"
 	"sync/atomic"
 
+	"axlab.dev/bit/code"
 	"axlab.dev/bit/common"
 )
 
@@ -29,7 +30,7 @@ type Node struct {
 	nodes  []*Node
 	parent *Node
 	index  int
-	scope  *Scope
+	scope  *code.Scope
 }
 
 var idCounter atomic.Int32
@@ -44,7 +45,13 @@ func (program *Program) NewNode(value Value, span Span) *Node {
 
 	if v, ok := value.(HasScope); ok {
 		if v.IsScope(node) {
-			node.scope = newScope(node)
+			parent := node.GetParentScope()
+			if parent == nil {
+				node.scope = code.NewScope(node)
+			} else {
+				span := node.Span()
+				node.scope = parent.NewChild(span.Sta(), span.End(), node)
+			}
 		}
 	}
 
@@ -361,4 +368,118 @@ func DebugNodes(msg string, nodes ...*Node) {
 		out.WriteString("  (no nodes)\n")
 	}
 	fmt.Println(out.String())
+}
+
+// Node values that can delimit a scope must implement this.
+type HasScope interface {
+	IsScope(node *Node) bool
+}
+
+func (node *Node) GetParentScope() *code.Scope {
+	if node == nil || node.Parent() == nil {
+		return nil
+	}
+	return node.Parent().GetScope()
+}
+
+func (node *Node) GetScope() *code.Scope {
+	cur, scope := node, node.scope
+	for scope == nil && cur.Parent() != nil {
+		cur = cur.Parent()
+		scope = cur.scope
+	}
+
+	if scope == nil {
+		panic(fmt.Sprintf("scope resolution returned nil for node `%s`", node.Describe()))
+	}
+
+	return scope
+}
+
+type HasOutput interface {
+	Type(node *Node) code.Type
+	Output(ctx *code.OutputContext, node *Node)
+}
+
+func (node *Node) Type() code.Type {
+	if node != nil {
+		if v, ok := node.Value().(HasOutput); ok {
+			return v.Type(node)
+		}
+		return code.InvalidType()
+	}
+	return code.VoidType()
+}
+
+func (node *Node) Output(ctx *code.OutputContext) code.Expr {
+	if !ctx.Valid() {
+		return nil
+	}
+	if v, ok := node.value.(HasOutput); ok {
+		if node.scope != nil {
+			v.Output(ctx.WithScope(node.scope), node)
+		} else {
+			v.Output(ctx, node)
+		}
+	} else {
+		err := node.span.CreateError("cannot output node `%s`", node.Describe())
+		ctx.Error(err)
+	}
+	return ctx.LastExpr()
+}
+
+func (node *Node) CreateError(msg string, args ...any) error {
+	return node.span.CreateError(msg, args)
+}
+
+func (node *Node) OutputError(ctx *code.OutputContext, msg string, args ...any) {
+	err := node.CreateError(msg, args...)
+	ctx.Error(err)
+}
+
+func (node *Node) OutputChildren(ctx *code.OutputContext) (out []code.Expr) {
+	for _, it := range node.Nodes() {
+		if expr := it.Output(ctx); expr != nil {
+			out = append(out, expr)
+		}
+		if !ctx.Valid() {
+			break
+		}
+	}
+	return
+}
+
+func (node *Node) CheckEmpty(ctx *code.OutputContext) bool {
+	return node.CheckArity(ctx, 0)
+}
+
+func (node *Node) CheckArity(ctx *code.OutputContext, n int) bool {
+	if node.Len() != n {
+		node.OutputError(ctx, "node `%s` should have arity %d", node.Describe(), n)
+		return false
+	}
+	return true
+}
+
+func (node *Node) CheckRange(ctx *code.OutputContext, a, b int) bool {
+	if len := node.Len(); len < a || b < len {
+		node.OutputError(ctx, "node `%s` should have arity between %d and %d", node.Describe(), a, b)
+		return false
+	}
+	return true
+}
+
+func (node *Node) OutputChild(ctx *code.OutputContext, allowEmpty bool) code.Expr {
+	list := node.Nodes()
+	switch len(list) {
+	case 0:
+		if !allowEmpty {
+			node.OutputError(ctx, "node `%s` cannot be empty", node.Describe())
+		}
+	case 1:
+		return list[0].Output(ctx)
+	default:
+		node.OutputError(ctx, "node `%s` cannot have multiple children", node.Describe())
+	}
+	return nil
 }

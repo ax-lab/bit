@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"axlab.dev/bit/code"
 	"axlab.dev/bit/common"
 	"axlab.dev/bit/files"
 	"axlab.dev/bit/proc"
@@ -67,7 +68,30 @@ type RunOptions struct {
 type RunResult struct {
 	Err   error
 	Log   []error
-	Value Result
+	Value code.Value
+}
+
+func (res RunResult) Repr() string {
+	return ResultRepr(res.Value, res.Err)
+}
+
+func ResultRepr(val code.Value, err error) string {
+	res := strings.Builder{}
+	if err != nil {
+		res.WriteString("Error = ")
+		res.WriteString(err.Error())
+		res.WriteString("\n")
+	}
+
+	if val != nil {
+		res.WriteString("Value = ")
+		res.WriteString(val.String())
+		res.WriteString("\n")
+	} else if err == nil {
+		res.WriteString("Value = (none)\n")
+	}
+
+	return res.String()
 }
 
 func NewCompiler(ctx context.Context, inputPath, buildPath string) *Compiler {
@@ -127,24 +151,14 @@ func (comp *Compiler) Run(file string, options RunOptions) (out RunResult) {
 
 		out.Err = err
 	} else {
-		rt := NewRuntime(program.mainNode)
-
+		rt := code.NewRuntime()
 		if options.StdOut != nil {
 			rt.StdOut = options.StdOut
 		}
 		if options.StdErr != nil {
 			rt.StdErr = options.StdErr
 		}
-
-		out.Value = rt.Eval(*program.outputCode)
-		if out.Value != nil {
-			program.writeOutput("result.txt", ResultRepr(out.Value), true)
-		}
-
-		if err := GetResultError(out.Value); err != nil {
-			out.Err = err
-			out.Value = nil
-		}
+		program.writeOutput("result.txt", out.Repr(), true)
 	}
 
 	return
@@ -299,18 +313,29 @@ func (program *Program) QueueCompile() (wait chan struct{}) {
 				const resultFile = "result.txt"
 				if program.Valid() {
 					common.Out("... Running program...\n")
-					rt := NewRuntime(program.mainNode)
+					rt := code.NewRuntime()
 
 					out := strings.Builder{}
 					err := strings.Builder{}
 					rt.StdOut = &out
 					rt.StdErr = &err
-					result := rt.Eval(*program.outputCode)
+
+					val, rtErr := program.output.Eval(rt)
 
 					res := strings.Builder{}
-					res.WriteString("Result = ")
-					res.WriteString(ResultRepr(result))
-					res.WriteString("\n")
+					if rtErr != nil {
+						res.WriteString("Error = ")
+						res.WriteString(rtErr.Error())
+						res.WriteString("\n")
+					}
+
+					if val != nil {
+						res.WriteString("Result = ")
+						res.WriteString(val.String())
+						res.WriteString("\n")
+					} else if rtErr == nil {
+						res.WriteString("Result = (none)\n")
+					}
 
 					if out.Len() > 0 {
 						txt := out.String()

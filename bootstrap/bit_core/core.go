@@ -1,13 +1,17 @@
-package core
+package bit_core
 
-import "axlab.dev/bit/bit"
+import (
+	"axlab.dev/bit/bit"
+	"axlab.dev/bit/code"
+)
 
-type Code = bit.Code
+// TODO: move span and sources to a common library to enable interop with code
+
 type Key = bit.Key
 type Node = bit.Node
 type Span = bit.Span
 type Symbol = bit.Symbol
-type Type = bit.Type
+type Type = code.Type
 type Value = bit.Value
 type Word = bit.Word
 
@@ -52,3 +56,19 @@ func InitCompiler(program *bit.Program) {
 func outputAll(program *bit.Program, key Key) {
 	program.DeclareGlobal(key, Output{})
 }
+
+func init() {
+	assertCode[bit.Module]()
+	assertCode[Block]()
+	assertCode[Group]()
+	assertCode[Line]()
+	assertCode[Var]()
+	assertCode[Let]()
+	assertCode[Bool]()
+	assertCode[Int]()
+	assertCode[Str]()
+	assertCode[Print]()
+	assertCode[If]()
+}
+
+func assertCode[T bit.HasOutput]() {}
