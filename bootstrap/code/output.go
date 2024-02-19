@@ -7,10 +7,11 @@ type Output struct {
 	main   *Block
 }
 
-func NewOutput(scope *Scope) *Output {
-	return &Output{
+func NewOutput(scope *Scope, typ Type, source any) *Output {
+	out := &Output{
 		main: NewBlockWithScope(scope),
 	}
+	return out
 }
 
 func (output *Output) NewContext() *OutputContext {
@@ -41,13 +42,15 @@ func (output *Output) Repr(repr Repr) string {
 
 func (output *Output) OutputCpp(mainFile string) map[string]string {
 	ctx := NewCppContext()
+
+	// TODO: improve or simplify name allocation?
+	output.main.Scope().ProcessNames()
+	output.main.OutputCpp(ctx)
 	return ctx.GetOutputFiles(mainFile)
 }
 
 type OutputContext struct {
-	expr Expr
-	main *Block
-
+	main   *Block
 	source *Output
 }
 
@@ -82,22 +85,14 @@ func (ctx *OutputContext) Error(err error) {
 	ctx.source.errors = append(ctx.source.errors, err)
 }
 
-func (ctx *OutputContext) OutputExpr(expr Expr) {
-	ctx.expr = expr
-}
-
 func (ctx *OutputContext) Output(stmt ...Stmt) {
-	ctx.main.Body = append(ctx.main.Body, stmt...)
+	for _, it := range stmt {
+		if it != nil {
+			ctx.main.Body = append(ctx.main.Body, it)
+		}
+	}
 }
 
-func (ctx *OutputContext) LastExpr() Expr {
-	return ctx.expr
-}
-
-func (ctx *OutputContext) Body() []Stmt {
-	return ctx.main.Body
-}
-
-func (ctx *OutputContext) Block() *Block {
+func (ctx *OutputContext) Block() Stmt {
 	return ctx.main
 }

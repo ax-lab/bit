@@ -41,6 +41,9 @@ func (t Type) String() string {
 }
 
 func (t Type) CppType() string {
+	if t.typeData == nil {
+		return "!nil!"
+	}
 	return t.Impl.CppType()
 }
 

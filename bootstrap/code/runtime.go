@@ -24,8 +24,8 @@ func NewRuntime() *Runtime {
 	}
 }
 
-func (rt *Runtime) SlotIndex(slot int) int {
-	return len(rt.Stack) - slot - 1
+func (rt *Runtime) slotIndex(v *varSlot) int {
+	return v.decl.rtOffset + v.index
 }
 
 func (rt *Runtime) Out(txt string, args ...any) {

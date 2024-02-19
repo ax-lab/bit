@@ -32,9 +32,9 @@ func (val Int) Type(node *Node) code.Type {
 	return code.IntType()
 }
 
-func (val Int) Output(ctx *code.OutputContext, node *Node) {
+func (val Int) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
 	node.CheckEmpty(ctx)
-	ctx.OutputExpr(code.NewInt(int(val)))
+	ctx.Output(ans.SetVar(code.NewInt(int(val))))
 }
 
 type ParseInt struct{}

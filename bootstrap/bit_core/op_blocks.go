@@ -72,6 +72,6 @@ func (val Block) Type(node *Node) code.Type {
 	return node.Last().Type()
 }
 
-func (val Block) Output(ctx *code.OutputContext, node *Node) {
-	node.OutputChildren(ctx)
+func (val Block) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+	node.OutputChildren(ctx, ans)
 }

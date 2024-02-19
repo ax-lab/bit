@@ -32,9 +32,9 @@ func (val Str) Type(node *Node) code.Type {
 	return code.StrType()
 }
 
-func (val Str) Output(ctx *code.OutputContext, node *Node) {
+func (val Str) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
 	node.CheckEmpty(ctx)
-	ctx.OutputExpr(code.NewStr(string(val)))
+	ctx.Output(ans.SetVar(code.NewStr(string(val))))
 }
 
 type ParseString struct{}

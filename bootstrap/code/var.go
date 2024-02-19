@@ -26,7 +26,7 @@ func (v *Variable) Type() Type {
 }
 
 func (v *Variable) Eval(rt *Runtime) (Value, error) {
-	index := rt.SlotIndex(v.slot.index)
+	index := rt.slotIndex(v.slot)
 	return rt.Stack[index], nil
 }
 
@@ -48,7 +48,7 @@ func (v *Variable) Name() string {
 
 func (v *Variable) OutputName() string {
 	if v.processed == "" {
-		panic("variable output name not processed")
+		panic(fmt.Sprintf("variable `%s` output name not processed", v.Name()))
 	}
 	return v.processed
 }
@@ -60,6 +60,9 @@ func (v *Variable) CheckBound() {
 }
 
 func (v *Variable) SetVar(expr Expr) *SetVar {
+	if v == nil {
+		return nil
+	}
 	return &SetVar{variable: v, Expr: expr}
 }
 
@@ -70,12 +73,18 @@ type SetVar struct {
 }
 
 func (v *SetVar) Exec(rt *Runtime) (err error) {
-	index := rt.SlotIndex(v.variable.slot.index)
+	if v == nil {
+		return nil
+	}
+	index := rt.slotIndex(v.variable.slot)
 	rt.Stack[index], err = v.Expr.Eval(rt)
 	return err
 }
 
 func (v *SetVar) OutputCpp(ctx *CppContext) {
+	if v == nil {
+		return
+	}
 	ctx.Body.WriteFmt("%s = ", v.variable.OutputName())
 	v.Expr.OutputCpp(ctx)
 	ctx.Body.Write(";")
@@ -83,5 +92,8 @@ func (v *SetVar) OutputCpp(ctx *CppContext) {
 }
 
 func (v *SetVar) Repr(mode Repr) string {
+	if v == nil {
+		return "(nil) = (nil)"
+	}
 	return fmt.Sprintf("%s = %s", v.variable.Name(), v.Expr.Repr(mode))
 }

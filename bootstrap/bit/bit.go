@@ -158,6 +158,7 @@ func (comp *Compiler) Run(file string, options RunOptions) (out RunResult) {
 		if options.StdErr != nil {
 			rt.StdErr = options.StdErr
 		}
+		out.Value, out.Err = program.output.Eval(rt)
 		program.writeOutput("result.txt", out.Repr(), true)
 	}
 

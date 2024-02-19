@@ -11,6 +11,15 @@ type Decl struct {
 	scope *Scope
 	mutex sync.Mutex
 	slots []*varSlot
+
+	/*
+		TODO: this is a hack to allow indexing variables from upper scopes
+
+		Since nested scopes are static, we can probably just compute an absolute
+		offset for each variable from the stack. This would be non-reentrant,
+		but functions should have their own stack anyway.
+	*/
+	rtOffset int
 }
 
 func NewDecl(scope *Scope) *Decl {
@@ -37,6 +46,7 @@ func (decl *Decl) Add(v *Variable) {
 
 func (decl *Decl) Init(rt *Runtime) {
 	if new := len(decl.slots); new > 0 {
+		decl.rtOffset = len(rt.Stack)
 		newLen := len(rt.Stack) + new
 		rt.Stack = slices.Grow(rt.Stack, new)
 		rt.Stack = rt.Stack[:newLen]

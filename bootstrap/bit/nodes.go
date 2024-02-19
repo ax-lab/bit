@@ -47,11 +47,10 @@ func (program *Program) NewNode(value Value, span Span) *Node {
 		if v.IsScope(node) {
 			parent := node.GetParentScope()
 			if parent == nil {
-				node.scope = code.NewScope(node)
-			} else {
-				span := node.Span()
-				node.scope = parent.NewChild(span.Sta(), span.End(), node)
+				parent = program.scope
 			}
+			span := node.Span()
+			node.scope = parent.NewChild(span.Sta(), span.End(), node)
 		}
 	}
 
@@ -398,7 +397,9 @@ func (node *Node) GetScope() *code.Scope {
 
 type HasOutput interface {
 	Type(node *Node) code.Type
-	Output(ctx *code.OutputContext, node *Node)
+
+	// TODO: review output model
+	Output(ctx *code.OutputContext, node *Node, ans *code.Variable)
 }
 
 func (node *Node) Type() code.Type {
@@ -411,23 +412,22 @@ func (node *Node) Type() code.Type {
 	return code.VoidType()
 }
 
-func (node *Node) Output(ctx *code.OutputContext) code.Expr {
+func (node *Node) Output(ctx *code.OutputContext, ans *code.Variable) {
 	if !ctx.Valid() {
-		return nil
+		return
 	}
 	if v, ok := node.value.(HasOutput); ok {
 		if node.scope != nil {
 			inner := ctx.NewScope(node.scope)
-			v.Output(inner, node)
+			v.Output(inner, node, ans)
 			ctx.Output(inner.Block())
 		} else {
-			v.Output(ctx, node)
+			v.Output(ctx, node, ans)
 		}
 	} else {
 		err := node.span.CreateError("cannot output node `%s`", node.Describe())
 		ctx.Error(err)
 	}
-	return ctx.LastExpr()
 }
 
 func (node *Node) CreateError(msg string, args ...any) error {
@@ -437,18 +437,6 @@ func (node *Node) CreateError(msg string, args ...any) error {
 func (node *Node) OutputError(ctx *code.OutputContext, msg string, args ...any) {
 	err := node.CreateError(msg, args...)
 	ctx.Error(err)
-}
-
-func (node *Node) OutputChildren(ctx *code.OutputContext) (out []code.Expr) {
-	for _, it := range node.Nodes() {
-		if expr := it.Output(ctx); expr != nil {
-			out = append(out, expr)
-		}
-		if !ctx.Valid() {
-			break
-		}
-	}
-	return
 }
 
 func (node *Node) CheckEmpty(ctx *code.OutputContext) bool {
@@ -471,7 +459,22 @@ func (node *Node) CheckRange(ctx *code.OutputContext, a, b int) bool {
 	return true
 }
 
-func (node *Node) OutputChild(ctx *code.OutputContext, allowEmpty bool) code.Expr {
+func (node *Node) OutputChildren(ctx *code.OutputContext, ans *code.Variable) {
+	nodes := node.Nodes()
+	for n, it := range nodes {
+		if n == len(nodes)-1 {
+			it.Output(ctx, ans)
+		} else {
+			it.Output(ctx, nil)
+		}
+		if !ctx.Valid() {
+			break
+		}
+	}
+}
+
+// TODO: figure out allowEmpty and void values
+func (node *Node) OutputChild(ctx *code.OutputContext, ans *code.Variable, allowEmpty bool) {
 	list := node.Nodes()
 	switch len(list) {
 	case 0:
@@ -479,9 +482,8 @@ func (node *Node) OutputChild(ctx *code.OutputContext, allowEmpty bool) code.Exp
 			node.OutputError(ctx, "node `%s` cannot be empty", node.Describe())
 		}
 	case 1:
-		return list[0].Output(ctx)
+		list[0].Output(ctx, ans)
 	default:
 		node.OutputError(ctx, "node `%s` cannot have multiple children", node.Describe())
 	}
-	return nil
 }

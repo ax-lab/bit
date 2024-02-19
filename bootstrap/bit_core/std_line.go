@@ -26,6 +26,6 @@ func (val Line) Type(node *Node) code.Type {
 	return node.Get(0).Type()
 }
 
-func (val Line) Output(ctx *code.OutputContext, node *Node) {
-	node.OutputChild(ctx, true)
+func (val Line) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+	node.OutputChild(ctx, ans, true)
 }

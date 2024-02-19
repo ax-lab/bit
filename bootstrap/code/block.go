@@ -11,7 +11,6 @@ type Block struct {
 	Id
 	Decl    *Decl
 	Body    []Stmt
-	Expr    Expr
 	OwnDecl bool
 }
 
@@ -30,39 +29,36 @@ func (blk *Block) Scope() *Scope {
 	return blk.Decl.scope
 }
 
-func (blk *Block) Eval(rt *Runtime) (Value, error) {
+func (blk *Block) Eval(rt *Runtime) (out Value, err error) {
 	if blk.OwnDecl {
 		blk.Decl.Init(rt)
 		defer blk.Decl.Drop(rt)
 	}
 
-	if err := blk.Exec(rt); err != nil {
-		return nil, err
+	for _, it := range blk.Body {
+		if err := it.Exec(rt); err != nil {
+			return nil, err
+		}
 	}
 
-	if blk.Expr != nil {
-		return blk.Expr.Eval(rt)
+	// TODO: have a better way to return the result from a block
+	if blk.OwnDecl && blk.Decl.Len() > 0 {
+		out = rt.Stack[blk.Decl.rtOffset]
 	}
-
-	return nil, nil
+	return out, nil
 }
 
 func (blk *Block) Exec(rt *Runtime) error {
-	if blk.OwnDecl {
-		blk.Decl.Init(rt)
-		defer blk.Decl.Drop(rt)
-	}
-	for _, it := range blk.Body {
-		if err := it.Exec(rt); err != nil {
-			return err
-		}
-	}
-	return nil
+	_, err := blk.Eval(rt)
+	return err
 }
 
 func (blk *Block) OutputCpp(ctx *CppContext) {
 	ctx.Body.Push("{")
 	ctx.Body.Indent()
+	if blk.OwnDecl {
+		blk.Decl.OutputCpp(ctx)
+	}
 	for _, it := range blk.Body {
 		ctx.Body.EnsureBlank()
 		it.OutputCpp(ctx)

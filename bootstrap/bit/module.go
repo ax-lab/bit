@@ -37,6 +37,6 @@ func (mod Module) Type(node *Node) code.Type {
 	return node.Last().Type()
 }
 
-func (mod Module) Output(code *code.OutputContext, node *Node) {
-	node.OutputChildren(code)
+func (mod Module) Output(code *code.OutputContext, node *Node, ans *code.Variable) {
+	node.OutputChildren(code, ans)
 }

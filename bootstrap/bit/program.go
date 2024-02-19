@@ -196,9 +196,14 @@ func (program *Program) CompileOutput() {
 		panic("valid program must have a main node")
 	}
 
-	output := code.NewOutput(program.scope)
+	output := code.NewOutput(program.scope, node.Type(), node)
 	outputCtx := output.NewContext()
-	node.Output(outputCtx)
+
+	// TODO: this is a hack to get the value out, fix this
+	ans := outputCtx.TempVar("result", node.Type(), node)
+	node.Output(outputCtx, ans)
+	ans.SetType(node.Type())
+
 	if errs := output.Errors(); len(errs) == 0 {
 		program.output = output
 	} else {

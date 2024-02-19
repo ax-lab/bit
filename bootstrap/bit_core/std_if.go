@@ -35,28 +35,25 @@ func (val If) Type(node *Node) Type {
 	}
 }
 
-func (val If) Output(ctx *code.OutputContext, node *Node) {
+func (val If) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
 	if !node.CheckRange(ctx, 2, 3) {
 		return
 	}
 
-	result := ctx.TempVar("if", val.Type(node), node)
-	cond := node.Get(0).Output(ctx)
+	cond := ctx.TempVar("if_cond", code.BoolType(), node.Get(0))
+	node.Get(0).Output(ctx, cond)
 
 	ifTrue := ctx.NewBlock()
-	out := node.Get(1).Output(ifTrue)
-	ifTrue.Output(result.SetVar(out))
+	node.Get(1).Output(ifTrue, ans)
 
-	var ifFalse code.Stmt
+	var elseStmt code.Stmt
 	if child := node.Get(2); child != nil {
-		block := ctx.NewBlock()
-		out := child.Output(block)
-		block.Output(result.SetVar(out))
-		ifFalse = block.Block()
+		ifFalse := ctx.NewBlock()
+		child.Output(ifFalse, ans)
+		elseStmt = ifFalse.Block()
 	}
 
-	ctx.Output(code.NewIf(cond, ifTrue.Block(), ifFalse))
-	ctx.OutputExpr(result)
+	ctx.Output(code.NewIf(cond, ifTrue.Block(), elseStmt))
 }
 
 // TODO: (resolution) this should have precedence even over more specific bindings, we need a general mechanism for that

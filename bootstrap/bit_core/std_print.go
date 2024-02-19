@@ -26,10 +26,22 @@ func (val Print) Type(node *Node) code.Type {
 	return node.Last().Type()
 }
 
-func (val Print) Output(ctx *code.OutputContext, node *Node) {
-	args := node.OutputChildren(ctx)
-	code := code.NewPrint(args...)
+func (val Print) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+	var vars []code.Expr
+	block := ctx.NewBlock()
+	for _, it := range node.Nodes() {
+		v := block.TempVar("p_arg", it.Type(), it)
+		vars = append(vars, v)
+		it.Output(block, v)
+	}
+
+	ctx.Output(block.Block())
+
+	code := code.NewPrint(vars...)
 	ctx.Output(code)
+	if len(vars) > 0 {
+		ctx.Output(ans.SetVar(vars[len(vars)-1]))
+	}
 }
 
 type ParsePrint struct{}

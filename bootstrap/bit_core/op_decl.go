@@ -33,10 +33,10 @@ func (val Var) Type(node *Node) Type {
 	return val.Var.Type()
 }
 
-func (val Var) Output(ctx *code.OutputContext, node *Node) {
+func (val Var) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
 	node.CheckEmpty(ctx)
 	val.Var.CheckBound()
-	ctx.OutputExpr(val.Var)
+	ctx.Output(ans.SetVar(val.Var))
 }
 
 type BindVar struct {
@@ -90,11 +90,12 @@ func (val Let) Type(node *Node) Type {
 	return val.Var.Type()
 }
 
-func (val Let) Output(ctx *code.OutputContext, node *Node) {
-	expr := node.OutputChild(ctx, false)
+func (val Let) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
 	decl := ctx.GetDecl()
 	decl.Add(val.Var)
-	ctx.Output(val.Var.SetVar(expr))
+	val.Var.SetType(node.Get(0).Type())
+	node.OutputChild(ctx, val.Var, false)
+	ctx.Output(ans.SetVar(val.Var))
 }
 
 type ParseLet struct{}

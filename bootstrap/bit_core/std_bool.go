@@ -36,9 +36,9 @@ func (val Bool) Type(node *Node) code.Type {
 	return code.BoolType()
 }
 
-func (val Bool) Output(ctx *code.OutputContext, node *Node) {
+func (val Bool) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
 	node.CheckEmpty(ctx)
-	ctx.OutputExpr(code.NewBool(bool(val)))
+	ctx.Output(ans.SetVar(code.NewBool(bool(val))))
 }
 
 type ParseBool struct{}
