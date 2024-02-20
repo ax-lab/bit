@@ -30,10 +30,6 @@ const (
 	PrecLast
 )
 
-type Source = common.Source
-type Span = common.Span
-type Cursor = common.Cursor
-
 const (
 	debugQueue = false
 )
@@ -55,7 +51,7 @@ type Compiler struct {
 
 	sourceFileMutex sync.Mutex
 	sourceFileMap   map[string]*struct {
-		src *Source
+		src *common.Source
 		err error
 	}
 }

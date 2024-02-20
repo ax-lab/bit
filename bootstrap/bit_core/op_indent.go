@@ -1,6 +1,9 @@
 package bit_core
 
-import "axlab.dev/bit/bit"
+import (
+	"axlab.dev/bit/bit"
+	"axlab.dev/bit/common"
+)
 
 type Indented struct{}
 
@@ -17,7 +20,7 @@ func (val Indented) IsEqual(other any) bool {
 
 type IndentedGroup struct{}
 
-func (val IndentedGroup) Bind(node *Node) {
+func (val IndentedGroup) Bind(node *bit.Node) {
 	node.Bind(IndentedGroup{})
 }
 
@@ -76,10 +79,10 @@ func (op ParseIndent) Process(args *bit.BindArgs) {
 			pos := nodes[sta].Index()
 
 			list := par.RemoveRange(nodes[sta], nodes[end])
-			block := args.Program.NewNode(IndentedGroup{}, SpanFromSlice(list[1:]))
+			block := args.Program.NewNode(IndentedGroup{}, common.SpanFromSlice(list[1:]))
 			block.AddChildren(list[1:]...)
 
-			group := args.Program.NewNode(Group{}, SpanFromRange(list[0], block))
+			group := args.Program.NewNode(Group{}, common.SpanFromRange(list[0], block))
 			group.AddChildren(list[0], block)
 
 			par.InsertNodes(pos, group)

@@ -3,6 +3,7 @@ package bit_core
 import (
 	"axlab.dev/bit/bit"
 	"axlab.dev/bit/code"
+	"axlab.dev/bit/common"
 )
 
 type If struct{}
@@ -18,11 +19,11 @@ func (val If) Repr(oneline bool) string {
 	return "If"
 }
 
-func (val If) Bind(node *Node) {
+func (val If) Bind(node *bit.Node) {
 	node.Bind(If{})
 }
 
-func (val If) Type(node *Node) Type {
+func (val If) Type(node *bit.Node) code.Type {
 	switch node.Len() {
 	case 0, 1:
 		return code.InvalidType()
@@ -35,7 +36,7 @@ func (val If) Type(node *Node) Type {
 	}
 }
 
-func (val If) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+func (val If) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	if !node.CheckRange(ctx, 2, 3) {
 		return
 	}
@@ -79,12 +80,12 @@ func (op ParseIf) Process(args *bit.BindArgs) {
 			continue
 		}
 
-		makeNode := func(node *Node) *Node {
+		makeNode := func(node *bit.Node) *bit.Node {
 			if node != nil {
 				return node
 			}
 			src := par.RemoveNodes(idx, par.Len())
-			node = args.Program.NewNode(If{}, SpanFromSlice(src))
+			node = args.Program.NewNode(If{}, common.SpanFromSlice(src))
 			par.InsertNodes(idx, node)
 			return node
 		}
@@ -94,8 +95,8 @@ func (op ParseIf) Process(args *bit.BindArgs) {
 
 		// parse an inline else
 		var (
-			node     *Node
-			elseNode *Node
+			node     *bit.Node
+			elseNode *bit.Node
 		)
 		if split := WordIndex(list, "else"); split >= 0 {
 			node = makeNode(node)
@@ -106,7 +107,7 @@ func (op ParseIf) Process(args *bit.BindArgs) {
 				list[split].AddError("if..else branch cannot be empty")
 				continue
 			}
-			elseNode = args.Program.NewNode(Group{}, SpanFromSlice(rest)).WithChildren(rest...)
+			elseNode = args.Program.NewNode(Group{}, common.SpanFromSlice(rest)).WithChildren(rest...)
 		}
 
 		// parse an if : block
@@ -115,7 +116,7 @@ func (op ParseIf) Process(args *bit.BindArgs) {
 			node = makeNode(node)
 			expr, body := list[:len(list)-1], list[len(list)-1]
 			node.AddChildren(
-				args.Program.NewNode(Group{}, SpanFromSlice(expr)).WithChildren(expr...),
+				args.Program.NewNode(Group{}, common.SpanFromSlice(expr)).WithChildren(expr...),
 				body,
 			)
 		} else if split := SymbolIndex(list, ":"); split >= 0 {
@@ -129,8 +130,8 @@ func (op ParseIf) Process(args *bit.BindArgs) {
 			}
 
 			node.AddChildren(
-				args.Program.NewNode(Group{}, SpanFromSlice(expr)).WithChildren(expr...),
-				args.Program.NewNode(Group{}, SpanFromSlice(body)).WithChildren(body...),
+				args.Program.NewNode(Group{}, common.SpanFromSlice(expr)).WithChildren(expr...),
+				args.Program.NewNode(Group{}, common.SpanFromSlice(body)).WithChildren(body...),
 			)
 		} else {
 			it.Undo()
@@ -142,7 +143,7 @@ func (op ParseIf) Process(args *bit.BindArgs) {
 				next.FlagDone()
 				parent := next.Parent()
 				children := parent.RemoveNodes(next.Index(), parent.Len())[1:]
-				elseNode = args.Program.NewNode(Group{}, SpanFromSlice(children)).WithChildren(children...)
+				elseNode = args.Program.NewNode(Group{}, common.SpanFromSlice(children)).WithChildren(children...)
 			}
 		}
 

@@ -49,7 +49,7 @@ func (op ParseBlocks) String() string {
 
 type Block struct{}
 
-func (val Block) IsScope(node *Node) bool {
+func (val Block) IsScope(node *bit.Node) bool {
 	return true
 }
 
@@ -64,14 +64,14 @@ func (val Block) Repr(oneline bool) string {
 	return "Block"
 }
 
-func (val Block) Bind(node *Node) {
+func (val Block) Bind(node *bit.Node) {
 	node.Bind(Block{})
 }
 
-func (val Block) Type(node *Node) code.Type {
+func (val Block) Type(node *bit.Node) code.Type {
 	return node.Last().Type()
 }
 
-func (val Block) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+func (val Block) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	node.OutputChildren(ctx, ans)
 }

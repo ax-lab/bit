@@ -7,7 +7,7 @@ import (
 )
 
 type NodeReplacer interface {
-	Get(node *Node) (Value, error)
+	Get(node *bit.Node) (bit.Value, error)
 }
 
 type Replace struct {

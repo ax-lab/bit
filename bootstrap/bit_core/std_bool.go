@@ -28,22 +28,22 @@ func (val Bool) Repr(oneline bool) string {
 	return fmt.Sprintf("Bool(%s)", val.String())
 }
 
-func (val Bool) Bind(node *Node) {
+func (val Bool) Bind(node *bit.Node) {
 	node.Bind(Bool(false))
 }
 
-func (val Bool) Type(node *Node) code.Type {
+func (val Bool) Type(node *bit.Node) code.Type {
 	return code.BoolType()
 }
 
-func (val Bool) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+func (val Bool) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	node.CheckEmpty(ctx)
 	ctx.Output(ans.SetVar(code.NewBool(bool(val))))
 }
 
 type ParseBool struct{}
 
-func (ParseBool) Get(node *Node) (Value, error) {
+func (ParseBool) Get(node *bit.Node) (bit.Value, error) {
 	if tok, ok := node.Value().(bit.TokenType); ok && tok == bit.TokenWord {
 		switch node.Text() {
 		case "true":

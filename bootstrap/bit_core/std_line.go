@@ -1,12 +1,13 @@
 package bit_core
 
 import (
+	"axlab.dev/bit/bit"
 	"axlab.dev/bit/code"
 )
 
 type Line struct{}
 
-func (val Line) Bind(node *Node) {
+func (val Line) Bind(node *bit.Node) {
 	node.Bind(Line{})
 	node.Bind(Indented{})
 }
@@ -22,10 +23,10 @@ func (val Line) IsEqual(other any) bool {
 	return false
 }
 
-func (val Line) Type(node *Node) code.Type {
+func (val Line) Type(node *bit.Node) code.Type {
 	return node.Get(0).Type()
 }
 
-func (val Line) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+func (val Line) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	node.OutputChild(ctx, ans, true)
 }

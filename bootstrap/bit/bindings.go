@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+
+	"axlab.dev/bit/common"
 )
 
 var (
@@ -25,7 +27,7 @@ type BindingMap struct {
 
 	globalMutex   sync.Mutex
 	globals       map[Key]Binding
-	globalSources map[*Source]bool
+	globalSources map[*common.Source]bool
 }
 
 func (segs *BindingMap) StepNext() bool {
@@ -82,12 +84,12 @@ func (segs *BindingMap) AddNodes(key Key, nodes ...*Node) {
 	}
 }
 
-func (segs *BindingMap) InitSource(src *Source) {
+func (segs *BindingMap) InitSource(src *common.Source) {
 	segs.globalMutex.Lock()
 	defer segs.globalMutex.Unlock()
 
 	if segs.globalSources == nil {
-		segs.globalSources = make(map[*Source]bool)
+		segs.globalSources = make(map[*common.Source]bool)
 	}
 	if !segs.globalSources[src] {
 		segs.globalSources[src] = true
@@ -110,15 +112,15 @@ func (segs *BindingMap) BindGlobal(key Key, binding Binding) {
 	}
 }
 
-func (segs *BindingMap) BindStatic(key Key, src *Source, binding Binding) {
+func (segs *BindingMap) BindStatic(key Key, src *common.Source, binding Binding) {
 	segs.Bind(key, src.Span(), binding)
 }
 
-func (segs *BindingMap) Bind(key Key, span Span, binding Binding) {
+func (segs *BindingMap) Bind(key Key, span common.Span, binding Binding) {
 	segs.doBindSpan(key, span, binding, false)
 }
 
-func (segs *BindingMap) BindAt(key Key, sta, end int, src *Source, binding Binding) {
+func (segs *BindingMap) BindAt(key Key, sta, end int, src *common.Source, binding Binding) {
 	segs.doBind(key, sta, end, src, binding, false)
 }
 
@@ -141,7 +143,7 @@ func (segs *BindingMap) Dump() string {
 
 		byKey := segs.byKey[key]
 
-		var sources []*Source
+		var sources []*common.Source
 		for src := range byKey.bySource {
 			sources = append(sources, src)
 		}
@@ -195,12 +197,12 @@ func (segs *BindingMap) Dump() string {
 	return out.String()
 }
 
-func (segs *BindingMap) doBindSpan(key Key, span Span, binding Binding, global bool) {
+func (segs *BindingMap) doBindSpan(key Key, span common.Span, binding Binding, global bool) {
 	sta, end, src := span.Sta(), span.End(), span.Source()
 	segs.doBind(key, sta, end, src, binding, global)
 }
 
-func (segs *BindingMap) doBind(key Key, sta, end int, src *Source, binding Binding, global bool) {
+func (segs *BindingMap) doBind(key Key, sta, end int, src *common.Source, binding Binding, global bool) {
 	segments := segs.getByKey(key).getBySource(src)
 	if global {
 		sta = 0
@@ -337,7 +339,7 @@ type BindingValue struct {
 	val    Binding
 	repr   string
 	key    Key
-	src    *Source
+	src    *common.Source
 }
 
 func (bind *BindingValue) overrides(other *BindingValue) bool {
@@ -367,14 +369,14 @@ type segmentsByKey struct {
 	mapMutex sync.Mutex
 	parent   *BindingMap
 	key      Key
-	bySource map[*Source]*segmentsBySource
+	bySource map[*common.Source]*segmentsBySource
 }
 
-func (segs *segmentsByKey) getBySource(source *Source) *segmentsBySource {
+func (segs *segmentsByKey) getBySource(source *common.Source) *segmentsBySource {
 	segs.mapMutex.Lock()
 	defer segs.mapMutex.Unlock()
 	if segs.bySource == nil {
-		segs.bySource = make(map[*Source]*segmentsBySource)
+		segs.bySource = make(map[*common.Source]*segmentsBySource)
 	}
 
 	data := segs.bySource[source]
@@ -390,7 +392,7 @@ func (segs *segmentsByKey) getBySource(source *Source) *segmentsBySource {
 
 type segmentsBySource struct {
 	parent *segmentsByKey
-	source *Source
+	source *common.Source
 	table  segmentTable
 
 	nodesMutex  sync.Mutex

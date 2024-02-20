@@ -1,22 +1,25 @@
 package bit_core
 
-import "axlab.dev/bit/bit"
+import (
+	"axlab.dev/bit/bit"
+	"axlab.dev/bit/common"
+)
 
 // Implemented by non-semantic group nodes that can be "flattened" without
 // losing meaning.
 type CanFlatten interface {
-	Flatten(node *Node) []*Node
+	Flatten(node *bit.Node) []*bit.Node
 }
 
-func (val Group) Flatten(node *Node) []*Node {
+func (val Group) Flatten(node *bit.Node) []*bit.Node {
 	return node.Nodes()
 }
 
-func (val Line) Flatten(node *Node) []*Node {
+func (val Line) Flatten(node *bit.Node) []*bit.Node {
 	return node.Nodes()
 }
 
-func FlattenNodes(nodes ...*Node) (out []*Node) {
+func FlattenNodes(nodes ...*bit.Node) (out []*bit.Node) {
 	for _, it := range nodes {
 		if v, ok := it.Value().(CanFlatten); ok {
 			out = append(out, v.Flatten(it)...)
@@ -44,9 +47,9 @@ func (op SplitLines) Process(args *bit.BindArgs) {
 	for _, nodes := range args.NodesByParent() {
 		par := nodes[0].Parent()
 		cur, children := 0, par.RemoveNodes(0, par.Len())
-		push := func(line []*Node) {
+		push := func(line []*bit.Node) {
 			if len(line) > 0 {
-				span := SpanFromSlice(line)
+				span := common.SpanFromSlice(line)
 				node := args.Program.NewNode(Line{}, span)
 				node.AddChildren(line...)
 				par.AddChildren(node)

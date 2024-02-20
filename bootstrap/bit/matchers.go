@@ -9,7 +9,7 @@ import (
 	"axlab.dev/bit/common"
 )
 
-type Matcher func(cur *Cursor) (TokenType, error)
+type Matcher func(cur *common.Cursor) (TokenType, error)
 
 func MatchInteger() Matcher {
 	return MatchWithRE(TokenInteger, `\d+`)
@@ -24,7 +24,7 @@ func ParseIntegerLiteral(str string) int {
 func MatchWithRE(token TokenType, reExpr string) Matcher {
 	reExpr = fmt.Sprintf(`^(%s)`, reExpr)
 	re := regexp.MustCompile(reExpr)
-	return func(cur *Cursor) (TokenType, error) {
+	return func(cur *common.Cursor) (TokenType, error) {
 		if m := re.FindString(cur.Text()); len(m) > 0 {
 			cur.Advance(len(m))
 			return token, nil
@@ -34,7 +34,7 @@ func MatchWithRE(token TokenType, reExpr string) Matcher {
 	}
 }
 
-func MatchWord(cur *Cursor) (TokenType, error) {
+func MatchWord(cur *common.Cursor) (TokenType, error) {
 	isLetter := func(chr rune) bool {
 		return 'a' <= chr && chr <= 'z' || 'A' <= chr && chr <= 'Z'
 	}
@@ -118,7 +118,7 @@ func ParseStringLiteral(str string) string {
 	return out.String()
 }
 
-func MatchString(cur *Cursor) (TokenType, error) {
+func MatchString(cur *common.Cursor) (TokenType, error) {
 	startPos := *cur
 	delim := cur.ReadAny(`r"`, `r'`, `"`, `'`)
 	if delim == "" {

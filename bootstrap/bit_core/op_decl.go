@@ -5,6 +5,7 @@ import (
 
 	"axlab.dev/bit/bit"
 	"axlab.dev/bit/code"
+	"axlab.dev/bit/common"
 )
 
 type Var struct {
@@ -25,15 +26,15 @@ func (val Var) Repr(oneline bool) string {
 	return fmt.Sprintf("Var(%s)", val.Var.Name())
 }
 
-func (val Var) Bind(node *Node) {
+func (val Var) Bind(node *bit.Node) {
 	node.Bind(Var{})
 }
 
-func (val Var) Type(node *Node) Type {
+func (val Var) Type(node *bit.Node) code.Type {
 	return val.Var.Type()
 }
 
-func (val Var) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+func (val Var) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	node.CheckEmpty(ctx)
 	val.Var.CheckBound()
 	ctx.Output(ans.SetVar(val.Var))
@@ -82,15 +83,15 @@ func (val Let) Repr(oneline bool) string {
 	return fmt.Sprintf("Let(%s)", val.Var.Name())
 }
 
-func (val Let) Bind(node *Node) {
+func (val Let) Bind(node *bit.Node) {
 	node.Bind(Let{})
 }
 
-func (val Let) Type(node *Node) Type {
+func (val Let) Type(node *bit.Node) code.Type {
 	return val.Var.Type()
 }
 
-func (val Let) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+func (val Let) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	decl := ctx.GetDecl()
 	decl.Add(val.Var)
 	val.Var.SetType(node.Get(0).Type())
@@ -136,7 +137,7 @@ func (op ParseLet) Process(args *bit.BindArgs) {
 		par := it.Parent()
 		split := next.Index() + 1
 		nodes := par.RemoveNodes(it.Index(), par.Len())
-		nodesSpan := SpanFromSlice(nodes)
+		nodesSpan := common.SpanFromSlice(nodes)
 
 		scope := par.GetScope()
 		offset := nodesSpan.End()
@@ -155,7 +156,7 @@ func (op ParseLet) Process(args *bit.BindArgs) {
 			it.FlagDone()
 		}
 
-		it.DeclareAt(Word(name), variable.Offset(), scope.End(), BindVar{variable})
+		it.DeclareAt(bit.Word(name), variable.Offset(), scope.End(), BindVar{variable})
 	}
 }
 

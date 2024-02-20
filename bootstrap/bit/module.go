@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"axlab.dev/bit/code"
+	"axlab.dev/bit/common"
 )
 
 type Module struct {
-	Source *Source
+	Source *common.Source
 }
 
 func (mod Module) IsScope(node *Node) bool {

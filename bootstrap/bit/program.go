@@ -32,7 +32,7 @@ type Program struct {
 	config   ProgramConfig
 
 	lexer    *Lexer
-	source   *Source
+	source   *common.Source
 	tokens   []Token
 	allNodes []*Node
 	modules  []*Node
@@ -116,7 +116,7 @@ func (program *Program) NeedRecompile() bool {
 	return false
 }
 
-func (program *Program) CompileSource(source *Source) {
+func (program *Program) CompileSource(source *common.Source) {
 	program.reset()
 	program.source = source
 	program.mainNode = program.loadSource(source)
@@ -227,7 +227,7 @@ func (program *Program) srcCopyName(baseName string) string {
 	return "src/" + baseName + ".txt"
 }
 
-func (program *Program) loadSource(source *Source) *Node {
+func (program *Program) loadSource(source *common.Source) *Node {
 	program.bindings.InitSource(source)
 
 	baseName := source.Name()

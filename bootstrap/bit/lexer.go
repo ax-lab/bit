@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+
+	"axlab.dev/bit/common"
 )
 
 const (
@@ -75,7 +77,7 @@ func (typ TokenType) Repr(oneline bool) string {
 
 type Token struct {
 	Type TokenType
-	Span Span
+	Span common.Span
 }
 
 func (token Token) Indent() int {
@@ -170,7 +172,7 @@ func (lexer *Lexer) AddSymbols(symbols ...string) {
 	}
 }
 
-func (lexer *Lexer) Tokenize(src *Source) (out []Token, err error) {
+func (lexer *Lexer) Tokenize(src *common.Source) (out []Token, err error) {
 	cur := src.Cursor()
 	for !cur.IsEnd() {
 		if cur.SkipSpaces() {
@@ -241,7 +243,7 @@ func (lexer *Lexer) Tokenize(src *Source) (out []Token, err error) {
 	return
 }
 
-func skipMultilineComment(cur *Cursor) {
+func skipMultilineComment(cur *common.Cursor) {
 	noComment := func(chr rune) bool { return chr != COMMENT_CHAR && chr != COMMENT_DELIM }
 	count := 0
 	for !cur.IsEnd() {

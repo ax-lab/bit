@@ -3,6 +3,7 @@ package bit_core
 import (
 	"axlab.dev/bit/bit"
 	"axlab.dev/bit/code"
+	"axlab.dev/bit/common"
 )
 
 type Print struct{}
@@ -18,15 +19,15 @@ func (val Print) Repr(oneline bool) string {
 	return "Print"
 }
 
-func (val Print) Bind(node *Node) {
+func (val Print) Bind(node *bit.Node) {
 	node.Bind(Print{})
 }
 
-func (val Print) Type(node *Node) code.Type {
+func (val Print) Type(node *bit.Node) code.Type {
 	return node.Last().Type()
 }
 
-func (val Print) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+func (val Print) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	var vars []code.Expr
 	block := ctx.NewBlock()
 	for _, it := range node.Nodes() {
@@ -65,7 +66,7 @@ func (op ParsePrint) Process(args *bit.BindArgs) {
 			continue
 		}
 		src := par.RemoveNodes(idx, par.Len())
-		node := args.Program.NewNode(Print{}, SpanFromSlice(src))
+		node := args.Program.NewNode(Print{}, common.SpanFromSlice(src))
 		node.AddChildren(src[1:]...)
 		par.InsertNodes(idx, node)
 	}

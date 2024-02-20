@@ -2,41 +2,30 @@ package bit_core
 
 import (
 	"axlab.dev/bit/bit"
-	"axlab.dev/bit/code"
 )
-
-// TODO: move span and sources to a common library to enable interop with code
-
-type Key = bit.Key
-type Node = bit.Node
-type Span = bit.Span
-type Symbol = bit.Symbol
-type Type = code.Type
-type Value = bit.Value
-type Word = bit.Word
 
 func InitCompiler(program *bit.Program) {
 	program.DeclareGlobal(bit.TokenBreak, SplitLines{})
 	program.DeclareGlobal(Indented{}, ParseIndent{})
 	program.DeclareGlobal(IndentedGroup{}, ParseBlocks{})
 
-	program.DeclareGlobal(Symbol("("), ParseBrackets{"(", ")"})
-	program.DeclareGlobal(Symbol(")"), ParseBrackets{"(", ")"})
+	program.DeclareGlobal(bit.Symbol("("), ParseBrackets{"(", ")"})
+	program.DeclareGlobal(bit.Symbol(")"), ParseBrackets{"(", ")"})
 
-	program.DeclareGlobal(Symbol("["), ParseBrackets{"[", "]"})
-	program.DeclareGlobal(Symbol("]"), ParseBrackets{"[", "]"})
+	program.DeclareGlobal(bit.Symbol("["), ParseBrackets{"[", "]"})
+	program.DeclareGlobal(bit.Symbol("]"), ParseBrackets{"[", "]"})
 
-	program.DeclareGlobal(Symbol("{"), ParseBrackets{"{", "}"})
-	program.DeclareGlobal(Symbol("}"), ParseBrackets{"{", "}"})
+	program.DeclareGlobal(bit.Symbol("{"), ParseBrackets{"{", "}"})
+	program.DeclareGlobal(bit.Symbol("}"), ParseBrackets{"{", "}"})
 
-	program.DeclareGlobal(Word("print"), ParsePrint{})
-	program.DeclareGlobal(Word("let"), ParseLet{})
-	program.DeclareGlobal(Word("if"), ParseIf{})
+	program.DeclareGlobal(bit.Word("print"), ParsePrint{})
+	program.DeclareGlobal(bit.Word("let"), ParseLet{})
+	program.DeclareGlobal(bit.Word("if"), ParseIf{})
 
 	program.DeclareGlobal(bit.TokenString, Replace{ParseString{}})
 	program.DeclareGlobal(bit.TokenInteger, Replace{ParseInt{}})
-	program.DeclareGlobal(Word("true"), Replace{ParseBool{}})
-	program.DeclareGlobal(Word("false"), Replace{ParseBool{}})
+	program.DeclareGlobal(bit.Word("true"), Replace{ParseBool{}})
+	program.DeclareGlobal(bit.Word("false"), Replace{ParseBool{}})
 
 	outputAll(program, Str(""))
 	outputAll(program, Int(0))
@@ -53,7 +42,7 @@ func InitCompiler(program *bit.Program) {
 	outputAll(program, If{})
 }
 
-func outputAll(program *bit.Program, key Key) {
+func outputAll(program *bit.Program, key bit.Key) {
 	program.DeclareGlobal(key, Output{})
 }
 

@@ -23,7 +23,7 @@ type Value interface {
 type Node struct {
 	program *Program
 	value   Value
-	span    Span
+	span    common.Span
 	done    atomic.Bool
 	id      int
 
@@ -35,7 +35,7 @@ type Node struct {
 
 var idCounter atomic.Int32
 
-func (program *Program) NewNode(value Value, span Span) *Node {
+func (program *Program) NewNode(value Value, span common.Span) *Node {
 	node := &Node{
 		program: program,
 		value:   value,
@@ -152,7 +152,7 @@ func (node *Node) Value() Value {
 	return node.value
 }
 
-func (node *Node) Span() Span {
+func (node *Node) Span() common.Span {
 	return node.span
 }
 

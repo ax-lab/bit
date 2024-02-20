@@ -1,12 +1,14 @@
 package bit
 
+import "axlab.dev/bit/common"
+
 func (comp *Compiler) FlushSources() {
 	comp.sourceFileMutex.Lock()
 	defer comp.sourceFileMutex.Unlock()
 	comp.sourceFileMap = nil
 }
 
-func (comp *Compiler) LoadSource(path string) (*Source, error) {
+func (comp *Compiler) LoadSource(path string) (*common.Source, error) {
 	fullPath, _, err := comp.inputDir.TryResolvePath(path)
 	if err != nil {
 		return nil, err
@@ -17,7 +19,7 @@ func (comp *Compiler) LoadSource(path string) (*Source, error) {
 
 	if comp.sourceFileMap == nil {
 		comp.sourceFileMap = make(map[string]*struct {
-			src *Source
+			src *common.Source
 			err error
 		})
 	}
@@ -26,13 +28,13 @@ func (comp *Compiler) LoadSource(path string) (*Source, error) {
 	if entry == nil {
 		file, err := comp.inputDir.TryReadFile(path)
 
-		var src *Source
+		var src *common.Source
 		if file != nil {
 			src = file.CreateSource()
 		}
 
 		entry = &struct {
-			src *Source
+			src *common.Source
 			err error
 		}{src, err}
 		comp.sourceFileMap[fullPath] = entry

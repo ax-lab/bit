@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"axlab.dev/bit/bit"
+	"axlab.dev/bit/common"
 )
 
 type Bracket struct {
@@ -11,7 +12,7 @@ type Bracket struct {
 	End string
 }
 
-func (val Bracket) Bind(node *Node) {}
+func (val Bracket) Bind(node *bit.Node) {}
 
 func (val Bracket) Repr(oneline bool) string {
 	return fmt.Sprintf("Bracket(`%s%s`)", val.Sta, val.End)
@@ -38,7 +39,7 @@ func (op ParseBrackets) String() string {
 }
 
 func (op ParseBrackets) Process(args *bit.BindArgs) {
-	var stack []*Node
+	var stack []*bit.Node
 	for _, it := range args.Nodes {
 		if it.Text() == op.Sta {
 			stack = append(stack, it)
@@ -49,7 +50,7 @@ func (op ParseBrackets) Process(args *bit.BindArgs) {
 				par := sta.Parent()
 				stack = stack[:l-1]
 				nodes := par.RemoveRange(sta, it)
-				group := args.Program.NewNode(Bracket(op), SpanFromRange(sta, it))
+				group := args.Program.NewNode(Bracket(op), common.SpanFromRange(sta, it))
 				group.AddChildren(nodes[1 : len(nodes)-1]...)
 				par.InsertNodes(pos, group)
 			} else {

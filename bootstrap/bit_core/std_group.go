@@ -1,12 +1,13 @@
 package bit_core
 
 import (
+	"axlab.dev/bit/bit"
 	"axlab.dev/bit/code"
 )
 
 type Group struct{}
 
-func (val Group) Bind(node *Node) {
+func (val Group) Bind(node *bit.Node) {
 	node.Bind(Group{})
 }
 
@@ -21,10 +22,10 @@ func (val Group) IsEqual(other any) bool {
 	return false
 }
 
-func (val Group) Type(node *Node) code.Type {
+func (val Group) Type(node *bit.Node) code.Type {
 	return node.Get(0).Type()
 }
 
-func (val Group) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+func (val Group) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	node.OutputChild(ctx, ans, true)
 }

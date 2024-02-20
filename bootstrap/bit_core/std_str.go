@@ -24,22 +24,22 @@ func (val Str) Repr(oneline bool) string {
 	return fmt.Sprintf("Str(%v)", string(val))
 }
 
-func (val Str) Bind(node *Node) {
+func (val Str) Bind(node *bit.Node) {
 	node.Bind(Str(""))
 }
 
-func (val Str) Type(node *Node) code.Type {
+func (val Str) Type(node *bit.Node) code.Type {
 	return code.StrType()
 }
 
-func (val Str) Output(ctx *code.OutputContext, node *Node, ans *code.Variable) {
+func (val Str) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	node.CheckEmpty(ctx)
 	ctx.Output(ans.SetVar(code.NewStr(string(val))))
 }
 
 type ParseString struct{}
 
-func (ParseString) Get(node *Node) (Value, error) {
+func (ParseString) Get(node *bit.Node) (bit.Value, error) {
 	if tok, ok := node.Value().(bit.TokenType); ok && tok == bit.TokenString {
 		str := bit.ParseStringLiteral(node.Text())
 		return Str(str), nil

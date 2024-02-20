@@ -2,7 +2,7 @@ package bit_core
 
 import "axlab.dev/bit/bit"
 
-func Succ(node *Node) *Node {
+func Succ(node *bit.Node) *bit.Node {
 	if next := node.Next(); next != nil {
 		return EnterGroup(next)
 	}
@@ -12,7 +12,7 @@ func Succ(node *Node) *Node {
 	return nil
 }
 
-func EnterGroup(node *Node) *Node {
+func EnterGroup(node *bit.Node) *bit.Node {
 	if node.Len() > 0 {
 		if _, ok := node.Value().(CanFlatten); ok {
 			return EnterGroup(node.Head())
@@ -21,14 +21,14 @@ func EnterGroup(node *Node) *Node {
 	return node
 }
 
-func ParseName(node *Node) (name string, next *Node) {
+func ParseName(node *bit.Node) (name string, next *bit.Node) {
 	if IsName(node) {
 		return node.Text(), node.Next()
 	}
 	return
 }
 
-func IsName(node *Node) bool {
+func IsName(node *bit.Node) bool {
 	if node != nil {
 		if v, ok := node.Value().(bit.TokenType); ok {
 			return v == bit.TokenWord
@@ -37,7 +37,7 @@ func IsName(node *Node) bool {
 	return false
 }
 
-func IsSymbol(node *Node, symbol string) bool {
+func IsSymbol(node *bit.Node, symbol string) bool {
 	if node != nil {
 		if v, ok := node.Value().(bit.TokenType); ok {
 			return v == bit.TokenSymbol && node.Text() == symbol
@@ -46,7 +46,7 @@ func IsSymbol(node *Node, symbol string) bool {
 	return false
 }
 
-func IsWord(node *Node, word string) bool {
+func IsWord(node *bit.Node, word string) bool {
 	if node != nil {
 		if v, ok := node.Value().(bit.TokenType); ok {
 			return v == bit.TokenWord && node.Text() == word
@@ -55,7 +55,7 @@ func IsWord(node *Node, word string) bool {
 	return false
 }
 
-func SymbolIndex(nodes []*Node, symbol string) int {
+func SymbolIndex(nodes []*bit.Node, symbol string) int {
 	for n, it := range nodes {
 		if IsSymbol(it, symbol) {
 			return n
@@ -64,7 +64,7 @@ func SymbolIndex(nodes []*Node, symbol string) int {
 	return -1
 }
 
-func LastSymbolIndex(nodes []*Node, symbol string) int {
+func LastSymbolIndex(nodes []*bit.Node, symbol string) int {
 	for n := len(nodes) - 1; n >= 0; n-- {
 		if it := nodes[n]; IsSymbol(it, symbol) {
 			return n
@@ -73,7 +73,7 @@ func LastSymbolIndex(nodes []*Node, symbol string) int {
 	return -1
 }
 
-func WordIndex(nodes []*Node, word string) int {
+func WordIndex(nodes []*bit.Node, word string) int {
 	for n, it := range nodes {
 		if IsWord(it, word) {
 			return n
@@ -82,7 +82,7 @@ func WordIndex(nodes []*Node, word string) int {
 	return -1
 }
 
-func LastWordIndex(nodes []*Node, word string) int {
+func LastWordIndex(nodes []*bit.Node, word string) int {
 	for n := len(nodes) - 1; n >= 0; n-- {
 		if it := nodes[n]; IsWord(it, word) {
 			return n
