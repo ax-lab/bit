@@ -205,7 +205,7 @@ func (span Span) Compare(other Span) int {
 }
 
 func (span Span) CreateError(msg string, args ...any) error {
-	err := CompilerError{
+	err := ErrorWithLocation{
 		Span:    span,
 		Message: msg,
 		Args:    args,
