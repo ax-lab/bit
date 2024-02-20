@@ -14,8 +14,8 @@ func (mod Module) IsScope(node *Node) bool {
 	return true
 }
 
-func (mod Module) IsEqual(other Key) bool {
-	if v, ok := other.(Module); ok {
+func (mod Module) IsEqual(val any) bool {
+	if v, ok := val.(Module); ok {
 		return v == mod
 	}
 	return false

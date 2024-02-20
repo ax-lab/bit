@@ -14,7 +14,7 @@ func (val Group) Repr(oneline bool) string {
 	return "Group"
 }
 
-func (val Group) IsEqual(other Key) bool {
+func (val Group) IsEqual(other any) bool {
 	if v, ok := other.(Group); ok {
 		return val == v
 	}

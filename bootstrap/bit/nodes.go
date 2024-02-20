@@ -11,7 +11,7 @@ import (
 )
 
 type Key interface {
-	IsEqual(other Key) bool
+	IsEqual(val any) bool
 	Repr(oneline bool) string
 }
 
@@ -320,8 +320,8 @@ func (node *Node) InsertNodes(at int, newNodes ...*Node) {
 	// its offset or location
 	if last := node.nodes[len(node.nodes)-1]; last != nil {
 		span := last.span
-		if span.src == node.span.src && span.end > node.span.end {
-			node.span.end = span.end
+		if span.Source() == node.span.Source() && span.End() > node.span.End() {
+			node.span.SetEnd(span.End())
 		}
 	}
 }

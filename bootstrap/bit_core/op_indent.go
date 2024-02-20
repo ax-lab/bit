@@ -8,7 +8,7 @@ func (val Indented) Repr(oneline bool) string {
 	return "Indented"
 }
 
-func (val Indented) IsEqual(other Key) bool {
+func (val Indented) IsEqual(other any) bool {
 	if v, ok := other.(Indented); ok {
 		return val == v
 	}
@@ -25,7 +25,7 @@ func (val IndentedGroup) Repr(oneline bool) string {
 	return "IndentedGroup"
 }
 
-func (val IndentedGroup) IsEqual(other Key) bool {
+func (val IndentedGroup) IsEqual(other any) bool {
 	if v, ok := other.(IndentedGroup); ok {
 		return val == v
 	}

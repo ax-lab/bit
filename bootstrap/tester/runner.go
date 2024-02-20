@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"axlab.dev/bit/common"
-	"axlab.dev/bit/files"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -77,7 +76,7 @@ type Runner struct {
 
 func NewRunner(t *testing.T, dir string, runner TestRunner) Runner {
 	path := common.Try(filepath.Abs(dir))
-	common.Assert(files.IsDir(path), "test path must exist: %s", path)
+	common.Assert(common.IsDir(path), "test path must exist: %s", path)
 	return Runner{
 		t:       t,
 		inner:   runner,

@@ -1,4 +1,4 @@
-package bit
+package common
 
 import (
 	"cmp"
@@ -7,6 +7,8 @@ import (
 	"sort"
 	"strings"
 )
+
+const MaxErrorOutput = 16
 
 type ErrorWithLocation struct {
 	Span    Span

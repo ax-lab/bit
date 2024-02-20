@@ -16,8 +16,8 @@ const (
 
 type Symbol string
 
-func (sym Symbol) IsEqual(key Key) bool {
-	if v, ok := key.(Symbol); ok {
+func (sym Symbol) IsEqual(val any) bool {
+	if v, ok := val.(Symbol); ok {
 		return sym == v
 	}
 	return false
@@ -29,8 +29,8 @@ func (sym Symbol) Repr(oneline bool) string {
 
 type Word string
 
-func (w Word) IsEqual(key Key) bool {
-	if v, ok := key.(Word); ok {
+func (w Word) IsEqual(val any) bool {
+	if v, ok := val.(Word); ok {
 		return w == v
 	}
 	return false
@@ -62,8 +62,8 @@ func (typ TokenType) Bind(node *Node) {
 	}
 }
 
-func (typ TokenType) IsEqual(key Key) bool {
-	if v, ok := key.(TokenType); ok {
+func (typ TokenType) IsEqual(val any) bool {
+	if v, ok := val.(TokenType); ok {
 		return typ == v
 	}
 	return false

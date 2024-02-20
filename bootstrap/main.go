@@ -81,7 +81,7 @@ func main() {
 
 			if len(res.Log) > 0 {
 				hasOutput = true
-				errText := common.Indented(bit.ErrorsToString(res.Log, bit.MaxErrorOutput))
+				errText := common.Indented(common.ErrorsToString(res.Log, common.MaxErrorOutput))
 				common.Err("\n\t>>> Error Log <<<\n\n\t" + errText + "\n")
 			}
 

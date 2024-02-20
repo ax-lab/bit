@@ -1,4 +1,4 @@
-package files
+package common
 
 import (
 	"errors"
@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-
-	"axlab.dev/bit/common"
 )
 
 type Entry struct {
@@ -57,10 +55,10 @@ func (info *Entry) String() string {
 
 func List(dirPath string, options ListOptions) (out []*Entry) {
 	dir := os.DirFS(dirPath)
-	basePath := common.Try(filepath.Abs(dirPath))
+	basePath := Try(filepath.Abs(dirPath))
 	err := fs.WalkDir(dir, ".", func(entryPath string, dirEntry fs.DirEntry, err error) error {
 		if err != nil {
-			common.Warn(err, "listing `%s`", dirPath)
+			Warn(err, "listing `%s`", dirPath)
 			return nil
 		}
 
@@ -83,7 +81,7 @@ func List(dirPath string, options ListOptions) (out []*Entry) {
 		if !skip {
 			if _, err := entry.Info(); err != nil {
 				if !errors.Is(err, fs.ErrNotExist) {
-					common.Warn(err, "listing `%s`", dirPath)
+					Warn(err, "listing `%s`", dirPath)
 				}
 				skip = true
 			}
@@ -100,6 +98,6 @@ func List(dirPath string, options ListOptions) (out []*Entry) {
 		out = append(out, entry)
 		return nil
 	})
-	common.Check(err)
+	Check(err)
 	return out
 }

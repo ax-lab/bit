@@ -11,11 +11,8 @@ import (
 
 	"axlab.dev/bit/code"
 	"axlab.dev/bit/common"
-	"axlab.dev/bit/files"
 	"axlab.dev/bit/proc"
 )
-
-const MaxErrorOutput = 16
 
 const (
 	PrecFirst Precedence = iota
@@ -33,6 +30,10 @@ const (
 	PrecLast
 )
 
+type Source = common.Source
+type Span = common.Span
+type Cursor = common.Cursor
+
 const (
 	debugQueue = false
 )
@@ -44,8 +45,8 @@ type Compiler struct {
 
 	core func(*Program)
 
-	inputDir files.Dir
-	buildDir files.Dir
+	inputDir common.Dir
+	buildDir common.Dir
 
 	programsMutex sync.Mutex
 	programs      map[string]map[string]*Program
@@ -97,8 +98,8 @@ func ResultRepr(val code.Value, err error) string {
 func NewCompiler(ctx context.Context, inputPath, buildPath string) *Compiler {
 	return &Compiler{
 		ctx:      ctx,
-		inputDir: files.OpenDir(inputPath).MustExist("compiler input"),
-		buildDir: files.OpenDir(buildPath).Create("compiler build"),
+		inputDir: common.OpenDir(inputPath).MustExist("compiler input"),
+		buildDir: common.OpenDir(buildPath).Create("compiler build"),
 	}
 }
 
@@ -165,11 +166,11 @@ func (comp *Compiler) Run(file string, options RunOptions) (out RunResult) {
 	return
 }
 
-func (comp *Compiler) InputDir() files.Dir {
+func (comp *Compiler) InputDir() common.Dir {
 	return comp.inputDir
 }
 
-func (comp *Compiler) BuildDir() files.Dir {
+func (comp *Compiler) BuildDir() common.Dir {
 	return comp.buildDir
 }
 
@@ -177,7 +178,7 @@ func (comp *Compiler) Watch() {
 	input := comp.inputDir
 	inputPath := input.FullPath()
 
-	watcher := files.Watch(inputPath, files.ListOptions{Filter: func(entry *files.Entry) bool {
+	watcher := common.Watch(inputPath, common.ListOptions{Filter: func(entry *common.Entry) bool {
 		if entry.IsDir {
 			return true
 		}
@@ -211,7 +212,7 @@ mainLoop:
 
 				buildPath := ev.Entry.Path
 				program := comp.GetProgram(ev.Entry.Path, buildPath)
-				if ev.Type != files.EventRemove {
+				if ev.Type != common.EventRemove {
 					program.QueueCompile()
 				} else {
 					program.ClearBuild()
@@ -298,7 +299,7 @@ func (program *Program) QueueCompile() (wait chan struct{}) {
 				program.CompileSource(source)
 				if !program.Valid() {
 					common.Out("\n")
-					ShowErrors(program.Errors)
+					common.ShowErrors(program.Errors)
 					common.Out("\n")
 				}
 

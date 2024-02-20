@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"axlab.dev/bit/code"
+	"axlab.dev/bit/common"
 	"axlab.dev/bit/proc"
 )
 
@@ -143,7 +144,7 @@ func (program *Program) CompileSource(source *Source) {
 		program.writeOutput(unresolvedFile, "# UNRESOLVED NODES\n\n"+program.dumpNodes(unresolved), true)
 
 		if outputErrors {
-			maxUnresolved := MaxErrorOutput - 1
+			maxUnresolved := common.MaxErrorOutput - 1
 			types, cnt := make(map[reflect.Type]bool), 0
 			for _, it := range unresolved {
 				if typ := reflect.TypeOf(it.Value()); !types[typ] {
@@ -177,7 +178,7 @@ func (program *Program) CompileSource(source *Source) {
 	program.writeOutput("code-output.txt", program.output.Repr(code.ReprDebug)+"\n", true)
 
 	if errFile := "errors.txt"; len(program.Errors) > 0 {
-		program.writeOutput(errFile, ErrorsToString(program.Errors, -1), true)
+		program.writeOutput(errFile, common.ErrorsToString(program.Errors, -1), true)
 	} else {
 		program.removeOutput(errFile)
 	}

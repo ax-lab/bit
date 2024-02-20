@@ -9,7 +9,7 @@ import (
 
 type Str string
 
-func (val Str) IsEqual(other Key) bool {
+func (val Str) IsEqual(other any) bool {
 	if v, ok := other.(Str); ok {
 		return v == val
 	}

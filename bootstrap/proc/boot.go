@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"axlab.dev/bit/common"
-	"axlab.dev/bit/files"
 )
 
 var (
@@ -52,7 +51,7 @@ func NeedRebuild() (rebuild bool, newest time.Time) {
 		return
 	}
 
-	rootDir := filepath.Join(files.ProjectDir(), "bootstrap")
+	rootDir := filepath.Join(common.ProjectDir(), "bootstrap")
 	exeTime := common.Try(os.Stat(exe)).ModTime()
 	queue := []string{rootDir}
 	for len(queue) > 0 {
@@ -79,7 +78,7 @@ func Rebuild() bool {
 	common.Out("\n▸▸▸ bootstrap: detected changes, rebuilding...\n")
 
 	exe := GetBootstrapExe(true)
-	mainFile := filepath.Join(files.ProjectDir(), "bootstrap", "main.go")
+	mainFile := filepath.Join(common.ProjectDir(), "bootstrap", "main.go")
 
 	success := Run("▸▸▸ GO", "go", "build", "-o", exe, mainFile)
 
@@ -105,7 +104,7 @@ func RunSelf(ctx context.Context, args []string) int {
 	fps[syscall.Stderr] = os.Stderr
 
 	proc := common.Try(os.StartProcess(exe, args, &os.ProcAttr{
-		Dir:   files.WorkingDir(),
+		Dir:   common.WorkingDir(),
 		Env:   os.Environ(),
 		Files: fps,
 	}))
@@ -148,7 +147,7 @@ func GetBootstrapExe(force bool) string {
 			exeFile = filepath.Clean(exeFile)
 		}
 
-		if filepath.Dir(exeFile) != files.ProjectDir() {
+		if filepath.Dir(exeFile) != common.ProjectDir() {
 			return "" // go run
 		}
 

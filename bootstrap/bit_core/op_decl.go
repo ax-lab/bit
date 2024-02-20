@@ -11,7 +11,7 @@ type Var struct {
 	Var *code.Variable
 }
 
-func (val Var) IsEqual(other Key) bool {
+func (val Var) IsEqual(other any) bool {
 	if v, ok := other.(Var); ok {
 		return v == val
 	}
@@ -68,7 +68,7 @@ type Let struct {
 	Var *code.Variable
 }
 
-func (val Let) IsEqual(other Key) bool {
+func (val Let) IsEqual(other any) bool {
 	if v, ok := other.(Let); ok {
 		return v == val
 	}

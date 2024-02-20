@@ -9,7 +9,7 @@ import (
 
 type Int int
 
-func (val Int) IsEqual(other Key) bool {
+func (val Int) IsEqual(other any) bool {
 	if v, ok := other.(Int); ok {
 		return v == val
 	}

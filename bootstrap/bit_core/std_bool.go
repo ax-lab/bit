@@ -9,7 +9,7 @@ import (
 
 type Bool bool
 
-func (val Bool) IsEqual(other Key) bool {
+func (val Bool) IsEqual(other any) bool {
 	if v, ok := other.(Bool); ok {
 		return v == val
 	}

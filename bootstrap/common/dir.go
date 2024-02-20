@@ -1,4 +1,4 @@
-package files
+package common
 
 import (
 	"errors"
@@ -7,8 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"axlab.dev/bit/common"
 )
 
 type Dir struct {
@@ -18,7 +16,7 @@ type Dir struct {
 }
 
 func OpenDir(path string) Dir {
-	fullPath := common.Try(filepath.Abs(path))
+	fullPath := Try(filepath.Abs(path))
 	return Dir{
 		name: path,
 		path: fullPath,
@@ -28,14 +26,14 @@ func OpenDir(path string) Dir {
 
 func (dir Dir) MustExist(label string) Dir {
 	if !IsDir(dir.FullPath()) {
-		common.Fatal("%s is not a valid directory: %s", label, dir.name)
+		Fatal("%s is not a valid directory: %s", label, dir.name)
 	}
 	return dir
 }
 
 func (dir Dir) Create(label string) Dir {
 	if err := os.MkdirAll(dir.FullPath(), fs.ModePerm); err != nil {
-		common.Fatal("%s directory `%s` could not be created: %v", label, dir.name, err)
+		Fatal("%s directory `%s` could not be created: %v", label, dir.name, err)
 	}
 	return dir
 }
@@ -50,27 +48,27 @@ func (dir Dir) FullPath() string {
 
 func (dir Dir) Write(name, text string) *DirFile {
 	path, name := dir.ResolvePath(name)
-	common.Check(os.MkdirAll(filepath.Dir(path), os.ModePerm))
-	common.Check(os.WriteFile(path, []byte(text), os.ModePerm))
-	return &DirFile{name: name, path: path, text: text}
+	Check(os.MkdirAll(filepath.Dir(path), os.ModePerm))
+	Check(os.WriteFile(path, []byte(text), os.ModePerm))
+	return &DirFile{dir: dir, name: name, path: path, text: text}
 }
 
 func (dir Dir) Remove(name string) {
 	path, _ := dir.ResolvePath(name)
 	if err := os.Remove(path); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		common.Warn(err, "removing `%s` from `%s`", name, dir.name)
+		Warn(err, "removing `%s` from `%s`", name, dir.name)
 	}
 }
 
 func (dir Dir) MakeDir(name string) {
 	path, _ := dir.ResolvePath(name)
-	common.Check(os.MkdirAll(path, os.ModePerm))
+	Check(os.MkdirAll(path, os.ModePerm))
 }
 
 func (dir Dir) RemoveAll(name string) {
 	path, name := dir.ResolvePath(name)
 	if err := os.RemoveAll(path); err != nil {
-		common.Warn(err, "removing `%s` from `%s`", name, dir.name)
+		Warn(err, "removing `%s` from `%s`", name, dir.name)
 	}
 }
 
@@ -79,7 +77,7 @@ func (dir Dir) Stat(name string) fs.FileInfo {
 	if info, err := os.Stat(fullPath); err == nil {
 		return info
 	} else if !errors.Is(err, fs.ErrNotExist) {
-		common.Warn(err, "stating `%s` in `%s`", name, dir.name)
+		Warn(err, "stating `%s` in `%s`", name, dir.name)
 	}
 	return nil
 }
@@ -87,7 +85,7 @@ func (dir Dir) Stat(name string) fs.FileInfo {
 func (dir Dir) ReadFile(name string) *DirFile {
 	out, err := dir.TryReadFile(name)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
-		common.Fatal("%v", err)
+		Fatal("%v", err)
 	}
 	return out
 }
@@ -100,7 +98,7 @@ func (dir Dir) TryReadFile(name string) (*DirFile, error) {
 
 	if data, err := os.ReadFile(path); err == nil {
 		text := string(data)
-		return &DirFile{name: name, path: path, text: text}, nil
+		return &DirFile{dir: dir, name: name, path: path, text: text}, nil
 	} else {
 		return nil, err
 	}
@@ -114,7 +112,7 @@ func (dir Dir) GetFullPath(path string) string {
 func (dir Dir) ResolvePath(path string) (fullPath, relativeName string) {
 	fullPath, relativeName, err := dir.TryResolvePath(path)
 	if err != nil {
-		common.Fatal("%v", err)
+		Fatal("%v", err)
 	}
 	return
 }
@@ -129,10 +127,10 @@ func (dir Dir) TryResolvePath(path string) (fullPath, relativeName string, err e
 	if resolved, err := filepath.EvalSymlinks(fullPath); err == nil {
 		fullPath = resolved
 	} else if !errors.Is(err, fs.ErrNotExist) {
-		common.Check(err)
+		Check(err)
 	}
 
-	filePath := common.Try(filepath.Rel(base, fullPath))
+	filePath := Try(filepath.Rel(base, fullPath))
 	if filePath == "" || strings.Contains(filePath, "..") {
 		err = fmt.Errorf("`%s` is not a valid path within directory `%s`", path, dir.Name())
 		return
@@ -143,9 +141,14 @@ func (dir Dir) TryResolvePath(path string) (fullPath, relativeName string, err e
 }
 
 type DirFile struct {
+	dir  Dir
 	name string
 	path string
 	text string
+}
+
+func (file *DirFile) Dir() Dir {
+	return file.dir
 }
 
 func (file *DirFile) FullPath() string {

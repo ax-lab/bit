@@ -53,7 +53,7 @@ func (val Block) IsScope(node *Node) bool {
 	return true
 }
 
-func (val Block) IsEqual(other Key) bool {
+func (val Block) IsEqual(other any) bool {
 	if v, ok := other.(Block); ok {
 		return val == v
 	}

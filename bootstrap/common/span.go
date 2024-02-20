@@ -1,152 +1,9 @@
-package bit
+package common
 
 import (
 	"fmt"
 	"strings"
-	"sync/atomic"
-	"unsafe"
-
-	"axlab.dev/bit/common"
-	"axlab.dev/bit/files"
 )
-
-type Source struct {
-	name     string
-	text     string
-	dir      files.Dir
-	file     *files.DirFile
-	tabWidth atomic.Uint32
-}
-
-func (src *Source) IsEqual(key Key) bool {
-	if v, ok := key.(*Source); ok {
-		return src == v
-	}
-	return false
-}
-
-func (src *Source) Repr(oneline bool) string {
-	return fmt.Sprintf("Source(%s)", src.name)
-}
-
-func (src *Source) Name() string {
-	return src.name
-}
-
-func (src *Source) Text() string {
-	return src.text
-}
-
-func (src *Source) Len() int {
-	return len(src.text)
-}
-
-func (src *Source) Dir() files.Dir {
-	return src.dir
-}
-
-func (src *Source) File() *files.DirFile {
-	return src.file
-}
-
-func (src *Source) Compare(other *Source) int {
-	if src == other {
-		return 0
-	}
-
-	srcHasFile := src.file != nil
-	otherHasFile := other.file != nil
-	if srcHasFile != otherHasFile {
-		if srcHasFile {
-			return -1
-		} else {
-			return +1
-		}
-	}
-
-	if cmp := strings.Compare(src.name, other.name); cmp != 0 {
-		return cmp
-	}
-
-	srcPtr := uintptr(unsafe.Pointer(src))
-	otherPtr := uintptr(unsafe.Pointer(other))
-	if srcPtr < otherPtr {
-		return -1
-	} else {
-		return +1
-	}
-}
-
-func (src *Source) Span() Span {
-	return Span{
-		src: src,
-		loc: Location{},
-		sta: 0,
-		end: len(src.text),
-	}
-}
-
-func (src *Source) Cursor() *Cursor {
-	return src.Span().Cursor()
-}
-
-func (src *Source) TabWidth() uint32 {
-	tw := src.tabWidth.Load()
-	if tw == 0 {
-		tw = common.DefaultTabSize
-	}
-	return tw
-}
-
-func (src *Source) SetTabWidth(tabWidth uint32) {
-	src.tabWidth.Store(tabWidth)
-}
-
-func (comp *Compiler) FlushSources() {
-	comp.sourceFileMutex.Lock()
-	defer comp.sourceFileMutex.Unlock()
-	comp.sourceFileMap = nil
-}
-
-func (comp *Compiler) LoadSource(path string) (*Source, error) {
-	fullPath, _, err := comp.inputDir.TryResolvePath(path)
-	if err != nil {
-		return nil, err
-	}
-
-	comp.sourceFileMutex.Lock()
-	defer comp.sourceFileMutex.Unlock()
-
-	if comp.sourceFileMap == nil {
-		comp.sourceFileMap = make(map[string]*struct {
-			src *Source
-			err error
-		})
-	}
-
-	entry := comp.sourceFileMap[fullPath]
-	if entry == nil {
-		file, err := comp.inputDir.TryReadFile(path)
-
-		var src *Source
-		if file != nil {
-			src = &Source{
-				dir:  comp.inputDir,
-				file: file,
-				name: file.Name(),
-				text: file.Text(),
-			}
-		}
-
-		entry = &struct {
-			src *Source
-			err error
-		}{src, err}
-		comp.sourceFileMap[fullPath] = entry
-	}
-
-	return entry.src, entry.err
-}
 
 type Span struct {
 	src *Source
@@ -177,6 +34,13 @@ func (span Span) Sta() int {
 
 func (span Span) End() int {
 	return span.end
+}
+
+func (span *Span) SetEnd(end int) {
+	if end < span.sta {
+		panic("invalid span end")
+	}
+	span.end = end
 }
 
 func (span Span) Len() int {
@@ -233,12 +97,12 @@ func (span Span) DisplayText(maxChars int) string {
 		trimR = true
 	}
 
-	if trimmed := strings.TrimRightFunc(text, common.IsSpace); len(trimmed) != len(text) {
+	if trimmed := strings.TrimRightFunc(text, IsSpace); len(trimmed) != len(text) {
 		text = trimmed
 		trimR = true
 	}
 
-	if trimmed := strings.TrimLeftFunc(text, common.IsSpace); len(trimmed) != len(text) {
+	if trimmed := strings.TrimLeftFunc(text, IsSpace); len(trimmed) != len(text) {
 		text = trimmed
 		trimL = true
 	}
@@ -329,7 +193,7 @@ func (loc *Location) Advance(tabWidth uint32, text string) {
 			loc.ind = 0
 		} else {
 			wasCR = false
-			indenting := loc.col == loc.ind && common.IsSpace(chr)
+			indenting := loc.col == loc.ind && IsSpace(chr)
 			if chr == '\t' {
 				loc.col += tab - (loc.col % tab)
 			} else {
@@ -425,7 +289,7 @@ func (cur *Cursor) ReadAny(str ...string) string {
 }
 
 func (cur *Cursor) SkipSpaces() bool {
-	return cur.SkipWhile(common.IsSpace) > 0
+	return cur.SkipWhile(IsSpace) > 0
 }
 
 func (cur *Cursor) SkipWhile(cond func(rune) bool) int {

@@ -1,4 +1,4 @@
-package files
+package common
 
 import (
 	"io/fs"
@@ -6,12 +6,10 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-
-	"axlab.dev/bit/common"
 )
 
 func WorkingDir() string {
-	return common.Try(filepath.Abs("."))
+	return Try(filepath.Abs("."))
 }
 
 func IsDir(path string) bool {
@@ -22,7 +20,7 @@ func IsDir(path string) bool {
 }
 
 func MakeDir(path string) {
-	common.Check(os.MkdirAll(path, fs.ModePerm))
+	Check(os.MkdirAll(path, fs.ModePerm))
 }
 
 func IsFile(path string) bool {

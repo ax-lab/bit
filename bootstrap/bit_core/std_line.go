@@ -15,7 +15,7 @@ func (val Line) Repr(oneline bool) string {
 	return "Line"
 }
 
-func (val Line) IsEqual(other Key) bool {
+func (val Line) IsEqual(other any) bool {
 	if v, ok := other.(Line); ok {
 		return val == v
 	}

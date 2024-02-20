@@ -7,7 +7,7 @@ import (
 
 type Print struct{}
 
-func (val Print) IsEqual(other Key) bool {
+func (val Print) IsEqual(other any) bool {
 	if v, ok := other.(Print); ok {
 		return v == val
 	}

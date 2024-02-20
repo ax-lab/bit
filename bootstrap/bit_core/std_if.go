@@ -7,7 +7,7 @@ import (
 
 type If struct{}
 
-func (val If) IsEqual(other Key) bool {
+func (val If) IsEqual(other any) bool {
 	if v, ok := other.(If); ok {
 		return v == val
 	}
