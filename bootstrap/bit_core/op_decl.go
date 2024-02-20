@@ -36,7 +36,6 @@ func (val Var) Type(node *bit.Node) code.Type {
 
 func (val Var) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
 	node.CheckEmpty(ctx)
-	val.Var.CheckBound()
 	ctx.Output(ans.SetVar(val.Var))
 }
 
@@ -92,8 +91,6 @@ func (val Let) Type(node *bit.Node) code.Type {
 }
 
 func (val Let) Output(ctx *code.OutputContext, node *bit.Node, ans *code.Variable) {
-	decl := ctx.GetDecl()
-	decl.Add(val.Var)
 	val.Var.SetType(node.Get(0).Type())
 	node.OutputChild(ctx, val.Var, false)
 	ctx.Output(ans.SetVar(val.Var))

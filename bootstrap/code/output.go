@@ -9,7 +9,7 @@ type Output struct {
 
 func NewOutput(scope *Scope, typ Type, source any) *Output {
 	out := &Output{
-		main: NewBlockWithScope(scope),
+		main: NewBlock(scope),
 	}
 	return out
 }
@@ -56,24 +56,19 @@ type OutputContext struct {
 
 func (ctx *OutputContext) NewScope(scope *Scope) *OutputContext {
 	out := *ctx
-	out.main = NewBlockWithScope(scope)
+	out.main = NewBlock(scope)
 	return &out
 }
 
 func (ctx *OutputContext) NewBlock() *OutputContext {
 	out := *ctx
-	out.main = NewBlock(ctx.main.Decl)
+	out.main = NewBlockUnscoped(ctx.main.Scope())
 	return &out
-}
-
-func (ctx *OutputContext) GetDecl() *Decl {
-	return ctx.main.Decl
 }
 
 func (ctx *OutputContext) TempVar(name string, typ Type, source any) *Variable {
 	scope := ctx.main.Scope()
 	v := scope.DeclareUnique(name, typ, source)
-	ctx.main.Decl.Add(v)
 	return v
 }
 

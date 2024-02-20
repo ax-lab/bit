@@ -9,30 +9,31 @@ import (
 
 type Block struct {
 	Id
-	Decl    *Decl
-	Body    []Stmt
-	OwnDecl bool
+	Body     []Stmt
+	OwnScope bool
+
+	scope *Scope
 }
 
-func NewBlockWithScope(scope *Scope) *Block {
+func NewBlock(scope *Scope) *Block {
 	return &Block{
-		Decl:    NewDecl(scope),
-		OwnDecl: true,
+		scope:    scope,
+		OwnScope: true,
 	}
 }
 
-func NewBlock(decl *Decl) *Block {
-	return &Block{Decl: decl, OwnDecl: false}
+func NewBlockUnscoped(scope *Scope) *Block {
+	return &Block{scope: scope, OwnScope: false}
 }
 
 func (blk *Block) Scope() *Scope {
-	return blk.Decl.scope
+	return blk.scope
 }
 
 func (blk *Block) Eval(rt *Runtime) (out Value, err error) {
-	if blk.OwnDecl {
-		blk.Decl.Init(rt)
-		defer blk.Decl.Drop(rt)
+	if blk.OwnScope {
+		blk.scope.Init(rt)
+		defer blk.scope.Drop(rt)
 	}
 
 	for _, it := range blk.Body {
@@ -42,8 +43,8 @@ func (blk *Block) Eval(rt *Runtime) (out Value, err error) {
 	}
 
 	// TODO: have a better way to return the result from a block
-	if blk.OwnDecl && blk.Decl.Len() > 0 {
-		out = rt.Stack[blk.Decl.rtOffset]
+	if blk.OwnScope && blk.scope.Len() > 0 {
+		out = rt.Stack[blk.scope.slotOffset]
 	}
 	return out, nil
 }
@@ -56,8 +57,8 @@ func (blk *Block) Exec(rt *Runtime) error {
 func (blk *Block) OutputCpp(ctx *CppContext) {
 	ctx.Body.Push("{")
 	ctx.Body.Indent()
-	if blk.OwnDecl {
-		blk.Decl.OutputCpp(ctx)
+	if blk.OwnScope {
+		blk.scope.OutputCpp(ctx)
 	}
 	for _, it := range blk.Body {
 		ctx.Body.EnsureBlank()
@@ -68,7 +69,7 @@ func (blk *Block) OutputCpp(ctx *CppContext) {
 }
 
 func (blk *Block) Repr(mode Repr) string {
-	if len(blk.Body) == 0 && (!blk.OwnDecl || blk.Decl.Len() == 0) {
+	if len(blk.Body) == 0 && (!blk.OwnScope || blk.scope.Len() == 0) {
 		return "{ }"
 	}
 
@@ -100,9 +101,9 @@ func (blk *Block) Repr(mode Repr) string {
 	default:
 		out := strings.Builder{}
 		out.WriteString("{")
-		if blk.OwnDecl {
+		if blk.OwnScope {
 			out.WriteString("\n")
-			out.WriteString(common.Indent(blk.Decl.String()))
+			out.WriteString(common.Indent(blk.scope.String()))
 		}
 		for _, it := range blk.Body {
 			out.WriteString("\n")

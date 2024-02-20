@@ -205,6 +205,7 @@ func (program *Program) CompileOutput() {
 	node.Output(outputCtx, ans)
 	ans.SetType(node.Type())
 
+	program.scope.BindVars()
 	if errs := output.Errors(); len(errs) == 0 {
 		program.output = output
 	} else {

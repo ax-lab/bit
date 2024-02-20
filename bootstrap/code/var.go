@@ -53,12 +53,6 @@ func (v *Variable) OutputName() string {
 	return v.processed
 }
 
-func (v *Variable) CheckBound() {
-	if v.slot == nil {
-		panic(fmt.Sprintf("variable `%s` was not bound", v.name))
-	}
-}
-
 func (v *Variable) SetVar(expr Expr) *SetVar {
 	if v == nil {
 		return nil

@@ -20,6 +20,9 @@ type Scope struct {
 	uniq  []*Variable
 
 	children []*Scope
+
+	slots      []*varSlot
+	slotOffset int
 }
 
 func NewScope(source any) *Scope {
@@ -55,9 +58,13 @@ func (scope *Scope) NewChild(sta, end int, source any) *Scope {
 }
 
 func (scope *Scope) ProcessNames() {
-	if scope.root.processed.CompareAndSwap(false, true) {
+	if scope.root.compiled.CompareAndSwap(false, true) {
 		scope.root.ProcessNames()
 	}
+}
+
+func (scope *Scope) BindVars() {
+	scope.root.ProcessSlots()
 }
 
 func (scope *Scope) Parent() *Scope {
@@ -129,9 +136,36 @@ type varKey struct {
 }
 
 type rootScopeData struct {
-	Scope     *Scope
-	nameMap   map[string]int
-	processed atomic.Bool
+	Scope    *Scope
+	nameMap  map[string]int
+	compiled atomic.Bool
+}
+
+func (root *rootScopeData) ProcessSlots() {
+	root.Scope.processSlots()
+}
+
+func (scope *Scope) processSlots() {
+	if scope.parent != nil {
+		scope.slotOffset = scope.parent.slotOffset + len(scope.parent.slots)
+	}
+
+	for _, it := range scope.vars {
+		index := len(scope.slots)
+		it.slot = &varSlot{scope, it, index}
+		scope.slots = append(scope.slots, it.slot)
+
+	}
+
+	for _, it := range scope.uniq {
+		index := len(scope.slots)
+		it.slot = &varSlot{scope, it, index}
+		scope.slots = append(scope.slots, it.slot)
+	}
+
+	for _, it := range scope.children {
+		it.processSlots()
+	}
 }
 
 func (root *rootScopeData) ProcessNames() {

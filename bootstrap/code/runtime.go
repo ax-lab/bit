@@ -25,7 +25,7 @@ func NewRuntime() *Runtime {
 }
 
 func (rt *Runtime) slotIndex(v *varSlot) int {
-	return v.decl.rtOffset + v.index
+	return v.scope.slotOffset + v.index
 }
 
 func (rt *Runtime) Out(txt string, args ...any) {
