@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"axlab.dev/bit/bit"
-	"axlab.dev/bit/bit_core"
+	"axlab.dev/bit/bit_lang"
 	"axlab.dev/bit/tester"
 )
 
@@ -37,7 +37,7 @@ type BitRunner struct{}
 
 func (BitRunner) Run(input tester.Input) (out tester.Output) {
 	compiler := bit.NewCompiler(context.Background(), "../tests", "../build/tests/")
-	compiler.SetCore(bit_core.InitCompiler)
+	compiler.SetCore(bit_lang.InitCompiler)
 
 	stdOut := strings.Builder{}
 	stdErr := strings.Builder{}

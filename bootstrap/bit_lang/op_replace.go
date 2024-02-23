@@ -1,4 +1,4 @@
-package bit_core
+package bit_lang
 
 import (
 	"fmt"
