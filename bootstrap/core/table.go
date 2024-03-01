@@ -43,7 +43,7 @@ func (table *Table[T]) Get(id Id) (out T) {
 }
 
 func (table *Table[T]) TryGet(id Id) (out T, ok bool) {
-	if enableTableChecks > 0 && id.table[0] != table.shared.tableId {
+	if enableTableChecks > 0 && id.table[:][0] != table.shared.tableId {
 		panic("Table: trying to get an invalid id for the table")
 	}
 
@@ -61,7 +61,7 @@ type Id struct {
 }
 
 func (id Id) Valid() bool {
-	if enableTableChecks > 0 && id.table[0] == 0 {
+	if enableTableChecks > 0 && id.table[:][0] == 0 {
 		return false
 	}
 	return id.value > 0

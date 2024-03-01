@@ -19,7 +19,7 @@ func (writer *TableWriter[T]) Add(value T) (out Id) {
 
 	out.value = writer.source.shared.nextId.Add(1)
 	if enableTableChecks > 0 {
-		out.table[0] = writer.source.shared.tableId
+		out.table[:][0] = writer.source.shared.tableId
 	}
 
 	writer.source.buffer.Set(out.toIndex(), &value)
@@ -39,7 +39,7 @@ func (writer *TableWriter[T]) Apply(change TableChange[T]) {
 }
 
 func (writer *TableWriter[T]) Set(id Id, value T) {
-	if enableTableChecks > 0 && id.table[0] != writer.source.shared.tableId {
+	if enableTableChecks > 0 && id.table[:][0] != writer.source.shared.tableId {
 		panic("Table: trying to set an invalid id for the table")
 	}
 	if writer.done.Load() {
