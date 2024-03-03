@@ -69,14 +69,24 @@ func (rope *ropeBuffer[T]) Splice(sta, end int, pageSize [2]int, data RopeIter[T
 	pre := rope.Blocks[:blkSta]
 	pos := rope.Blocks[blkEnd:]
 
-	rope.Blocks = make([]ropeBlock[T], len(pre)+1+len(tail)+len(pos))
+	rope.Blocks = make([]ropeBlock[T], 0, len(pre)+1+len(tail)+len(pos))
 	rope.Blocks = append(rope.Blocks, pre...)
 	rope.Blocks = append(rope.Blocks, head)
 	rope.Blocks = append(rope.Blocks, tail...)
 	rope.Blocks = append(rope.Blocks, pos...)
+
+	prevEnd := 0
+	for i := range rope.Blocks {
+		it := &rope.Blocks[i]
+		it.offset = prevEnd
+		prevEnd = it.End()
+	}
 }
 
 func (rope *ropeBuffer[T]) PageIndex(n int) (index [3]int, valid bool) {
+	if n == 0 {
+		return [3]int{0, 0, 0}, len(rope.Blocks) > 0
+	}
 	sta, end := 0, len(rope.Blocks)
 	for sta < end {
 		mid := (end-sta)/2 + sta
@@ -92,7 +102,6 @@ func (rope *ropeBuffer[T]) PageIndex(n int) (index [3]int, valid bool) {
 			}
 			return [3]int{mid + 1, 0, 0}, valid
 		} else {
-
 			index, valid := block.PageIndex(n)
 			return [3]int{mid, index[0], index[1]}, valid
 		}
@@ -140,7 +149,7 @@ func (rope *ropeBlock[T]) PageIndex(n int) (index [2]int, valid bool) {
 			if pos < pageSta {
 				end = mid
 			} else {
-				return [2]int{mid, pos - pageEnd}, true
+				return [2]int{mid, pos - pageSta}, true
 			}
 		}
 	}
