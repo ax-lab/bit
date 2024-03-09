@@ -22,7 +22,7 @@ func (writer *TableWriter[T]) Add(value T) (out Id) {
 		out.table[:][0] = writer.source.shared.tableId
 	}
 
-	writer.source.buffer.Set(out.toIndex(), &value)
+	dataSetWrite(writer.source.dataSet, out.toIndex(), &value)
 	return
 }
 
@@ -46,7 +46,7 @@ func (writer *TableWriter[T]) Set(id Id, value T) {
 		panic("Table: writing after commit")
 	}
 
-	writer.source.buffer.Set(id.toIndex(), &value)
+	dataSetWrite(writer.source.dataSet, id.toIndex(), &value)
 }
 
 func (writer *TableWriter[T]) Finish() *Table[T] {
