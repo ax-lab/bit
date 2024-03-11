@@ -174,3 +174,36 @@ func BenchmarkTable(t *testing.B) {
 		}
 	}
 }
+
+func BenchmarkDataSet(t *testing.B) {
+	for n := 0; n < t.N; n++ {
+		t0 := time.Now()
+
+		tables := make([]core.DataSet[uint64], benchIter)
+		for id := uint64(0); id < benchSize; id++ {
+			tables[0].Set(id, id)
+		}
+
+		for i := 1; i < benchIter; i++ {
+			new := tables[i-1].Clone()
+			for j := uint64(0); j < benchSize; j++ {
+				v0 := new.Get(j)
+				v1 := new.Get((j + 1) % benchSize)
+				val := (v0 + v1) / 2
+				new.Set(j, val)
+			}
+			tables[i] = new
+		}
+
+		sum := uint64(0)
+		last := tables[len(tables)-1]
+		for id := uint64(0); id < benchSize; id++ {
+			sum += last.Get(id)
+		}
+
+		dur := time.Since(t0)
+		if true {
+			fmt.Println("DS:     SUM is", sum, " -- took ", dur.String())
+		}
+	}
+}
