@@ -202,8 +202,44 @@ func BenchmarkDataSet(t *testing.B) {
 		}
 
 		dur := time.Since(t0)
-		if true {
+		if debugBench {
 			fmt.Println("DS:     SUM is", sum, " -- took ", dur.String())
+		}
+	}
+}
+
+func BenchmarkState(t *testing.B) {
+	for n := 0; n < t.N; n++ {
+		var state []core.State
+
+		t0 := time.Now()
+
+		cells := make([]core.Value[uint64], benchSize)
+		state = append(state, core.NewState())
+
+		for i := range cells {
+			cells[i] = core.New[uint64]()
+			cells[i].Set(state[0], uint64(i))
+		}
+
+		for i := 1; i < benchIter; i++ {
+			gen := i
+			state = append(state, state[gen-1].Clone())
+			for j := range cells {
+				val := (cells[j].Get(state[gen-1]) + cells[(j+1)%benchSize].Get(state[gen-1])) / 2
+				cells[j].Set(state[gen], val)
+			}
+		}
+
+		last := state[len(state)-1]
+		sum := uint64(0)
+		for i := range cells {
+			sum += cells[i].Get(last)
+		}
+
+		dur := time.Since(t0)
+		if debugBench {
+			fmt.Println("STATE:  SUM is", sum, " -- took ", dur.String())
 		}
 	}
 }
