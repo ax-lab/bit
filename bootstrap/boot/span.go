@@ -1,6 +1,9 @@
 package boot
 
-import "fmt"
+import (
+	"cmp"
+	"fmt"
+)
 
 type Span struct {
 	src *Source
@@ -52,6 +55,19 @@ func (span Span) Skip(offset int) Span {
 		panic("Span: invalid skip offset")
 	}
 	return span.Range(offset, len)
+}
+
+func (span Span) Cmp(other Span) int {
+	if span.src == nil || other.src == nil {
+		panic("Span: invalid value for compare")
+	}
+	if span.src != other.src {
+		return span.src.Cmp(other.src)
+	}
+	if res := cmp.Compare(span.sta, other.sta); res != 0 {
+		return res
+	}
+	return cmp.Compare(span.Len(), other.Len())
 }
 
 func (span Span) Location() string {

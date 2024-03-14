@@ -1,11 +1,13 @@
 package boot
 
 import (
+	"cmp"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"sync"
+	"unsafe"
 )
 
 type Source struct {
@@ -43,6 +45,19 @@ func (src *Source) Repr() string {
 
 func (src *Source) Type() Type {
 	return TypeOf[Source]()
+}
+
+func (src *Source) Cmp(other *Source) int {
+	if res := cmp.Compare(src.Name(), other.Name()); res != 0 {
+		return res
+	}
+	if res := cmp.Compare(len(src.Text()), len(other.Text())); res != 0 {
+		return res
+	}
+
+	a := uintptr(unsafe.Pointer(src))
+	b := uintptr(unsafe.Pointer(other))
+	return cmp.Compare(a, b)
 }
 
 type sourceMap struct {

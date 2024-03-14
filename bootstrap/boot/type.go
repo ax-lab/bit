@@ -1,10 +1,12 @@
 package boot
 
 import (
+	"cmp"
 	"fmt"
 	"reflect"
 	"strings"
 	"sync"
+	"unsafe"
 )
 
 type Type struct {
@@ -45,6 +47,9 @@ func TypeOf[T any]() Type {
 }
 
 func (typ Type) Name() string {
+	if typ.inner == nil {
+		return ""
+	}
 	return typ.inner.name
 }
 
@@ -56,6 +61,16 @@ func (typ Type) String() string {
 		return fmt.Sprintf("<%s>", name)
 	}
 	return fmt.Sprintf("<Type=%p>", typ.inner)
+}
+
+func (typ Type) Cmp(other Type) int {
+	if res := cmp.Compare(typ.Name(), other.Name()); res != 0 {
+		return res
+	}
+
+	a := uintptr(unsafe.Pointer(typ.inner))
+	b := uintptr(unsafe.Pointer(other.inner))
+	return cmp.Compare(a, b)
 }
 
 var (

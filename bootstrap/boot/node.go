@@ -3,8 +3,8 @@ package boot
 import (
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
-	"sync"
 )
 
 type Node struct {
@@ -15,31 +15,22 @@ func (node Node) Span() Span {
 	return node.inner.span
 }
 
+func (node Node) Offset() int {
+	return node.inner.span.Sta()
+}
+
 func (node Node) Value() Value {
 	return node.inner.value
 }
 
-type nodeMap struct {
-	mutex    sync.Mutex
-	allNodes []Node
-}
-
-func (nm *nodeMap) NewNode(value Value, span Span) Node {
-	if value == nil {
-		panic("Node: value cannot be nil")
+func (node Node) Cmp(other Node) int {
+	if res := node.Span().Cmp(other.Span()); res != 0 {
+		return res
 	}
-
-	nm.mutex.Lock()
-	defer nm.mutex.Unlock()
-
-	data := &nodeInner{
-		value: value,
-		span:  span,
+	if res := node.Value().Type().Cmp(other.Value().Type()); res != 0 {
+		return res
 	}
-	node := Node{data}
-
-	nm.allNodes = append(nm.allNodes, node)
-	return node
+	return 0
 }
 
 func (nm *nodeMap) CheckDone() error {
@@ -64,6 +55,9 @@ func (nm *nodeMap) CheckDone() error {
 
 		maxPer := max(count/len(pending), 1)
 		for key, list := range pending {
+			slices.SortStableFunc(list, func(a, b Node) int {
+				return a.Cmp(b)
+			})
 			for n, it := range list {
 				if n == maxPer {
 					break
