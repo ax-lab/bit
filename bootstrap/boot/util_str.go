@@ -23,11 +23,11 @@ func StrTrimEnd(input string) string {
 	return strings.TrimRightFunc(input, IsSpace)
 }
 
-func StrIndent(input string, prefix ...IndentPrefix) string {
-	return strDoIndent(true, input, prefix...)
+func StrTrimSta(input string) string {
+	return strings.TrimLeftFunc(input, IsSpace)
 }
 
-func strDoIndent(indentNext bool, input string, prefix ...IndentPrefix) string {
+func StrIndent(input string, prefix ...IndentPrefix) string {
 	tabBuffer := strings.Builder{}
 	for _, it := range prefix {
 		tabBuffer.WriteString(string(it))
@@ -47,11 +47,10 @@ func strDoIndent(indentNext bool, input string, prefix ...IndentPrefix) string {
 		}
 
 		line = StrTrimEnd(line)
-		if indentNext && (len(line) > 0 || nonSpace) {
+		if len(line) > 0 || nonSpace {
 			output.WriteString(tab)
 		}
 		output.WriteString(line)
-		indentNext = true
 		hasOutput = true
 	}
 

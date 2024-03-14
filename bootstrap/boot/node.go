@@ -1,14 +1,25 @@
 package boot
 
 type Node struct {
-	data *nodeData
+	inner *nodeInner
+}
+
+func (node Node) Span() Span {
+	return node.inner.span
+}
+
+func (node Node) Value() any {
+	return node.inner.value
 }
 
 type nodeMap struct{}
 
-func (nm *nodeMap) NewNode(value any) Node {
-	data := &nodeData{}
+func (nm *nodeMap) NewNode(value any, span Span) Node {
+	data := &nodeInner{}
 	return Node{data}
 }
 
-type nodeData struct{}
+type nodeInner struct {
+	value any
+	span  Span
+}
