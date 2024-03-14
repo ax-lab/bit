@@ -1,3 +1,5 @@
 package boot
 
-type State struct{}
+type State struct {
+	sourceMap
+}

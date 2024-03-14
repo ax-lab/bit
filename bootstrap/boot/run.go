@@ -2,7 +2,6 @@ package boot
 
 import (
 	"fmt"
-	"os"
 	"strings"
 )
 
@@ -12,12 +11,12 @@ func Main() {
 }
 
 func (st *State) RunFile(file string) {
-	data, err := os.ReadFile(file)
+	src, err := st.LoadSourceFile(file)
 	if err != nil {
 		Fatal(err)
 	}
 
-	text := string(data)
+	text := src.Text
 	header := text
 	if len(header) > PragmaLoadHeaderSize {
 		header = header[:PragmaLoadHeaderSize]
@@ -32,14 +31,5 @@ func (st *State) RunFile(file string) {
 			}
 		}
 	}
-	fmt.Println(string(data))
-}
-
-func FatalAt(file string, line int, err error) {
-	Fatal(fmt.Errorf("at %s:%d: %v", file, line, err))
-}
-
-func Fatal(err error) {
-	fmt.Fprintf(os.Stderr, "\nfatal: %v\n\n", err)
-	os.Exit(1)
+	fmt.Println(src.Text)
 }
