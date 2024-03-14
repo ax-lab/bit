@@ -47,11 +47,13 @@ func (nm *nodeMap) CheckDone() error {
 
 	if count > 0 {
 		out := strings.Builder{}
+		out.WriteString("compilation finished with ")
 		if count == 1 {
-			out.WriteString("there is one pending node:\n")
+			out.WriteString("1 unparsed node")
 		} else {
-			out.WriteString(fmt.Sprintf("there are %d pending nodes:\n", count))
+			out.WriteString(fmt.Sprintf("%d unparsed nodes", count))
 		}
+		out.WriteString(":\n")
 
 		maxPer := max(count/len(pending), 1)
 		for key, list := range pending {
