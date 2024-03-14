@@ -16,6 +16,8 @@ func (st *State) RunFile(file string) {
 		Fatal(err)
 	}
 
+	st.CheckDone()
+
 	if !st.CheckValid(os.Stderr, "\nErrors:\n\n") {
 		fmt.Println()
 		os.Exit(1)
