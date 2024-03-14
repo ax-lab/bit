@@ -1,6 +1,7 @@
 package boot
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -34,6 +35,14 @@ func (src *Source) SetTabWidth(width int) {
 		panic("Source: invalid tab width")
 	}
 	src.tabWidth = width
+}
+
+func (src *Source) Repr() string {
+	return fmt.Sprintf("%s (%d bytes)", src.Name(), len(src.Text()))
+}
+
+func (src *Source) Type() Type {
+	return TypeOf[Source]()
 }
 
 type sourceMap struct {

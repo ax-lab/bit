@@ -1,5 +1,7 @@
 package boot
 
+import "fmt"
+
 type Span struct {
 	src *Source
 	sta int
@@ -50,4 +52,16 @@ func (span Span) Skip(offset int) Span {
 		panic("Span: invalid skip offset")
 	}
 	return span.Range(offset, len)
+}
+
+func (span Span) Location() string {
+	cur := span.Src().Cursor()
+	cur.Advance(span.Sta())
+
+	loc := fmt.Sprintf("%s @ L%03d:%02d", span.Src().Name(), cur.Line(), cur.Column())
+	if len := span.Len(); len > 0 {
+		cur.Advance(len)
+		loc += fmt.Sprintf(" … L%03d:%02d (+%d)", cur.Line(), cur.Column(), len)
+	}
+	return loc
 }

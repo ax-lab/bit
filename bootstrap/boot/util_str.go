@@ -28,14 +28,9 @@ func StrTrimSta(input string) string {
 }
 
 func StrIndent(input string, prefix ...IndentPrefix) string {
-	tabBuffer := strings.Builder{}
-	for _, it := range prefix {
-		tabBuffer.WriteString(string(it))
-	}
-
-	tab := "\t"
-	if tabBuffer.Len() > 0 {
-		tab = tabBuffer.String()
+	tab := StrJoin(Sep(""), prefix...)
+	if tab == "" {
+		tab = "\t"
 	}
 
 	nonSpace := StrTrim(tab) != ""
@@ -55,4 +50,19 @@ func StrIndent(input string, prefix ...IndentPrefix) string {
 	}
 
 	return output.String()
+}
+
+type Sep string
+
+func StrJoin[T ~string](sep Sep, parts ...T) string {
+	out := strings.Builder{}
+	for _, it := range parts {
+		if part := string(it); len(part) > 0 {
+			if out.Len() > 0 {
+				out.WriteString(string(sep))
+			}
+			out.WriteString(part)
+		}
+	}
+	return out.String()
 }

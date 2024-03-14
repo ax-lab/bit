@@ -24,5 +24,5 @@ func (st *State) RunFile(file string) {
 	}
 
 	fmt.Println()
-	fmt.Println(src.Text())
+	fmt.Printf("Output = %s %v\n", src.Repr(), src.Type())
 }
