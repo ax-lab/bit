@@ -15,4 +15,4 @@ test-cpp:
 	@go test ./bootstrap -count=1 -args -bit.cpp
 
 run: build
-	@./bit --boot
+	@./bit --boot-watcher

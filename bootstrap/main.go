@@ -9,15 +9,16 @@ import (
 
 	"axlab.dev/bit/bit"
 	"axlab.dev/bit/bit_lang"
+	"axlab.dev/bit/boot"
 	"axlab.dev/bit/common"
 	"axlab.dev/bit/proc"
 )
 
 const (
-	FlagBoot   = "--boot"
-	FlagBooted = "--bootstrapped"
-	FlagWatch  = "--watch"
-	FlagCpp    = "--cpp"
+	FlagWatcher = "--boot-watcher"
+	FlagBooted  = "--bootstrapped"
+	FlagWatch   = "--watch"
+	FlagCpp     = "--cpp"
 
 	BuildDir = "build"
 )
@@ -26,13 +27,13 @@ func main() {
 
 	args := os.Args
 
-	var boot, booted, watch, cpp bool
+	var bootWatcher, booted, watch, cpp bool
 	var files []string
 	if len(args) > 1 {
 		skip := true
 		switch args[1] {
-		case FlagBoot:
-			boot = true
+		case FlagWatcher:
+			bootWatcher = true
 		case FlagBooted:
 			booted = true
 		case FlagWatch:
@@ -54,7 +55,12 @@ func main() {
 		proc.Bootstrap()
 	}
 
-	if boot {
+	if len(args) == 1 {
+		boot.Main()
+		return
+	}
+
+	if bootWatcher {
 		newArgs := append([]string{}, args...)
 		newArgs[1] = FlagBooted
 		BootstrapWatcher(newArgs)

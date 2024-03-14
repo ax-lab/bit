@@ -1,0 +1,4 @@
+#load boot.lexer
+#load boot.print
+
+print 'hello world'

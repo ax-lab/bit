@@ -1,0 +1,35 @@
+use ./match
+use ./token
+
+type IntToken is Token
+	flag = DEC | HEX | OCT | BIN
+
+lex DEC = [0-9]
+lex HEX = [0-9A-Fa-f]
+lex OCT = [0-7]
+lex BIN = [01]
+
+lex INV_SUFFIX = [A-Za-z] [A-Za-z0-9]*
+	on match => error 'invalid suffix for int literal'
+
+# Decimal
+match IntToken = DEC+ ('_' DEC+)* INV_SUFFIX?
+	on match => .flag = DEC
+
+# Hexadecimal
+match IntToken = 0x HEX+ ('_' HEX+)* INV_SUFFIX?
+	on match => .flag = HEX
+
+# Octal
+match IntToken = 0c OCT+ ('_' OCT+)* INV_SUFFIX?
+	on match => .flag = OCT
+
+# Binary
+match IntToken = 0b BIN+ ('_' BIN+)* INV_SUFFIX?
+	on match => .flag = BIN
+
+tests {
+	matches IntToken: '0'   with .flag = DEC
+	matches IntToken: '1'   with .flag = DEC
+	matches IntToken: '123' with .flag = DEC
+}
