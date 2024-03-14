@@ -35,14 +35,35 @@ func (nm *nodeMap) NewNode(value Value, span Span) Node {
 	return node
 }
 
-type nodeMapByType map[Type]nodeMapBySource
+type nodeMapByType map[Type]nodeMapByKey
 
 func (mTyp nodeMapByType) Add(node Node) {
 	key := node.Value().Type()
 	mSrc, ok := mTyp[key]
 	if !ok {
-		mSrc = make(nodeMapBySource)
+		mSrc = make(nodeMapByKey)
 		mTyp[key] = mSrc
+	}
+	mSrc.Add(node)
+}
+
+type nodeMapByKey map[Key]nodeMapBySource
+
+func (mKey nodeMapByKey) Add(node Node) {
+	for _, key := range node.Keys() {
+		mSrc, ok := mKey[key]
+		if !ok {
+			mSrc = make(nodeMapBySource)
+			mKey[key] = mSrc
+		}
+		mSrc.Add(node)
+	}
+
+	key := KeyNone()
+	mSrc, ok := mKey[key]
+	if !ok {
+		mSrc = make(nodeMapBySource)
+		mKey[key] = mSrc
 	}
 	mSrc.Add(node)
 }

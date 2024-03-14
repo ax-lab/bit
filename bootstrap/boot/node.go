@@ -23,6 +23,15 @@ func (node Node) Value() Value {
 	return node.inner.value
 }
 
+func (node Node) Keys() (out []Key) {
+	if val, ok := node.Value().(WithKey); ok {
+		out = []Key{val.Key()}
+	} else if val, ok := node.Value().(WithKeys); ok {
+		out = val.Keys()
+	}
+	return
+}
+
 func (node Node) Cmp(other Node) int {
 	if res := node.Span().Cmp(other.Span()); res != 0 {
 		return res
@@ -30,6 +39,21 @@ func (node Node) Cmp(other Node) int {
 	if res := node.Value().Type().Cmp(other.Value().Type()); res != 0 {
 		return res
 	}
+
+	ka := node.Keys()
+	kb := other.Keys()
+	for i := 0; i < max(len(ka), len(kb)); i++ {
+		if i >= len(ka) {
+			return -1
+		}
+		if i >= len(kb) {
+			return +1
+		}
+		if res := ka[i].Cmp(kb[i]); res != 0 {
+			return res
+		}
+	}
+
 	return 0
 }
 
