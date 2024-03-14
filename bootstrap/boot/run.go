@@ -2,7 +2,7 @@ package boot
 
 import (
 	"fmt"
-	"strings"
+	"os"
 )
 
 func Main() {
@@ -16,20 +16,11 @@ func (st *State) RunFile(file string) {
 		Fatal(err)
 	}
 
-	text := src.Text
-	header := text
-	if len(header) > PragmaLoadHeaderSize {
-		header = header[:PragmaLoadHeaderSize]
+	if !st.CheckValid(os.Stderr, "\nErrors:\n\n") {
+		fmt.Println()
+		os.Exit(1)
 	}
 
-	for n, line := range StrLines(header) {
-		line = StrTrim(line)
-		if strings.HasPrefix(line, PragmaLoadPrefix+" ") {
-			load := StrTrim(line[len(PragmaLoadPrefix):])
-			if err := st.PragmaLoad(load); err != nil {
-				FatalAt(file, n+1, err)
-			}
-		}
-	}
-	fmt.Println(src.Text)
+	fmt.Println()
+	fmt.Println(src.Text())
 }

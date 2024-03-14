@@ -1,13 +1,15 @@
 package boot
 
-import "fmt"
+import (
+	"fmt"
+)
 
 const (
 	PragmaLoadHeaderSize = 1024
 	PragmaLoadPrefix     = "#load"
 )
 
-func (st *State) PragmaLoad(name string) error {
+func (st *State) PragmaLoad(node Node, name string) error {
 	name = StrTrim(name)
 	if name == "" {
 		return fmt.Errorf("%s -- missing name", PragmaLoadPrefix)
