@@ -3,8 +3,7 @@ package core
 import "sync/atomic"
 
 var (
-	idCounter      atomic.Uint64
-	versionCounter atomic.Uint64
+	idCounter atomic.Uint64
 )
 
 func NewData[T any]() Data[T] {

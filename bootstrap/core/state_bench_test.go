@@ -7,34 +7,7 @@ import (
 	"time"
 
 	"axlab.dev/bit/core"
-	"github.com/stretchr/testify/require"
 )
-
-func TestCell(t *testing.T) {
-	test := require.New(t)
-
-	const maxVersion = 1024
-
-	expected := make([]string, maxVersion)
-	for n := range expected {
-		expected[n] = fmt.Sprintf("val-%d", n)
-	}
-
-	cell := core.Cell[string]{}
-	for n := uint64(1); n < maxVersion; n++ {
-		for k := uint64(1); k < maxVersion; k++ {
-			cur := cell.Get(k)
-			exp := expected[int(k)]
-			if k < n {
-				test.Equal(exp, cur, "at gen %d, expected #%d as `%s`, but it was `%s`", n, k, exp, cur)
-			} else {
-				test.Equal("", cur, "at gen %d, expected #%d to be empty, but it was `%s`", n, k, cur)
-			}
-		}
-
-		cell.Set(n, expected[int(n)])
-	}
-}
 
 const (
 	benchSize  = 1024
@@ -66,33 +39,6 @@ func BenchmarkBase(t *testing.B) {
 		dur := time.Since(t0)
 		if debugBench {
 			fmt.Println("BASE:   SUM is", sum, " -- took ", dur.String())
-		}
-	}
-}
-
-func BenchmarkCell(t *testing.B) {
-	for n := 0; n < t.N; n++ {
-		t0 := time.Now()
-		cells := make([]core.Cell[uint64], benchSize)
-		for i := range cells {
-			cells[i].Set(1, uint64(i))
-		}
-
-		for i := 2; i <= benchIter; i++ {
-			gen := uint64(i)
-			for j := range cells {
-				val := (cells[j].Get(gen-1) + cells[(j+1)%benchSize].Get(gen-1)) / 2
-				cells[j].Set(gen, val)
-			}
-		}
-
-		sum := uint64(0)
-		for i := range cells {
-			sum += cells[i].Get(benchIter)
-		}
-		dur := time.Since(t0)
-		if debugBench {
-			fmt.Println("CELL:   SUM is", sum, " -- took ", dur.String())
 		}
 	}
 }
