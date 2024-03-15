@@ -94,6 +94,8 @@ func (st *State) LoadSourceFile(file string) (*Source, error) {
 
 	src.text = string(data)
 	src.node = st.NewNode(src, src.Span())
+
+	st.BindSource(src)
 	src.parsePragmas()
 
 	return src, nil

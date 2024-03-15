@@ -4,6 +4,7 @@ type State struct {
 	sourceMap
 	nodeMap
 	errorList
+	bindingMap
 }
 
 func (st *State) CheckDone() {
