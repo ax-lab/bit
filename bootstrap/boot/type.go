@@ -13,15 +13,21 @@ type Type struct {
 	inner *typeInner
 }
 
-func NewType() Type {
+func TypeNew() Type {
 	inner := &typeInner{done: typeDone}
 	out := Type{inner}
 	return out
 }
 
-func TypeOf[T any]() Type {
-	var zero T
-	typ := reflect.TypeOf(zero)
+func TypeFromValue(val any) Type {
+	typ := reflect.TypeOf(val)
+	if typ == nil {
+		return Type{}
+	}
+	return TypeFrom(typ)
+}
+
+func TypeFrom(typ reflect.Type) Type {
 	if val, ok := typeMap.Load(typ); ok {
 		inner := val.(*typeInner)
 		<-inner.done
@@ -46,6 +52,12 @@ func TypeOf[T any]() Type {
 	return Type{inner}
 }
 
+func TypeOf[T any]() Type {
+	var zero T
+	typ := reflect.TypeOf(zero)
+	return TypeFrom(typ)
+}
+
 func (typ Type) Name() string {
 	if typ.inner == nil {
 		return ""
@@ -55,12 +67,12 @@ func (typ Type) Name() string {
 
 func (typ Type) String() string {
 	if typ.inner == nil {
-		return "<Type=nil>"
+		return "Type(nil)"
 	}
 	if name := typ.Name(); name != "" {
-		return fmt.Sprintf("<%s>", name)
+		return fmt.Sprintf("Type(%s)", name)
 	}
-	return fmt.Sprintf("<Type=%p>", typ.inner)
+	return fmt.Sprintf("Type(%p)", typ.inner)
 }
 
 func (typ Type) Cmp(other Type) int {

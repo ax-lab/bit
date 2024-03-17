@@ -23,6 +23,10 @@ func (node Node) Value() Value {
 	return node.inner.value
 }
 
+func (node Node) Type() Type {
+	return node.inner.typ
+}
+
 func (node Node) Keys() (out []Key) {
 	if val, ok := node.Value().(WithKey); ok {
 		out = []Key{val.Key()}
@@ -36,7 +40,7 @@ func (node Node) Cmp(other Node) int {
 	if res := node.Span().Cmp(other.Span()); res != 0 {
 		return res
 	}
-	if res := node.Value().Type().Cmp(other.Value().Type()); res != 0 {
+	if res := node.Type().Cmp(other.Type()); res != 0 {
 		return res
 	}
 
@@ -57,13 +61,17 @@ func (node Node) Cmp(other Node) int {
 	return 0
 }
 
+func (node Node) SetDone(done bool) {
+	node.inner.done = done
+}
+
 func (nm *nodeMap) CheckDone() error {
 	pending := make(map[Type][]Node)
 	count := 0
 	for _, it := range nm.allNodes {
 		if !it.inner.done {
 			it.inner.done = true
-			key := it.Value().Type()
+			key := it.Type()
 			pending[key] = append(pending[key], it)
 			count++
 		}
@@ -114,6 +122,7 @@ func (nm *nodeMap) CheckDone() error {
 
 type nodeInner struct {
 	value Value
+	typ   Type
 	span  Span
 	done  bool
 }

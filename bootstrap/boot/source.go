@@ -43,10 +43,6 @@ func (src *Source) Repr() string {
 	return fmt.Sprintf("%s (%d bytes)", src.Name(), len(src.Text()))
 }
 
-func (src *Source) Type() Type {
-	return TypeOf[Source]()
-}
-
 func (src *Source) Cmp(other *Source) int {
 	if res := cmp.Compare(src.Name(), other.Name()); res != 0 {
 		return res
@@ -63,6 +59,20 @@ func (src *Source) Cmp(other *Source) int {
 type sourceMap struct {
 	mutex sync.Mutex
 	files map[string]*Source
+}
+
+func (st *State) AddSource(name, text string) *Source {
+	src := &Source{
+		st:   st,
+		name: name,
+		text: text,
+	}
+	src.node = st.NewNode(src, src.Span())
+
+	st.BindSource(src)
+	src.parsePragmas()
+
+	return src
 }
 
 func (st *State) LoadSourceFile(file string) (*Source, error) {
@@ -85,6 +95,10 @@ func (st *State) LoadSourceFile(file string) (*Source, error) {
 		st:   st,
 		name: file,
 	}
+	if st.files == nil {
+		st.files = make(map[string]*Source)
+	}
+	st.files[fullPath] = src
 
 	data, err := os.ReadFile(file)
 	if err != nil {

@@ -21,6 +21,7 @@ func (nm *nodeMap) NewNode(value Value, span Span) Node {
 
 	data := &nodeInner{
 		value: value,
+		typ:   TypeFromValue(value),
 		span:  span,
 	}
 
@@ -35,10 +36,14 @@ func (nm *nodeMap) NewNode(value Value, span Span) Node {
 	return node
 }
 
+func (nm *nodeMap) Nodes() []Node {
+	return nm.allNodes
+}
+
 type nodeMapByType map[Type]nodeMapByKey
 
 func (mTyp nodeMapByType) Add(node Node) {
-	key := node.Value().Type()
+	key := node.Type()
 	mSrc, ok := mTyp[key]
 	if !ok {
 		mSrc = make(nodeMapByKey)

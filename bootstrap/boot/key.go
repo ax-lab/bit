@@ -1,6 +1,7 @@
 package boot
 
 import (
+	"cmp"
 	"fmt"
 )
 
@@ -17,28 +18,25 @@ type KeyCompare interface {
 	Cmp(other any) (bool, int)
 }
 
-type KeyValue interface {
-	comparable
-	KeyCompare
-}
-
 type Key struct {
 	val KeyCompare
+	typ Type
 }
 
 func KeyNone() Key {
-	return Key{keyNone{}}
+	return Key{nil, Type{}}
 }
 
-func KeyNew[T KeyValue](val T) Key {
-	return Key{val}
+func KeyValue[T KeyCompare](val T) Key {
+	return Key{val, TypeOf[T]()}
+}
+
+func KeyFrom[T cmp.Ordered](val T) Key {
+	return Key{keyOrdered[T]{val}, TypeOf[T]()}
 }
 
 func (key Key) Type() Type {
-	if key.val == nil {
-		return Type{}
-	}
-	return key.val.Type()
+	return key.typ
 }
 
 func (key Key) Value() Value {
@@ -62,20 +60,27 @@ func (key Key) Cmp(other Key) int {
 		return ta.Cmp(tb)
 	}
 
-	panic(fmt.Sprintf("key failed to compare -- type %v", ta))
+	panic(fmt.Sprintf("key failed to compare -- type %v and %v", ta, tb))
 }
 
-type keyNone struct{}
-
-func (me keyNone) Cmp(other any) (bool, int) {
-	_, ok := other.(keyNone)
-	return ok, 0
+func (key Key) String() string {
+	if key.val == nil {
+		return "Key(nil)"
+	}
+	return fmt.Sprintf("Key(%v)", key.val.Repr())
 }
 
-func (me keyNone) Repr() string {
-	return "Key(none)"
+type keyOrdered[T cmp.Ordered] struct {
+	val T
 }
 
-func (me keyNone) Type() Type {
-	return TypeOf[keyNone]()
+func (key keyOrdered[T]) Cmp(other any) (bool, int) {
+	if kv, ok := other.(keyOrdered[T]); ok {
+		return true, cmp.Compare(key.val, kv.val)
+	}
+	return false, 0
+}
+
+func (key keyOrdered[T]) Repr() string {
+	return fmt.Sprint(key.val)
 }

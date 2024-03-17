@@ -3,6 +3,7 @@ package boot
 import (
 	"cmp"
 	"fmt"
+	"math"
 )
 
 type Span struct {
@@ -47,6 +48,16 @@ func (span Span) Range(sta, end int) Span {
 		panic("Span: invalid slice bounds")
 	}
 	return Span{span.src, sta, end}
+}
+
+func (span Span) RangeString() string {
+	var end string
+	if span.end == math.MaxInt {
+		end = "MAX"
+	} else {
+		end = fmt.Sprint(span.end)
+	}
+	return fmt.Sprintf("%d…%s", span.sta, end)
 }
 
 func (span Span) Skip(offset int) Span {

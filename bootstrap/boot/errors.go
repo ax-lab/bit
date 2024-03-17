@@ -79,16 +79,21 @@ func (errs *errorList) AddError(err error) {
 	}
 }
 
-func (errs *errorList) CheckValid(stdErr io.Writer, prefix string) bool {
+func (errs *errorList) Errors() (out []error) {
 	errs.mutex.Lock()
 	defer errs.mutex.Unlock()
+	out = append(out, errs.list...)
+	return
+}
 
-	if len(errs.list) == 0 {
+func (errs *errorList) CheckValid(stdErr io.Writer, prefix string) bool {
+	list := errs.Errors()
+	if len(list) == 0 {
 		return true
 	}
 
 	fmt.Fprint(stdErr, prefix)
-	for n, err := range errs.list {
+	for n, err := range list {
 		if n > 0 {
 			fmt.Fprintf(stdErr, "\n")
 		}

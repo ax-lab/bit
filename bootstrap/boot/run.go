@@ -16,6 +16,7 @@ func (st *State) RunFile(file string) {
 		Fatal(err)
 	}
 
+	st.Evaluate()
 	st.CheckDone()
 
 	if !st.CheckValid(os.Stderr, "\nErrors:\n\n") {
@@ -24,5 +25,5 @@ func (st *State) RunFile(file string) {
 	}
 
 	fmt.Println()
-	fmt.Printf("Output = %s %v\n", src.Repr(), src.Type())
+	fmt.Printf("Output = %s %v\n", src.Repr(), TypeFromValue(src))
 }
