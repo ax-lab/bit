@@ -10,6 +10,7 @@ import (
 	"axlab.dev/bit/bit"
 	"axlab.dev/bit/bit_lang"
 	"axlab.dev/bit/boot"
+	"axlab.dev/bit/bot"
 	"axlab.dev/bit/common"
 	"axlab.dev/bit/proc"
 )
@@ -21,6 +22,8 @@ const (
 	FlagCpp     = "--cpp"
 
 	BuildDir = "build"
+
+	UseBot = true
 )
 
 func main() {
@@ -56,7 +59,11 @@ func main() {
 	}
 
 	if len(args) == 1 {
-		boot.Main()
+		if UseBot {
+			bot.Run()
+		} else {
+			boot.Main()
+		}
 		return
 	}
 
