@@ -5,10 +5,12 @@ import (
 	"io"
 	"strings"
 	"sync"
+
+	"axlab.dev/bit/input"
 )
 
 type ProgramError struct {
-	src    *Source
+	src    input.Source
 	line   int
 	column int
 	text   string
@@ -24,7 +26,7 @@ func Error(msg string, args ...any) ProgramError {
 	return err
 }
 
-func ErrorAt(err error, src *Source, pos ...int) error {
+func ErrorAt(err error, src input.Source, pos ...int) error {
 	return Error(err.Error()).At(src, pos...)
 }
 
@@ -51,8 +53,8 @@ func (err ProgramError) Error() string {
 	return out.String()
 }
 
-func (err ProgramError) At(src *Source, pos ...int) ProgramError {
-	if src == nil || len(pos) > 2 || (len(pos) > 0 && pos[0] <= 0) || (len(pos) > 1 && pos[1] <= 0) {
+func (err ProgramError) At(src input.Source, pos ...int) ProgramError {
+	if !src.Valid() || len(pos) > 2 || (len(pos) > 0 && pos[0] <= 0) || (len(pos) > 1 && pos[1] <= 0) {
 		panic("Error: invalid `at` position")
 	}
 

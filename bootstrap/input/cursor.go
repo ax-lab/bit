@@ -1,4 +1,4 @@
-package boot
+package input
 
 import (
 	"fmt"
@@ -12,7 +12,7 @@ type Cursor struct {
 	ind  int
 }
 
-func (src *Source) Cursor() Cursor {
+func (src Source) Cursor() Cursor {
 	return Cursor{span: src.Span()}
 }
 
@@ -101,7 +101,7 @@ func (cur *Cursor) Advance(length int) {
 	}
 
 	cr := false
-	tw := cur.span.Src().TabWidth()
+	tw := cur.span.Src().TabSize()
 
 	offset := 0
 	for pos, chr := range text {

@@ -3,6 +3,8 @@ package boot
 import (
 	"slices"
 	"sync"
+
+	"axlab.dev/bit/input"
 )
 
 type nodeMap struct {
@@ -11,7 +13,7 @@ type nodeMap struct {
 	pending  nodeMapByType
 }
 
-func (nm *nodeMap) NewNode(value Value, span Span) Node {
+func (nm *nodeMap) NewNode(value Value, span input.Span) Node {
 	if value == nil {
 		panic("Node: value cannot be nil")
 	}
@@ -73,7 +75,7 @@ func (mKey nodeMapByKey) Add(node Node) {
 	mSrc.Add(node)
 }
 
-type nodeMapBySource map[*Source]*nodeList
+type nodeMapBySource map[input.Source]*nodeList
 
 func (mSrc nodeMapBySource) Add(node Node) {
 	key := node.Span().Src()

@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"slices"
 	"strings"
+
+	"axlab.dev/bit/input"
 )
 
 type Node struct {
 	inner *nodeInner
 }
 
-func (node Node) Span() Span {
+func (node Node) Span() input.Span {
 	return node.inner.span
 }
 
@@ -123,6 +125,6 @@ func (nm *nodeMap) CheckDone() error {
 type nodeInner struct {
 	value Value
 	typ   Type
-	span  Span
+	span  input.Span
 	done  bool
 }

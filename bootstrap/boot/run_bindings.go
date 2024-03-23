@@ -6,6 +6,8 @@ import (
 	"slices"
 	"sync"
 	"unsafe"
+
+	"axlab.dev/bit/input"
 )
 
 type BindOrder int
@@ -36,11 +38,11 @@ type BindArgs struct {
 }
 
 type BindItem struct {
-	src  *Source
+	src  input.Source
 	list [][2]int
 }
 
-func (br BindItem) Src() *Source {
+func (br BindItem) Src() input.Source {
 	return br.src
 }
 
@@ -48,10 +50,13 @@ func (br BindItem) Len() int {
 	return len(br.list)
 }
 
-func (br BindItem) Get(index int) Span {
+func (br BindItem) Get(index int) input.Span {
 	sta := br.list[index][0]
 	end := br.list[index][1]
-	return Span{br.src, sta, end}
+	if end == math.MaxInt {
+		end = br.src.Len()
+	}
+	return br.src.Range(sta, end)
 }
 
 type bindInner struct {
@@ -151,7 +156,7 @@ type bindingGlobal struct {
 	Val  Bind
 }
 
-func (binds *bindingMap) BindSource(src *Source) {
+func (binds *bindingMap) BindSource(src input.Source) {
 	binds.mutex.Lock()
 	defer binds.mutex.Unlock()
 	if binds.sources == nil {
@@ -182,7 +187,7 @@ func (binds *bindingMap) Define(typ Type, key Key, val Bind) {
 	}
 }
 
-func (binds *bindingMap) DefineAt(span Span, typ Type, key Key, val Bind) {
+func (binds *bindingMap) DefineAt(span input.Span, typ Type, key Key, val Bind) {
 	binds.mutex.Lock()
 	defer binds.mutex.Unlock()
 
@@ -190,8 +195,8 @@ func (binds *bindingMap) DefineAt(span Span, typ Type, key Key, val Bind) {
 	binds.doDefine(src, typ, key, sta, end, val)
 }
 
-func (binds *bindingMap) doDefine(src *Source, typ Type, key Key, sta, end int, val Bind) {
-	if src == nil || end < sta {
+func (binds *bindingMap) doDefine(src input.Source, typ Type, key Key, sta, end int, val Bind) {
+	if !src.Valid() || end < sta {
 		panic("BindingMap: invalid range")
 	} else if end == sta {
 		return
@@ -204,7 +209,7 @@ func (binds *bindingMap) doDefine(src *Source, typ Type, key Key, sta, end int, 
 }
 
 type bindingInfo struct {
-	src *Source
+	src input.Source
 	typ Type
 	key Key
 	sta int
@@ -212,7 +217,7 @@ type bindingInfo struct {
 	val Bind
 }
 
-type bindingMapBySource map[*Source]bindingMapByType
+type bindingMapBySource map[input.Source]bindingMapByType
 
 func (mSrc bindingMapBySource) BindSource(parent *bindingMap, bind bindingInfo) {
 	mTyp := mSrc[bind.src]

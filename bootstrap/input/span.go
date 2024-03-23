@@ -1,18 +1,17 @@
-package boot
+package input
 
 import (
 	"cmp"
 	"fmt"
-	"math"
 )
 
 type Span struct {
-	src *Source
+	src Source
 	sta int
 	end int
 }
 
-func (src *Source) Span() Span {
+func (src Source) Span() Span {
 	return Span{
 		src: src,
 		sta: 0,
@@ -20,7 +19,19 @@ func (src *Source) Span() Span {
 	}
 }
 
-func (span Span) Src() *Source {
+func (src Source) Range(sta, end int) Span {
+	if sta < 0 || sta > end || end > len(src.Text()) {
+		panic("Source range out of bounds")
+	}
+
+	return Span{
+		src: src,
+		sta: sta,
+		end: end,
+	}
+}
+
+func (span Span) Src() Source {
 	return span.src
 }
 
@@ -50,35 +61,12 @@ func (span Span) Range(sta, end int) Span {
 	return Span{span.src, sta, end}
 }
 
-func (span Span) RangeString() string {
-	var end string
-	if span.end == math.MaxInt {
-		end = "MAX"
-	} else {
-		end = fmt.Sprint(span.end)
-	}
-	return fmt.Sprintf("%d…%s", span.sta, end)
-}
-
 func (span Span) Skip(offset int) Span {
 	len := span.Len()
 	if offset < 0 || len < offset {
 		panic("Span: invalid skip offset")
 	}
 	return span.Range(offset, len)
-}
-
-func (span Span) Cmp(other Span) int {
-	if span.src == nil || other.src == nil {
-		panic("Span: invalid value for compare")
-	}
-	if span.src != other.src {
-		return span.src.Cmp(other.src)
-	}
-	if res := cmp.Compare(span.sta, other.sta); res != 0 {
-		return res
-	}
-	return cmp.Compare(span.Len(), other.Len())
 }
 
 func (span Span) Location() string {
@@ -91,4 +79,14 @@ func (span Span) Location() string {
 		loc += fmt.Sprintf(" … L%03d:%02d (+%d)", cur.Line(), cur.Column(), len)
 	}
 	return loc
+}
+
+func (span Span) Cmp(other Span) int {
+	if res := span.src.Cmp(other.src); res != 0 {
+		return res
+	}
+	if res := cmp.Compare(span.sta, other.sta); res != 0 {
+		return res
+	}
+	return cmp.Compare(span.Len(), other.Len())
 }

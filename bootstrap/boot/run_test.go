@@ -34,7 +34,10 @@ func TestBasicRun(t *testing.T) {
 			var pos []string
 			for i := 0; i < it.Len(); i++ {
 				span := it.Get(i)
-				pos = append(pos, span.RangeString())
+
+				sta := span.Sta()
+				end := span.End()
+				pos = append(pos, fmt.Sprintf("%d…%d", sta, end))
 			}
 
 			log := fmt.Sprintf("%s: %s %s", head, it.Src().Name(), strings.Join(pos, " "))
@@ -50,8 +53,8 @@ func TestBasicRun(t *testing.T) {
 
 	test.Empty(state.Errors())
 	test.Equal([]string{
-		"0: Type(int) -> Key(42): src0 0…MAX",
-		"0: Type(int) -> Key(42): src1 0…MAX",
-		"0: Type(int) -> Key(42): src2 0…MAX",
+		"0: Type(int) -> Key(42): src0 0…3",
+		"0: Type(int) -> Key(42): src1 0…6",
+		"0: Type(int) -> Key(42): src2 0…4",
 	}, evalLog)
 }
