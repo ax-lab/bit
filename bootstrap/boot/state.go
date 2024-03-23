@@ -60,10 +60,10 @@ func (st *State) initSource(src input.Source) {
 			header = header[:PragmaLoadHeaderSize]
 		}
 
-		for n, line := range StrLines(header) {
-			line = StrTrim(line)
+		for n, line := range input.Lines(header) {
+			line = input.Trim(line)
 			if strings.HasPrefix(line, PragmaLoadPrefix+" ") {
-				load := StrTrim(line[len(PragmaLoadPrefix):])
+				load := input.Trim(line[len(PragmaLoadPrefix):])
 				if err := st.PragmaLoad(info.node, load); err != nil {
 					st.AddError(ErrorAt(err, src, n+1))
 				}

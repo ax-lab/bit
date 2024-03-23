@@ -100,7 +100,7 @@ func (errs *errorList) CheckValid(stdErr io.Writer, prefix string) bool {
 			fmt.Fprintf(stdErr, "\n")
 		}
 		text := fmt.Sprintf("[%d] %s\n", n+1, err)
-		fmt.Fprint(stdErr, StrIndent(text))
+		fmt.Fprint(stdErr, input.Indent(text))
 	}
 	return false
 }

@@ -5,14 +5,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
-	"unicode"
 )
-
-const DefaultTabSize = 4
-
-func IsSpace(chr rune) bool {
-	return chr != '\n' && chr != '\r' && unicode.IsSpace(chr)
-}
 
 type Source struct {
 	data *sourceData

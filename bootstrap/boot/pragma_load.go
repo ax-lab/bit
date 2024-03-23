@@ -2,6 +2,8 @@ package boot
 
 import (
 	"fmt"
+
+	"axlab.dev/bit/input"
 )
 
 const (
@@ -10,7 +12,7 @@ const (
 )
 
 func (st *State) PragmaLoad(node Node, name string) error {
-	name = StrTrim(name)
+	name = input.Trim(name)
 	if name == "" {
 		return fmt.Errorf("%s -- missing name", PragmaLoadPrefix)
 	}
