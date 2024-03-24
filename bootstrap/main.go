@@ -58,12 +58,13 @@ func main() {
 		proc.Bootstrap()
 	}
 
+	if UseBot {
+		bot.Run()
+		return
+	}
+
 	if len(args) == 1 {
-		if UseBot {
-			bot.Run()
-		} else {
-			boot.Main()
-		}
+		boot.Main()
 		return
 	}
 
