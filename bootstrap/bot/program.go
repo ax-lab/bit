@@ -17,8 +17,8 @@ type Program struct {
 	stdOut io.Writer
 
 	moduleLock sync.Mutex
-	moduleMap  map[input.Source]*moduleData
-	mainModule *moduleData
+	moduleMap  map[input.Source]Module
+	mainModule Module
 
 	errorLock sync.Mutex
 	errorList []error
@@ -74,35 +74,6 @@ func (program *Program) LoadString(name, text string) Module {
 	return program.loadSource(src)
 }
 
-func (program *Program) loadSource(src input.Source) Module {
-	program.moduleLock.Lock()
-	defer program.moduleLock.Unlock()
-
-	if mod, ok := program.moduleMap[src]; ok {
-		return Module{mod}
-	}
-
-	cursor := src.Cursor()
-	tokens, err := Lex(&cursor, &program.symbols)
-
-	mod := &moduleData{src: src, tokens: tokens}
-
-	if program.moduleMap == nil {
-		program.moduleMap = make(map[input.Source]*moduleData)
-	}
-	program.moduleMap[src] = mod
-
-	if program.mainModule == nil {
-		program.mainModule = mod
-	}
-
-	if err != nil {
-		program.AddError(fmt.Errorf("loading module `%s`: %v", mod.src.Name(), err))
-	}
-
-	return Module{mod}
-}
-
 func (program *Program) Run() {
 	var errs []error
 	program.errorLock.Lock()
@@ -122,12 +93,45 @@ func (program *Program) Run() {
 	defer program.moduleLock.Unlock()
 
 	main := program.mainModule
-	if main == nil {
+	if !main.Valid() {
 		return
 	}
 
-	for _, it := range main.tokens {
+	for _, it := range main.Tokens().Slice() {
 		fmt.Printf("\n=> %s @ %s: %#v\n", it.Kind, it.Span.Location(), it.Span.Text())
 	}
 	fmt.Printf("\n")
+}
+
+func (program *Program) loadSource(src input.Source) Module {
+	program.moduleLock.Lock()
+	defer program.moduleLock.Unlock()
+
+	if mod, ok := program.moduleMap[src]; ok {
+		return mod
+	}
+
+	cursor := src.Cursor()
+	tokens, err := Lex(&cursor, &program.symbols)
+
+	mod := Module{
+		&moduleData{
+			tokens: TokenListNew(src, tokens),
+		},
+	}
+
+	if program.moduleMap == nil {
+		program.moduleMap = make(map[input.Source]Module)
+	}
+	program.moduleMap[src] = mod
+
+	if !program.mainModule.Valid() {
+		program.mainModule = mod
+	}
+
+	if err != nil {
+		program.AddError(fmt.Errorf("loading module `%s`: %v", mod.Name(), err))
+	}
+
+	return mod
 }

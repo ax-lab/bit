@@ -7,24 +7,6 @@ import (
 	"axlab.dev/bit/input"
 )
 
-type TokenKind string
-
-const (
-	TokenInt     TokenKind = "Int"
-	TokenStr     TokenKind = "Str"
-	TokenWord    TokenKind = "Word"
-	TokenSymbol  TokenKind = "Symbol"
-	TokenBreak   TokenKind = "Break"
-	TokenComment TokenKind = "Comment"
-)
-
-type TokenIntBase string
-
-type Token struct {
-	Kind TokenKind
-	Span input.Span
-}
-
 func Lex(cursor *input.Cursor, symbols *SymbolTable) (out []Token, err error) {
 	for {
 		cursor.SkipSpaces()

@@ -111,6 +111,10 @@ func (span Span) Range(sta, end int) Span {
 	return Span{span.src, sta, end}
 }
 
+func (span Span) WithLen(len int) Span {
+	return span.Range(0, len)
+}
+
 func (span Span) Skip(offset int) Span {
 	len := span.Len()
 	if offset < 0 || len < offset {
