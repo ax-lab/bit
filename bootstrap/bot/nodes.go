@@ -8,6 +8,10 @@ type Node interface {
 }
 
 type NodeList struct {
+	data *nodeListData
+}
+
+type nodeListData struct {
 	source input.Source
 	items  []Node
 	sta    int
@@ -15,32 +19,32 @@ type NodeList struct {
 }
 
 func NodeListNew[T Node](src input.Source, items ...T) NodeList {
-	out := NodeList{
+	data := &nodeListData{
 		source: src,
 		items:  make([]Node, 0, len(items)),
 		sta:    0,
 		end:    len(items),
 	}
 	for _, it := range items {
-		out.items = append(out.items, it)
+		data.items = append(data.items, it)
 	}
-	return out
+	return NodeList{data}
 }
 
 func (ls NodeList) Src() input.Source {
-	return ls.source
+	return ls.data.source
 }
 
 func (ls NodeList) Len() int {
-	return ls.end - ls.sta
+	return ls.data.end - ls.data.sta
 }
 
 func (ls NodeList) Get(index int) Node {
-	index += ls.sta
-	if index < ls.sta || ls.end <= index {
+	index += ls.data.sta
+	if index < ls.data.sta || ls.data.end <= index {
 		panic("NodeList: index out of bounds")
 	}
-	return ls.items[index]
+	return ls.data.items[index]
 }
 
 func (ls NodeList) Range(pos ...int) NodeList {
@@ -48,12 +52,14 @@ func (ls NodeList) Range(pos ...int) NodeList {
 	if sta < 0 || end < sta || end > ls.Len() {
 		panic("NodeList: out of bounds range")
 	}
-	return NodeList{items: ls.items, sta: ls.sta + sta, end: ls.sta + end}
+	return NodeList{
+		&nodeListData{items: ls.data.items, sta: ls.data.sta + sta, end: ls.data.sta + end},
+	}
 }
 
 func (ls NodeList) Slice(pos ...int) []Node {
 	sta, end := ls.getRange(pos...)
-	return ls.items[sta:end]
+	return ls.data.items[sta:end]
 }
 
 func (ls NodeList) getRange(pos ...int) (sta, end int) {
@@ -72,23 +78,23 @@ func (ls NodeList) getRange(pos ...int) (sta, end int) {
 }
 
 func (ls NodeList) Span() input.Span {
-	list := ls.items
+	list := ls.data.items
 	size := len(list)
 	if size == 0 {
-		return ls.source.Span().WithLen(0)
+		return ls.data.source.Span().WithLen(0)
 	}
 
-	if ls.sta >= size {
+	if ls.data.sta >= size {
 		span := list[size-1].Span()
 		return span.Range(span.Len(), span.Len())
 	}
 
-	if ls.sta == ls.end {
-		span := list[ls.sta].Span()
+	if ls.data.sta == ls.data.end {
+		span := list[ls.data.sta].Span()
 		return span.WithLen(0)
 	}
 
-	sta := list[ls.sta].Span()
-	end := list[ls.end-1].Span()
+	sta := list[ls.data.sta].Span()
+	end := list[ls.data.end-1].Span()
 	return sta.Merged(end)
 }
