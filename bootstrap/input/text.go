@@ -12,6 +12,18 @@ func IsSpace(chr rune) bool {
 	return chr != '\n' && chr != '\r' && unicode.IsSpace(chr)
 }
 
+func IsAlpha(chr rune) bool {
+	return 'A' <= chr && chr <= 'Z' || 'a' <= chr && chr <= 'z'
+}
+
+func IsDigit(chr rune) bool {
+	return '0' <= chr && chr <= '9'
+}
+
+func IsWord(chr rune) bool {
+	return chr == '_' || IsAlpha(chr) || IsDigit(chr)
+}
+
 var (
 	reLines = regexp.MustCompile(`\r?\n`)
 )

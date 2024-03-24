@@ -2,6 +2,7 @@ package input
 
 import (
 	"fmt"
+	"strings"
 	"unicode/utf8"
 )
 
@@ -76,6 +77,27 @@ func (cur *Cursor) Read() rune {
 	}
 
 	return out
+}
+
+func (cur *Cursor) ReadString(str string) bool {
+	if str == "" {
+		return false
+	}
+
+	if txt := cur.Text(); strings.HasPrefix(txt, str) {
+		cur.Advance(len(str))
+		return true
+	}
+	return false
+}
+
+func (cur *Cursor) ReadAny(ls ...string) string {
+	for _, it := range ls {
+		if cur.ReadString(it) {
+			return it
+		}
+	}
+	return ""
 }
 
 func (cur *Cursor) SkipWhile(skip func(chr rune) bool) int {

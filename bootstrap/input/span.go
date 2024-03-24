@@ -3,6 +3,7 @@ package input
 import (
 	"cmp"
 	"fmt"
+	"strings"
 )
 
 type Span struct {
@@ -29,6 +30,55 @@ func (src Source) Range(sta, end int) Span {
 		sta: sta,
 		end: end,
 	}
+}
+
+func (span Span) Merged(other Span) Span {
+	out := span
+	out.Merge(other)
+	return out
+}
+
+func (span *Span) Merge(other Span) {
+	if span.src != other.src {
+		panic("Span: cannot merge from different sources")
+	}
+	if !span.src.Valid() {
+		return
+	}
+
+	span.sta = min(span.sta, other.sta)
+	span.end = max(span.end, other.end)
+}
+
+func (span Span) ExtendedTo(cursor *Cursor) Span {
+	out := span
+	out.ExtendTo(cursor)
+	return out
+}
+
+func (span *Span) ExtendTo(cursor *Cursor) {
+	if span.src != cursor.span.src {
+		panic("Span: cannot extend to cursor from different source")
+	}
+
+	if !span.src.Valid() {
+		panic("Span: cannot extend invalid span")
+	}
+
+	offset := cursor.Offset()
+	if offset < span.sta {
+		panic("Span: cannot extend to cursor out of range")
+	}
+
+	span.end = offset
+}
+
+func (span Span) NewError(msg string, args ...any) ErrorWithLocation {
+	return Error(msg, args...).AtLocation(span.Location())
+}
+
+func (span Span) ErrorAt(err error) ErrorWithLocation {
+	return Error(err.Error()).AtLocation(span.Location())
 }
 
 func (span Span) Src() Source {
@@ -73,11 +123,18 @@ func (span Span) Location() string {
 	cur := span.Src().Cursor()
 	cur.Advance(span.Sta())
 
-	loc := fmt.Sprintf("%s @ L%03d:%02d", span.Src().Name(), cur.Line(), cur.Column())
+	var (
+		rowSta = cur.Line()
+		colSta = cur.Column()
+		rowEnd = 0
+		colEnd = 0
+	)
 	if len := span.Len(); len > 0 {
 		cur.Advance(len)
-		loc += fmt.Sprintf(" … L%03d:%02d (+%d)", cur.Line(), cur.Column(), len)
+		rowEnd = cur.Line()
+		colEnd = cur.Column()
 	}
+	loc := Location(span.Src().Name(), rowSta, colSta, rowEnd, colEnd)
 	return loc
 }
 
@@ -89,4 +146,68 @@ func (span Span) Cmp(other Span) int {
 		return res
 	}
 	return cmp.Compare(span.Len(), other.Len())
+}
+
+func Location(file string, pos ...int) string {
+	var rowSta, colSta, rowEnd, colEnd int
+
+	valid := true
+	for i, it := range pos {
+		if it < 0 {
+			valid = false
+		}
+		switch i {
+		case 0:
+			rowSta = it
+		case 1:
+			colSta = it
+		case 2:
+			rowEnd = it
+		case 3:
+			colEnd = it
+		default:
+			valid = false
+		}
+
+		if !valid {
+			break
+		}
+	}
+
+	valid = valid &&
+		((rowEnd == 0 || rowEnd >= rowSta) &&
+			(colEnd == 0 || colEnd >= colSta || rowEnd != 0))
+
+	if !valid {
+		panic("Location: invalid position")
+	}
+
+	out := strings.Builder{}
+	if file != "" {
+		out.WriteString(file)
+	}
+
+	if rowSta > 0 {
+		if out.Len() == 0 {
+			out.WriteString("@ ")
+		} else {
+			out.WriteString(" @ ")
+		}
+
+		out.WriteString(fmt.Sprintf("L%03d", rowSta))
+		if colSta > 0 {
+			out.WriteString(fmt.Sprintf(":%02d", colSta))
+		}
+
+		if rowEnd > rowSta {
+			out.WriteString(fmt.Sprintf("…L%03d", rowEnd))
+			if colEnd > 0 {
+				out.WriteString(fmt.Sprintf(":%02d", colEnd))
+			}
+		} else if (rowEnd == 0 || rowEnd == rowSta) && colEnd > colSta {
+			out.WriteString(fmt.Sprintf("…%02d", colEnd))
+		}
+	}
+
+	return out.String()
 }
