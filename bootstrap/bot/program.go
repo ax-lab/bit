@@ -97,8 +97,10 @@ func (program *Program) Run() {
 		return
 	}
 
-	for _, it := range main.Tokens().Slice() {
-		fmt.Printf("\n=> %s @ %s: %#v\n", it.Kind, it.Span.Location(), it.Span.Text())
+	for _, it := range main.Nodes().Slice() {
+		repr := it.Repr()
+		span := it.Span()
+		fmt.Printf("\n=> %s\n   at %s: %#v\n", repr, span.Location(), span.Text())
 	}
 	fmt.Printf("\n")
 }
@@ -116,7 +118,7 @@ func (program *Program) loadSource(src input.Source) Module {
 
 	mod := Module{
 		&moduleData{
-			tokens: TokenListNew(src, tokens),
+			nodes: NodeListNew(src, tokens...),
 		},
 	}
 

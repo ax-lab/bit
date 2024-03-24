@@ -13,7 +13,7 @@ func (mod Module) Valid() bool {
 }
 
 func (mod Module) Src() input.Source {
-	return mod.data.tokens.Src()
+	return mod.data.nodes.Src()
 }
 
 func (mod Module) Name() string {
@@ -24,11 +24,11 @@ func (mod Module) Program() *Program {
 	return mod.data.program
 }
 
-func (mod Module) Tokens() TokenList {
-	return mod.data.tokens
+func (mod Module) Nodes() NodeList {
+	return mod.data.nodes
 }
 
 type moduleData struct {
 	program *Program
-	tokens  TokenList
+	nodes   NodeList
 }
