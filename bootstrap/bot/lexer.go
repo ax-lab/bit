@@ -32,39 +32,35 @@ func Lex(cursor *input.Cursor, symbols *SymbolTable) (out []Token, err error) {
 			break
 		}
 
-		var kind TokenKind
+		var (
+			tokenKind TokenKind
+			tokenErr  error
+		)
 		span := cursor.Span()
 		text := cursor.Text()
 
 		if text[0] == '\r' || text[0] == '\n' {
-			kind = TokenBreak
+			tokenKind = TokenBreak
 			if strings.HasPrefix(text, "\r\n") {
 				cursor.Advance(2)
 			} else {
 				cursor.Advance(1)
 			}
 		} else if word := LexWord(cursor); word > 0 {
-			kind = TokenWord
+			tokenKind = TokenWord
 		} else if dec, err := LexDecimal(cursor); dec > 0 || err != nil {
-			if err != nil {
-				return nil, err
-			}
-			kind = TokenInt
+			tokenKind, tokenErr = TokenInt, err
 		} else if str, err := LexString(cursor); str > 0 || err != nil {
-			if err != nil {
-				return nil, err
-			}
-			kind = TokenStr
+			tokenKind, tokenErr = TokenStr, err
 		} else if len := LexComment(cursor); len > 0 {
-			kind = TokenComment
+			tokenKind = TokenComment
 		} else if sym := symbols.Read(cursor); sym != "" {
-			kind = TokenSymbol
+			tokenKind = TokenSymbol
 		}
 
-		if kind == "" {
+		if tokenKind == "" {
 			cursor.Read()
-			span = span.ExtendedTo(cursor)
-			return nil, span.NewError("invalid token")
+			tokenErr = fmt.Errorf("invalid token")
 		}
 
 		size := cursor.Offset() - span.Sta()
@@ -73,8 +69,12 @@ func Lex(cursor *input.Cursor, symbols *SymbolTable) (out []Token, err error) {
 		}
 
 		span = span.Range(0, size)
+		if tokenErr != nil {
+			err = span.ErrorAt(tokenErr)
+			break
+		}
 
-		token := Token{kind, span}
+		token := Token{tokenKind, span}
 		out = append(out, token)
 	}
 
