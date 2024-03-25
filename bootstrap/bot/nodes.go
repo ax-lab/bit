@@ -87,6 +87,33 @@ func (ls NodeList) Span() input.Span {
 	return sta.Merged(end)
 }
 
+func (ls NodeList) Push(nodes ...Node) {
+	items := ls.data.items
+	for len(nodes) > 0 && cap(items) > len(items) {
+		if items[:len(items)+1][len(nodes)] == nodes[0] {
+			items = items[:len(nodes)+1]
+			nodes = nodes[1:]
+		} else {
+			break
+		}
+	}
+
+	if len(nodes) == 0 {
+		return
+	}
+
+	if cap(items) == len(items) || items[:len(items)+1][len(items)] == nil {
+		items = append(items, nodes...)
+	} else {
+		new := make([]Node, len(items)+len(nodes))
+		copy(new[:len(items)], items)
+		copy(new[len(items):], nodes)
+		items = new
+	}
+
+	ls.data.items = items
+}
+
 func (ls *nodeListData) GetRange(pos ...int) (sta, end int) {
 	if len(pos) > 2 {
 		panic("NodeList: invalid range")
