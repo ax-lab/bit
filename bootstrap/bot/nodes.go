@@ -1,6 +1,10 @@
 package bot
 
-import "axlab.dev/bit/input"
+import (
+	"fmt"
+
+	"axlab.dev/bit/input"
+)
 
 type Node interface {
 	Span() input.Span
@@ -14,6 +18,7 @@ type NodeList struct {
 type nodeListData struct {
 	source input.Source
 	items  []Node
+	offset int
 	sta    int
 	end    int
 }
@@ -48,40 +53,23 @@ func (ls NodeList) Get(index int) Node {
 }
 
 func (ls NodeList) Range(pos ...int) NodeList {
-	sta, end := ls.getRange(pos...)
-	if sta < 0 || end < sta || end > ls.Len() {
-		panic("NodeList: out of bounds range")
-	}
+	sta, end := ls.data.GetRange(pos...)
 	return NodeList{
 		&nodeListData{items: ls.data.items, sta: ls.data.sta + sta, end: ls.data.sta + end},
 	}
 }
 
 func (ls NodeList) Slice(pos ...int) []Node {
-	sta, end := ls.getRange(pos...)
+	sta, end := ls.data.GetRange(pos...)
 	return ls.data.items[sta:end]
-}
-
-func (ls NodeList) getRange(pos ...int) (sta, end int) {
-	sta, end = 0, ls.Len()
-	if len(pos) > 0 {
-		sta = pos[0]
-		if len(pos) > 1 {
-			end = pos[1]
-		}
-	}
-
-	if sta < 0 || end < sta || end > ls.Len() {
-		panic("NodeList: out of bounds range")
-	}
-	return
 }
 
 func (ls NodeList) Span() input.Span {
 	list := ls.data.items
 	size := len(list)
 	if size == 0 {
-		return ls.data.source.Span().WithLen(0)
+		offset := ls.data.offset
+		return ls.data.source.Span().Range(offset, offset)
 	}
 
 	if ls.data.sta >= size {
@@ -97,4 +85,33 @@ func (ls NodeList) Span() input.Span {
 	sta := list[ls.data.sta].Span()
 	end := list[ls.data.end-1].Span()
 	return sta.Merged(end)
+}
+
+func (ls *nodeListData) GetRange(pos ...int) (sta, end int) {
+	if len(pos) > 2 {
+		panic("NodeList: invalid range")
+	}
+
+	cnt := ls.end - ls.sta
+	sta, end = 0, cnt
+	if len(pos) > 0 {
+		sta = pos[0]
+		if len(pos) > 1 {
+			end = pos[1]
+		}
+	}
+
+	if sta < 0 || end < sta || end > cnt {
+		panic(fmt.Sprintf("NodeList: out of bounds range (%d-%d)", sta, end))
+	}
+	return
+}
+
+func (ls *nodeListData) Override(nodes []Node) {
+	ls.sta = 0
+	ls.end = len(nodes)
+	ls.items = nodes
+	if len(nodes) > 0 {
+		ls.offset = nodes[0].Span().Sta()
+	}
 }

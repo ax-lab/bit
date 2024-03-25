@@ -131,6 +131,12 @@ func (program *Program) loadSource(src input.Source) Module {
 		program.mainModule = mod
 	}
 
+	if err == nil {
+		for _, parseErr := range Parse(mod.data.nodes) {
+			program.AddError(parseErr)
+		}
+	}
+
 	if err != nil {
 		program.AddError(fmt.Errorf("loading module `%s`: %v", mod.Name(), err))
 	}

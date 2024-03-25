@@ -3,11 +3,11 @@ package bot
 import "axlab.dev/bit/input"
 
 type ParseContext interface {
-	Error(err error)
 	Nodes() NodeList
 	Parse(nodes NodeList)
 
-	Output(node ...Node)
+	Output(nodes ...Node)
+	Error(err error)
 }
 
 type Line struct {
@@ -29,7 +29,8 @@ func ParseLines(ctx ParseContext) {
 	cur := 0
 
 	push := func(idx int) {
-		if line := nodes.Range(cur, idx-1); line.Len() > 0 {
+		if idx > cur {
+			line := nodes.Range(cur, idx)
 			ctx.Parse(line)
 			ctx.Output(Line{line})
 		}
@@ -47,4 +48,31 @@ func ParseLines(ctx ParseContext) {
 	if last := len(items); cur < last {
 		push(last)
 	}
+}
+
+func Parse(nodes NodeList) (errs []error) {
+	ctx := parseContext{nodes: nodes}
+	ParseLines(&ctx)
+	ctx.nodes.data.Override(ctx.output)
+	return ctx.errs
+}
+
+type parseContext struct {
+	nodes  NodeList
+	errs   []error
+	output []Node
+}
+
+func (ctx *parseContext) Nodes() NodeList {
+	return ctx.nodes
+}
+
+func (ctx *parseContext) Parse(nodes NodeList) {}
+
+func (ctx *parseContext) Output(nodes ...Node) {
+	ctx.output = append(ctx.output, nodes...)
+}
+
+func (ctx *parseContext) Error(err error) {
+	ctx.errs = append(ctx.errs, err)
 }
