@@ -9,27 +9,12 @@ import (
 
 type Parser func(ctx ParseContext, nodes NodeList)
 
-type ParseContext interface {
-	Queue(nodes NodeList)
-	Push(nodes ...Node)
-	Error(err error)
-	ErrorAt(span input.Span, msg string, args ...any)
-}
-
-type Line struct {
-	nodes NodeList
-}
-
-func (line Line) Span() input.Span {
-	return line.nodes.Span()
-}
-
-func (line Line) Repr() string {
-	return "Line"
-}
-
 func Parse(nodes NodeList) (errs []error) {
-	parserList := []Parser{ParseBrackets, ParseLines}
+	parserList := []Parser{
+		ParseBrackets,
+		ParseLines,
+		ParsePrint,
+	}
 	queueNext := []NodeList{nodes}
 	for _, parser := range parserList {
 		queue := queueNext
@@ -55,6 +40,13 @@ func Parse(nodes NodeList) (errs []error) {
 	}
 
 	return
+}
+
+type ParseContext interface {
+	Queue(nodes NodeList)
+	Push(nodes ...Node)
+	Error(err error)
+	ErrorAt(span input.Span, msg string, args ...any)
 }
 
 type parseContext struct {

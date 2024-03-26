@@ -1,5 +1,7 @@
 package bot
 
+import "axlab.dev/bit/input"
+
 func ParseLines(ctx ParseContext, nodes NodeList) {
 	items := nodes.Slice()
 	cur := 0
@@ -24,4 +26,16 @@ func ParseLines(ctx ParseContext, nodes NodeList) {
 	if last := len(items); cur < last {
 		push(last)
 	}
+}
+
+type Line struct {
+	nodes NodeList
+}
+
+func (line Line) Span() input.Span {
+	return line.nodes.Span()
+}
+
+func (line Line) Repr() string {
+	return "Line"
 }
