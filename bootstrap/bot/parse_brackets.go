@@ -21,28 +21,26 @@ func (node Bracket) Repr() string {
 	return fmt.Sprintf("Bracket%s%s", node.sta.Span().Text(), node.end.Span().Text())
 }
 
-func ParseBrackets(ctx ParseContext) {
-	ctx.SetNext(ParseLines)
-
+func ParseBrackets(ctx ParseContext, nodes NodeList) {
 	var stack []Bracket
 
 	push := func(node Node) {
 		if last := len(stack) - 1; last >= 0 {
 			stack[last].nodes.Push(node)
 		} else {
-			ctx.Output(node)
+			ctx.Push(node)
 		}
 	}
 
 	hasError := false
-	items := ctx.Nodes().Slice()
+	items := nodes.Slice()
 	for idx := 0; !hasError && idx < len(items); idx++ {
 		node := items[idx]
 		if isOpen, kind := bracketIsOpen(node); isOpen {
 			bracketSta := Bracket{
 				kind:  kind,
 				sta:   node,
-				nodes: ctx.Nodes().Range(idx+1, idx+1),
+				nodes: nodes.Range(idx+1, idx+1),
 			}
 			stack = append(stack, bracketSta)
 		} else if isClose, kind := bracketIsClose(node); isClose {
@@ -55,7 +53,7 @@ func ParseBrackets(ctx ParseContext) {
 			bracketEnd := stack[last]
 			bracketEnd.end = node
 			stack = stack[:last]
-			ctx.Parse(bracketEnd.nodes)
+			ctx.Queue(bracketEnd.nodes)
 			push(bracketEnd)
 		} else {
 			push(node)

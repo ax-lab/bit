@@ -7,13 +7,11 @@ import (
 	"axlab.dev/bit/input"
 )
 
+type Parser func(ctx ParseContext, nodes NodeList)
+
 type ParseContext interface {
-	Nodes() NodeList
-	Parse(nodes NodeList)
-
-	SetNext(eval func(ctx ParseContext))
-
-	Output(nodes ...Node)
+	Queue(nodes NodeList)
+	Push(nodes ...Node)
 	Error(err error)
 	ErrorAt(span input.Span, msg string, args ...any)
 }
@@ -31,73 +29,45 @@ func (line Line) Repr() string {
 }
 
 func Parse(nodes NodeList) (errs []error) {
-	return parseNodes(nodes, ParseBrackets)
-}
+	parserList := []Parser{ParseBrackets, ParseLines}
+	queueNext := []NodeList{nodes}
+	for _, parser := range parserList {
+		queue := queueNext
+		queueNext = nil
 
-func ParseLines(ctx ParseContext) {
-	nodes := ctx.Nodes()
-	items := nodes.Slice()
+		for _, nodes := range queue {
+			ctx := parseContext{}
+			parser(&ctx, nodes)
+			queueNext = append(queueNext, ctx.queued...)
+			if len(ctx.output) > 0 {
+				nodes.data.Override(ctx.output)
+				queueNext = append(queueNext, nodes)
+			}
 
-	cur := 0
-
-	push := func(idx int) {
-		if idx > cur {
-			line := nodes.Range(cur, idx)
-			ctx.Parse(line)
-			ctx.Output(Line{line})
+			if len(ctx.errs) > 0 {
+				errs = append(errs, ctx.errs...)
+			}
 		}
-		cur = idx + 1
-	}
 
-	for idx := 0; idx < len(items); idx++ {
-		tok, ok := items[idx].(Token)
-		if !ok || tok.Kind() != TokenBreak {
-			continue
-		}
-		push(idx)
-	}
-
-	if last := len(items); cur < last {
-		push(last)
-	}
-}
-
-func parseNodes(nodes NodeList, eval func(ctx ParseContext)) (errs []error) {
-	ctx := parseContext{nodes: nodes}
-	eval(&ctx)
-	ctx.nodes.data.Override(ctx.output)
-	ctx.nextList = append(ctx.nextList, ctx.nodes)
-
-	if ctx.nextEval != nil {
-		for i := 0; i < len(ctx.nextList) && len(errs) == 0; i++ {
-			parseNodes(ctx.nextList[i], ctx.nextEval)
+		if len(errs) > 0 {
+			break
 		}
 	}
 
-	return ctx.errs
+	return
 }
 
 type parseContext struct {
-	nodes    NodeList
-	errs     []error
-	output   []Node
-	nextList []NodeList
-	nextEval func(ctx ParseContext)
+	errs   []error
+	output []Node
+	queued []NodeList
 }
 
-func (ctx *parseContext) Nodes() NodeList {
-	return ctx.nodes
+func (ctx *parseContext) Queue(nodes NodeList) {
+	ctx.queued = append(ctx.queued, nodes)
 }
 
-func (ctx *parseContext) SetNext(eval func(ctx ParseContext)) {
-	ctx.nextEval = eval
-}
-
-func (ctx *parseContext) Parse(nodes NodeList) {
-	ctx.nextList = append(ctx.nextList, nodes)
-}
-
-func (ctx *parseContext) Output(nodes ...Node) {
+func (ctx *parseContext) Push(nodes ...Node) {
 	ctx.output = append(ctx.output, nodes...)
 }
 
