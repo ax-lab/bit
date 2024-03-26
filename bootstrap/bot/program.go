@@ -97,10 +97,11 @@ func (program *Program) Run() {
 		return
 	}
 
+	repr := NodeReprNew(os.Stdout)
 	for _, it := range main.Nodes().Slice() {
-		repr := it.Repr()
-		span := it.Span()
-		fmt.Printf("\n=> %s\n   at %s: %#v\n", repr, span.Location(), span.Text())
+		repr.Write("\n=> ")
+		repr.Output(it)
+		repr.Write("\n")
 	}
 	fmt.Printf("\n")
 }

@@ -39,3 +39,8 @@ func (line Line) Span() input.Span {
 func (line Line) Repr() string {
 	return "Line"
 }
+
+func (line Line) NodeRepr(repr *NodeRepr) {
+	repr.Header(line)
+	repr.Items(line.nodes.Slice(), ReprPrefix(" {"), ReprSuffix("}"))
+}
