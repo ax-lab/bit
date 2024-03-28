@@ -40,7 +40,7 @@ func (line Line) Repr() string {
 	return "Line"
 }
 
-func (line Line) NodeRepr(repr *NodeRepr) {
+func (line Line) OutputRepr(repr *ReprWriter) {
 	repr.Header(line)
 	repr.Items(line.nodes.Slice(), ReprPrefix(" {"), ReprSuffix("}"))
 }

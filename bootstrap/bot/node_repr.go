@@ -10,8 +10,8 @@ import (
 	"axlab.dev/bit/input"
 )
 
-type HasNodeRepr interface {
-	NodeRepr(repr *NodeRepr)
+type HasTextRepr interface {
+	OutputRepr(repr *ReprWriter)
 }
 
 type ReprArg interface {
@@ -28,18 +28,18 @@ func (ReprColumn) IsReprArg() {}
 func (ReprPrefix) IsReprArg() {}
 func (ReprSuffix) IsReprArg() {}
 
-func Repr(out io.Writer, nodes ...Node) (n int, err error) {
-	repr := NodeRepr{output: out}
+func ReprNodes(out io.Writer, nodes ...Node) (n int, err error) {
+	repr := ReprWriter{output: out}
 	for n, it := range nodes {
 		if n > 0 {
 			repr.Write("\n")
 		}
-		repr.Output(it)
+		repr.OutputNode(it)
 	}
 	return repr.total, repr.err
 }
 
-type NodeRepr struct {
+type ReprWriter struct {
 	total   int
 	line    int
 	err     error
@@ -49,11 +49,11 @@ type NodeRepr struct {
 	cycle   map[Node]bool
 }
 
-func NodeReprNew(output io.Writer) *NodeRepr {
-	return &NodeRepr{output: output}
+func ReprNew(output io.Writer) *ReprWriter {
+	return &ReprWriter{output: output}
 }
 
-func (repr *NodeRepr) Output(node Node) {
+func (repr *ReprWriter) OutputNode(node Node) {
 	isCycle := repr.cycle[node]
 	if repr.cycle == nil {
 		repr.cycle = make(map[Node]bool)
@@ -65,8 +65,8 @@ func (repr *NodeRepr) Output(node Node) {
 		return
 	}
 
-	if it, hasRepr := node.(HasNodeRepr); hasRepr {
-		it.NodeRepr(repr)
+	if it, hasRepr := node.(HasTextRepr); hasRepr {
+		it.OutputRepr(repr)
 	} else {
 		repr.Header(node)
 	}
@@ -74,7 +74,7 @@ func (repr *NodeRepr) Output(node Node) {
 	repr.Snippet(node.Span().Text(), ReprPrefix(" = `"), ReprSuffix("`"), ReprColumn(60), ReprMaxLen(40))
 }
 
-func (repr *NodeRepr) Header(node Node, fields ...map[string]any) {
+func (repr *ReprWriter) Header(node Node, fields ...map[string]any) {
 	var keyVals [][2]string
 	for _, it := range fields {
 		for key, val := range it {
@@ -104,7 +104,7 @@ func (repr *NodeRepr) Header(node Node, fields ...map[string]any) {
 	}
 }
 
-func (repr *NodeRepr) Snippet(text string, args ...ReprArg) {
+func (repr *ReprWriter) Snippet(text string, args ...ReprArg) {
 	var (
 		maxLen int
 		prefix string
@@ -163,7 +163,7 @@ func (repr *NodeRepr) Snippet(text string, args ...ReprArg) {
 	}
 }
 
-func (repr *NodeRepr) Items(nodes []Node, args ...ReprArg) {
+func (repr *ReprWriter) Items(nodes []Node, args ...ReprArg) {
 	var (
 		prefix string
 		suffix string
@@ -185,7 +185,7 @@ func (repr *NodeRepr) Items(nodes []Node, args ...ReprArg) {
 		repr.Indent()
 		for _, it := range nodes {
 			repr.Write("\n")
-			repr.Output(it)
+			repr.OutputNode(it)
 		}
 
 		repr.Dedent()
@@ -193,15 +193,15 @@ func (repr *NodeRepr) Items(nodes []Node, args ...ReprArg) {
 	}
 }
 
-func (repr *NodeRepr) Indent() {
+func (repr *ReprWriter) Indent() {
 	repr.indent++
 }
 
-func (repr *NodeRepr) Dedent() {
+func (repr *ReprWriter) Dedent() {
 	repr.indent--
 }
 
-func (repr *NodeRepr) Write(txt string, args ...any) {
+func (repr *ReprWriter) Write(txt string, args ...any) {
 	if len(args) > 0 {
 		txt = fmt.Sprintf(txt, args...)
 	}
@@ -230,7 +230,7 @@ func (repr *NodeRepr) Write(txt string, args ...any) {
 	}
 }
 
-func (repr *NodeRepr) writeChunk(txt string) {
+func (repr *ReprWriter) writeChunk(txt string) {
 	if repr.err != nil {
 		return
 	}

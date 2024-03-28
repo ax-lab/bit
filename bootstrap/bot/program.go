@@ -4,9 +4,16 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path"
+	"slices"
+	"strings"
 	"sync"
 
 	"axlab.dev/bit/input"
+)
+
+const (
+	debugNodes = true
 )
 
 type Program struct {
@@ -74,18 +81,10 @@ func (program *Program) LoadString(name, text string) Module {
 	return program.loadSource(src)
 }
 
-func (program *Program) Run() {
-	var errs []error
-	program.errorLock.Lock()
-	errs = append(errs, program.errorList...)
-	program.errorLock.Unlock()
+func (program *Program) Eval() {}
 
-	if len(errs) > 0 {
-		fmt.Fprintf(program.stdErr, "\nErrors:\n")
-		for n, err := range errs {
-			fmt.Fprintf(program.stdErr, "\n\t[%d] %s\n", n+1, input.TrimSta(input.Indent(err.Error())))
-		}
-		fmt.Fprintf(program.stdErr, "\n")
+func (program *Program) Run() {
+	if program.OutputErrors() {
 		return
 	}
 
@@ -97,13 +96,80 @@ func (program *Program) Run() {
 		return
 	}
 
-	repr := NodeReprNew(os.Stdout)
-	for _, it := range main.Nodes().Slice() {
-		repr.Write("\n=> ")
-		repr.Output(it)
-		repr.Write("\n")
+	if debugNodes {
+		repr := ReprNew(os.Stdout)
+		for _, it := range main.Nodes().Slice() {
+			repr.Write("\n=> ")
+			repr.OutputNode(it)
+			repr.Write("\n")
+		}
+		fmt.Printf("\n")
 	}
-	fmt.Printf("\n")
+}
+
+func (program *Program) OutputErrors() (hasErrors bool) {
+	var errs []error
+	program.errorLock.Lock()
+	errs = append(errs, program.errorList...)
+	program.errorLock.Unlock()
+
+	if len(errs) == 0 {
+		return false
+	}
+
+	fmt.Fprintf(program.stdErr, "\nErrors:\n")
+	for n, err := range errs {
+		fmt.Fprintf(program.stdErr, "\n\t[%d] %s\n", n+1, input.TrimSta(input.Indent(err.Error())))
+	}
+	fmt.Fprintf(program.stdErr, "\n")
+	return true
+}
+
+func (program *Program) GoOutput(goProgram *GoProgram, mainFile *GoFile) {
+	const modMainFunc = "InitModule"
+
+	if program.HasErrors() {
+		return
+	}
+
+	moduleList := make([]Module, 0, len(program.moduleMap))
+	for _, it := range program.moduleMap {
+		if it != program.mainModule {
+			moduleList = append(moduleList, it)
+		}
+	}
+	slices.SortFunc(moduleList, func(a, b Module) int { return a.Cmp(b) })
+
+	mainFunc := mainFile.Func("main", "")
+
+	for _, mod := range moduleList {
+		name := mod.Src().Name()
+		base, name := path.Dir(name), path.Base(name)
+
+		base = strings.ReplaceAll(base, "/", "_")
+		name = strings.TrimSuffix(name, path.Ext(name))
+		if base == "" || base == "." || base == "/" {
+			base = name
+		}
+
+		modImport := fmt.Sprintf("%s/%s", goProgram.Module(), name)
+		mainFile.Import(modImport)
+		mainFunc.Push("%s.%s()", name, modMainFunc)
+
+		filePath := path.Join(base, name+".go")
+		file := goProgram.NewFile(filePath, name)
+		block := file.Func(modMainFunc, "")
+		mod.GoOutput(goProgram, block)
+	}
+
+	outVar := program.mainModule.GoOutput(goProgram, mainFunc)
+	if outVar != GoVarNone {
+		mainFunc.Push("_ = %s", outVar)
+	}
+
+	for _, err := range goProgram.Errors() {
+		program.AddError(err)
+	}
 }
 
 func (program *Program) loadSource(src input.Source) Module {
@@ -117,11 +183,7 @@ func (program *Program) loadSource(src input.Source) Module {
 	cursor := src.Cursor()
 	tokens, err := Lex(&cursor, &program.symbols)
 
-	mod := Module{
-		&moduleData{
-			nodes: NodeListNew(src, tokens...),
-		},
-	}
+	mod := moduleNew(program, NodeListNew(src, tokens...))
 
 	if program.moduleMap == nil {
 		program.moduleMap = make(map[input.Source]Module)
