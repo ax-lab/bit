@@ -1,6 +1,8 @@
 package bot
 
-import "axlab.dev/bit/input"
+import (
+	"axlab.dev/bit/input"
+)
 
 func ParsePrint(ctx ParseContext, nodes NodeList) {
 	if head := nodes.Get(0); NodeIsWord(head, "print") {
@@ -24,4 +26,38 @@ func (node Print) Span() input.Span {
 
 func (node Print) Repr() string {
 	return "Print"
+}
+
+func (node Print) OutputRepr(repr *ReprWriter) {
+	repr.Header(node)
+	repr.Items(node.args.Slice(), ReprPrefix(" ("), ReprSuffix(")"))
+}
+
+func (node Print) GoType() GoType {
+	return node.args.GoType()
+}
+
+func (node Print) GoOutput(blk *GoBlock) (out GoVar) {
+	nodes := node.args.Slice()
+
+	var args []GoVar
+	for _, it := range nodes {
+		code, ok := it.(GoCode)
+		if !ok {
+			blk.AddError(it.Span().NewError("cannot output `%s` as Go code", it.Repr()))
+		} else if out = code.GoOutput(blk); out != GoVarNone {
+			args = append(args, out)
+		}
+
+		if blk.HasErrors() {
+			break
+		}
+	}
+
+	if !blk.HasErrors() && len(args) > 0 {
+		blk.Import("fmt")
+		blk.Push("fmt.Print(%s)", input.Join(", ", args...))
+	}
+
+	return out
 }

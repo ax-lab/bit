@@ -44,3 +44,11 @@ func (line Line) OutputRepr(repr *ReprWriter) {
 	repr.Header(line)
 	repr.Items(line.nodes.Slice(), ReprPrefix(" {"), ReprSuffix("}"))
 }
+
+func (line Line) GoType() GoType {
+	return line.nodes.GoType()
+}
+
+func (line Line) GoOutput(blk *GoBlock) GoVar {
+	return line.nodes.GoOutputAll(blk)
+}

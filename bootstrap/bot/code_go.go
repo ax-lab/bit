@@ -12,6 +12,9 @@ type GoVar string
 const (
 	GoVarNone  GoVar  = ""
 	GoTypeNone GoType = ""
+
+	GoTypeStr GoType = "string"
+	GoTypeInt GoType = "int"
 )
 
 type GoCode interface {
@@ -32,8 +35,6 @@ func GoProgramNew(module string, mainFile string) (*GoProgram, *GoFile) {
 	return out, main
 }
 
-func (program *GoProgram) OutputTo(output *CodeOutput) {}
-
 func (program *GoProgram) Module() string {
 	return program.module
 }
@@ -48,6 +49,10 @@ func (program *GoProgram) NewFile(name, module string) *GoFile {
 	}
 	program.files[name] = file
 	return file
+}
+
+func (program *GoProgram) HasErrors() bool {
+	return len(program.errors) > 0
 }
 
 func (program *GoProgram) AddError(err error) {
@@ -79,6 +84,14 @@ func (file *GoFile) Import(name string) {
 	file.imports[name] = true
 }
 
+func (file *GoFile) HasErrors() bool {
+	return file.Program().HasErrors()
+}
+
+func (file *GoFile) AddError(err error) {
+	file.Program().AddError(err)
+}
+
 func (file *GoFile) Func(name, result string, args ...string) *GoBlock {
 	var header strings.Builder
 	header.WriteString(fmt.Sprintf("func %s(", name))
@@ -96,6 +109,7 @@ func (file *GoFile) Func(name, result string, args ...string) *GoBlock {
 	header.WriteString(" {")
 
 	out := &GoBlock{
+		file:   file,
 		header: header.String(),
 		footer: "}",
 		indent: 1,
@@ -128,6 +142,24 @@ func (blk *GoBlock) Import(name string) {
 
 func (blk *GoBlock) Program() *GoProgram {
 	return blk.file.Program()
+}
+
+func (blk *GoBlock) HasErrors() bool {
+	return blk.Program().HasErrors()
+}
+
+func (blk *GoBlock) AddError(err error) {
+	blk.Program().AddError(err)
+}
+
+func (blk *GoBlock) Expr(code string, args ...any) GoVar {
+	if len(args) > 0 {
+		code = fmt.Sprintf(code, args)
+	}
+
+	name := blk.VarName()
+	blk.Push("%s := %s", name, code)
+	return name
 }
 
 func (blk *GoBlock) Push(code string, args ...any) {

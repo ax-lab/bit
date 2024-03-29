@@ -81,7 +81,18 @@ func (program *Program) LoadString(name, text string) Module {
 	return program.loadSource(src)
 }
 
-func (program *Program) Eval() {}
+func (program *Program) Eval() {
+	main := program.mainModule
+	if debugNodes && main.Valid() {
+		repr := ReprNew(os.Stdout)
+		for _, it := range main.Nodes().Slice() {
+			repr.Write("\n=> ")
+			repr.OutputNode(it)
+			repr.Write("\n")
+		}
+		fmt.Printf("\n")
+	}
+}
 
 func (program *Program) Run() {
 	if program.OutputErrors() {
@@ -94,16 +105,6 @@ func (program *Program) Run() {
 	main := program.mainModule
 	if !main.Valid() {
 		return
-	}
-
-	if debugNodes {
-		repr := ReprNew(os.Stdout)
-		for _, it := range main.Nodes().Slice() {
-			repr.Write("\n=> ")
-			repr.OutputNode(it)
-			repr.Write("\n")
-		}
-		fmt.Printf("\n")
 	}
 }
 
