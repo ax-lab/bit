@@ -154,7 +154,7 @@ func (blk *GoBlock) AddError(err error) {
 
 func (blk *GoBlock) Expr(code string, args ...any) GoVar {
 	if len(args) > 0 {
-		code = fmt.Sprintf(code, args)
+		code = fmt.Sprintf(code, args...)
 	}
 
 	name := blk.VarName()
@@ -164,7 +164,7 @@ func (blk *GoBlock) Expr(code string, args ...any) GoVar {
 
 func (blk *GoBlock) Push(code string, args ...any) {
 	if len(args) > 0 {
-		code = fmt.Sprintf(code, args)
+		code = fmt.Sprintf(code, args...)
 	}
 	if blk.indent > 0 {
 		code = strings.Repeat("\t", blk.indent) + code

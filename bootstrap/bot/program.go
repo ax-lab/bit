@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	debugNodes = true
+	debugNodes = false
 )
 
 type Program struct {

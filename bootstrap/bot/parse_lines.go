@@ -1,6 +1,8 @@
 package bot
 
-import "axlab.dev/bit/input"
+import (
+	"axlab.dev/bit/input"
+)
 
 func ParseLines(ctx ParseContext, nodes NodeList) {
 	items := nodes.Slice()

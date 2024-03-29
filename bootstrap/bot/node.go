@@ -16,6 +16,7 @@ type NodeList struct {
 }
 
 type nodeListData struct {
+	shared bool
 	source input.Source
 	items  []Node
 	offset int
@@ -54,8 +55,9 @@ func (ls NodeList) Get(index int) Node {
 
 func (ls NodeList) Range(pos ...int) NodeList {
 	sta, end := ls.data.GetRange(pos...)
+	ls.data.shared = true
 	return NodeList{
-		&nodeListData{items: ls.data.items, sta: ls.data.sta + sta, end: ls.data.sta + end},
+		&nodeListData{items: ls.data.items, sta: sta, end: end, shared: true},
 	}
 }
 
@@ -88,30 +90,15 @@ func (ls NodeList) Span() input.Span {
 }
 
 func (ls NodeList) Push(nodes ...Node) {
-	items := ls.data.items
-	for len(nodes) > 0 && cap(items) > len(items) {
-		if items[:len(items)+1][len(nodes)] == nodes[0] {
-			items = items[:len(nodes)+1]
-			nodes = nodes[1:]
-		} else {
-			break
-		}
-	}
-
 	if len(nodes) == 0 {
 		return
 	}
-
-	if cap(items) == len(items) || items[:len(items)+1][len(items)] == nil {
-		items = append(items, nodes...)
-	} else {
-		new := make([]Node, len(items)+len(nodes))
-		copy(new[:len(items)], items)
-		copy(new[len(items):], nodes)
-		items = new
+	if ls.data.shared {
+		ls.data.items = append([]Node(nil), ls.data.items...)
+		ls.data.shared = false
 	}
 
-	ls.data.items = items
+	ls.data.items = append(ls.data.items, nodes...)
 }
 
 func (ls *nodeListData) GetRange(pos ...int) (sta, end int) {
@@ -131,6 +118,9 @@ func (ls *nodeListData) GetRange(pos ...int) (sta, end int) {
 	if sta < 0 || end < sta || end > cnt {
 		panic(fmt.Sprintf("NodeList: out of bounds range (%d-%d)", sta, end))
 	}
+
+	sta += ls.sta
+	end += ls.sta
 	return
 }
 
@@ -138,6 +128,7 @@ func (ls *nodeListData) Override(nodes []Node) {
 	ls.sta = 0
 	ls.end = len(nodes)
 	ls.items = nodes
+	ls.shared = false
 	if len(nodes) > 0 {
 		ls.offset = nodes[0].Span().Sta()
 	}

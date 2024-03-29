@@ -58,6 +58,7 @@ func (node Print) GoOutput(blk *GoBlock) (out GoVar) {
 		blk.Import("fmt")
 		blk.Push("fmt.Print(%s)", input.Join(", ", args...))
 	}
+	blk.Push("fmt.Println()")
 
 	return out
 }
