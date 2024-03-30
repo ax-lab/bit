@@ -1,3 +1,3 @@
 # Bit Language
 
-Bit programming language.
+Bit programming framework.
