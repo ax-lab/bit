@@ -32,6 +32,14 @@ func (p Path) Clean() Path {
 	return PathNew(p)
 }
 
+func (p Path) HasPrefix(prefix Path) bool {
+	preLen := prefix.Len()
+	if preLen == 0 {
+		return true
+	}
+	return strings.HasPrefix(string(p), string(prefix)) && (p.Len() == preLen || p[preLen] == '/')
+}
+
 func (p Path) IsRoot() bool {
 	return len(p) > 0 && p[0] == '/'
 }
