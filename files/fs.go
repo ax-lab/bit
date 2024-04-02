@@ -45,7 +45,23 @@ func (root fsRoot) Open(name string) (fs.File, error) {
 }
 
 func (root fsRoot) Sub(dir string) (fs.FS, error) {
-	panic("TODO")
+	file, err := root.Open(dir)
+	if err != nil {
+		return nil, fmt.Errorf("could not open sub dir `%s`: %v", dir, err)
+	}
+
+	stat, err := file.Stat()
+	if err != nil {
+		return nil, fmt.Errorf("could not open sub dir `%s`: %v", dir, err)
+	}
+
+	if !stat.IsDir() {
+		return nil, fmt.Errorf("cannot open sub dir `%s`: not a directory", dir)
+	}
+
+	entry := file.(*fsFile).entry
+	out := fsRoot{cache: root.cache, path: entry.path, root: entry.path}
+	return out, nil
 }
 
 func (root fsRoot) Stat(name string) (fs.FileInfo, error) {
@@ -158,17 +174,11 @@ func (loader fsLoaderFromRootDir) Stat(path Path) (fs.FileInfo, error) {
 }
 
 func (loader fsLoaderFromRootDir) ReadFile(path Path) ([]byte, error) {
-	panic("TODO: fs read file")
+	fullPath := filepath.Join(loader.rootPath, string(path))
+	return os.ReadFile(fullPath)
 }
 
 func (loader fsLoaderFromRootDir) ReadDir(path Path) ([]fs.DirEntry, error) {
-	panic("TODO: fs read dir")
-}
-
-func X() fs.FileInfo {
-	return &fsEntry{}
-}
-
-func Y() fs.DirEntry {
-	return &fsEntry{}
+	fullPath := filepath.Join(loader.rootPath, string(path))
+	return os.ReadDir(fullPath)
 }
