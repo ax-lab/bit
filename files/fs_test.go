@@ -16,24 +16,6 @@ func TestFS(t *testing.T) {
 
 	var ok bool
 
-	_, ok = root.(files.FS)
-	test.True(ok, "must implement files.FS")
-
-	_, ok = root.(fs.SubFS)
-	test.True(ok, "must implement fs.SubFS")
-
-	_, ok = root.(fs.StatFS)
-	test.True(ok, "must implement fs.StatFS")
-
-	_, ok = root.(fs.ReadDirFS)
-	test.True(ok, "must implement fs.ReadDirFS")
-
-	_, ok = root.(fs.ReadFileFS)
-	test.True(ok, "must implement fs.ReadFileFS")
-
-	_, ok = root.(fs.GlobFS)
-	test.True(ok, "must implement fs.GlobFS")
-
 	file, err := root.Open(".")
 	test.NoError(err)
 

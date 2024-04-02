@@ -17,6 +17,14 @@ func fsFileNew(entry *fsEntry) *fsFile {
 	return &fsFile{entry: entry}
 }
 
+func (file *fsFile) Path() Path {
+	return file.entry.path
+}
+
+func (file *fsFile) ListDir() ([]File, error) {
+	return file.entry.cache.ListDir(file.entry.path)
+}
+
 func (file *fsFile) Stat() (fs.FileInfo, error) {
 	return file.entry.Info()
 }

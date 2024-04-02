@@ -10,8 +10,24 @@ import (
 
 type FS interface {
 	fs.FS
+	fs.SubFS
+	fs.StatFS
+	fs.ReadDirFS
+	fs.ReadFileFS
+	fs.GlobFS
 
+	OpenFile(name string) (File, error)
+	ListDir(name string) ([]File, error)
+	SubFS(name string) (FS, error)
 	Resolve(name string) (Path, error)
+}
+
+type File interface {
+	fs.File
+	fs.ReadDirFile
+
+	Path() Path
+	ListDir() ([]File, error)
 }
 
 type fsRoot struct {
@@ -20,7 +36,7 @@ type fsRoot struct {
 	root  Path
 }
 
-func Root(baseDir string) (fs.FS, error) {
+func Root(baseDir string) (FS, error) {
 	fullPath, err := filepath.Abs(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("opening root `%s`: %v", baseDir, err)
@@ -31,6 +47,10 @@ func Root(baseDir string) (fs.FS, error) {
 }
 
 func (root fsRoot) Open(name string) (fs.File, error) {
+	return root.OpenFile(name)
+}
+
+func (root fsRoot) OpenFile(name string) (File, error) {
 	path, err := root.doResolve(name, "open file")
 	if err != nil {
 		return nil, err
@@ -45,6 +65,10 @@ func (root fsRoot) Open(name string) (fs.File, error) {
 }
 
 func (root fsRoot) Sub(dir string) (fs.FS, error) {
+	return root.SubFS(dir)
+}
+
+func (root fsRoot) SubFS(dir string) (FS, error) {
 	file, err := root.Open(dir)
 	if err != nil {
 		return nil, fmt.Errorf("could not open sub dir `%s`: %v", dir, err)
@@ -90,6 +114,19 @@ func (root fsRoot) ReadFile(name string) ([]byte, error) {
 		return nil, fmt.Errorf("could not read file `%s`: %v", name, err)
 	}
 	return data, nil
+}
+
+func (root fsRoot) ListDir(name string) ([]File, error) {
+	path, err := root.doResolve(name, "read dir")
+	if err != nil {
+		return nil, err
+	}
+
+	list, err := root.cache.ListDir(path)
+	if err != nil {
+		return nil, fmt.Errorf("could not read dir `%s`: %v", name, err)
+	}
+	return list, nil
 }
 
 func (root fsRoot) ReadDir(name string) ([]fs.DirEntry, error) {
@@ -157,6 +194,17 @@ func (cache *fsCache) Get(path Path) *fsEntry {
 		cache.entries[path] = out
 	}
 	return out
+}
+
+func (cache *fsCache) ListDir(path Path) (list []File, err error) {
+	ls, err := cache.loader.ReadDir(path)
+	for _, it := range ls {
+		// TODO: reuse the DirEntry info here
+		itPath := path.Push(it.Name())
+		entry := cache.Get(itPath)
+		list = append(list, fsFileNew(entry))
+	}
+	return list, err
 }
 
 func (cache *fsCache) ReadDir(path Path) (list []fs.DirEntry, err error) {

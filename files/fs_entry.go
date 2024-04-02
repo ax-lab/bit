@@ -31,7 +31,7 @@ func fsEntryNew(cache *fsCache, path Path, name string) *fsEntry {
 	return &fsEntry{cache: cache, path: path, name: name}
 }
 
-func (entry *fsEntry) Open() (file fs.File, err error) {
+func (entry *fsEntry) Open() (file File, err error) {
 	entry.ensureStatLoaded()
 
 	err = entry.statError
