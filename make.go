@@ -40,39 +40,12 @@ func main() {
 	}
 
 	project := FindProjectRoot()
-	root := core.Check(core.FS(project))
 
+	root := core.Check(core.FS(project))
 	dirSrc := root.Get(DirBoot)
 	dirBuild := root.Get(DirBuild)
 
-	var (
-		cmdSrc []core.File
-		cmdExe []core.File
-	)
-	cmdList := core.Check(dirSrc.Get(BootDirCmd).List())
-	for _, src := range cmdList {
-		info := core.Check(src.Info())
-		if !info.IsDir() {
-			continue
-		}
-
-		exe := dirBuild.Get(src.Name() + ".exe")
-		exeStat, exeErr := exe.Info()
-		if exeErr != nil {
-			if !errors.Is(exeErr, fs.ErrNotExist) {
-				core.Handle(exeErr)
-			}
-		} else if exeStat.IsDir() {
-			core.Fatal(fmt.Errorf("output exe `%s` is a directory", exe.Path()))
-		}
-
-		cmdSrc = append(cmdSrc, src)
-		cmdExe = append(cmdExe, exe)
-	}
-
-	if len(cmdSrc) == 0 {
-		core.Fatal(fmt.Errorf("no command executables to build"))
-	}
+	cmdSrc, cmdExe := FindCommands(dirSrc, dirBuild)
 
 	var (
 		srcTime time.Time
@@ -151,4 +124,33 @@ func FindProjectRoot() string {
 		root = next
 	}
 	return root
+}
+
+func FindCommands(dirSrc, dirBuild core.File) (cmdSrc, cmdExe []core.File) {
+	cmdList := core.Check(dirSrc.Get(BootDirCmd).List())
+	for _, src := range cmdList {
+		info := core.Check(src.Info())
+		if !info.IsDir() {
+			continue
+		}
+
+		exe := dirBuild.Get(src.Name() + ".exe")
+		exeStat, exeErr := exe.Info()
+		if exeErr != nil {
+			if !errors.Is(exeErr, fs.ErrNotExist) {
+				core.Handle(exeErr)
+			}
+		} else if exeStat.IsDir() {
+			core.Fatal(fmt.Errorf("output exe `%s` is a directory", exe.Path()))
+		}
+
+		cmdSrc = append(cmdSrc, src)
+		cmdExe = append(cmdExe, exe)
+	}
+
+	if len(cmdSrc) == 0 {
+		core.Fatal(fmt.Errorf("no command executables to build"))
+	}
+
+	return
 }
