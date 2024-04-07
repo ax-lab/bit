@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -27,6 +28,14 @@ type CmdArgs struct {
 
 	started atomic.Bool
 	exeDone atomic.Bool
+}
+
+func ExeName(name string) string {
+	exeName := FileNameWithoutExt(name)
+	if runtime.GOOS == "windows" {
+		return exeName + ".exe"
+	}
+	return exeName
 }
 
 func Cmd(name string, args ...string) *CmdArgs {

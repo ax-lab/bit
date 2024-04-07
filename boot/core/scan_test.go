@@ -122,3 +122,38 @@ func TestScanReadMatch(t *testing.T) {
 	test.Equal("", pre)
 	test.Equal("", txt)
 }
+
+func TestScanPos(t *testing.T) {
+	test := require.New(t)
+
+	const INPUT = "123456"
+
+	scan := core.ScannerNew(INPUT)
+	read := func() (rune, int) {
+		chr, ok := scan.Read()
+		test.True(ok)
+		return chr, scan.Pos()
+	}
+
+	test.Equal(0, scan.Pos())
+	a0, p0 := read()
+	a1, p1 := read()
+	a2, p2 := read()
+	a3, p3 := read()
+	a4, p4 := read()
+	a5, p5 := read()
+
+	test.Equal('1', a0)
+	test.Equal('2', a1)
+	test.Equal('3', a2)
+	test.Equal('4', a3)
+	test.Equal('5', a4)
+	test.Equal('6', a5)
+
+	test.Equal(1, p0)
+	test.Equal(2, p1)
+	test.Equal(3, p2)
+	test.Equal(4, p3)
+	test.Equal(5, p4)
+	test.Equal(6, p5)
+}

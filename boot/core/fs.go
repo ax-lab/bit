@@ -67,6 +67,10 @@ func (file File) Name() string {
 
 func (file File) NameWithoutExt() string {
 	name := file.Name()
+	return FileNameWithoutExt(name)
+}
+
+func FileNameWithoutExt(name string) string {
 	if ext := path.Ext(name); ext != "" && len(ext) < len(name) {
 		name = name[:len(name)-len(ext)]
 	}
@@ -244,7 +248,7 @@ func (file File) Glob(glob string, options ...GlobOption) (list []File, errs []e
 			continue
 		}
 
-		if globRegex != nil && !globRegex.MatchString(item.Name()) {
+		if globRegex != nil && !globRegex.MatchString(item.Path()) {
 			continue
 		}
 

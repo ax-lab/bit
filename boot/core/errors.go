@@ -1,10 +1,30 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 )
+
+func Errors(errs []error, msg string, args ...any) error {
+	if len(args) > 0 {
+		msg = fmt.Sprintf(msg, args...)
+	}
+	if len(errs) > 0 {
+		out := strings.Builder{}
+		out.WriteString(msg)
+		out.WriteString(":")
+		for _, err := range errs {
+			out.WriteString("\n- ")
+			out.WriteString(err.Error())
+		}
+		return errors.New(out.String())
+	}
+
+	return errors.New(msg)
+}
 
 func Check[T any](val T, err error) T {
 	if err != nil {

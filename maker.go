@@ -5,7 +5,9 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
+	"runtime"
 	"time"
 
 	"axlab.dev/bit/boot/core"
@@ -39,9 +41,10 @@ func main() {
 		}
 	}
 
-	project := FindProjectRoot()
+	projectDir := FindProjectRoot()
+	RebuildSelf(projectDir)
 
-	root := core.Check(core.FS(project))
+	root := core.Check(core.FS(projectDir))
 	dirSrc := root.Get(DirBoot)
 	dirBuild := root.Get(DirBuild)
 
@@ -51,7 +54,7 @@ func main() {
 		srcTime time.Time
 		srcPath string
 	)
-	srcFiles := core.CheckErrs(root.Glob("**.go"))
+	srcFiles := core.CheckErrs(root.Glob("boot/**.go"))
 	for _, src := range srcFiles {
 		modTime := core.Check(src.Info()).ModTime()
 		if srcTime.IsZero() || modTime.After(srcTime) {
@@ -101,14 +104,31 @@ func main() {
 		fmt.Printf("... Building `%s` to `%s`\n", src.Path(), exe.Path())
 
 		build := core.Cmd("go", "build", "-o", exe.FilePath(), src.FilePath())
-		build = build.SetDir(project)
+		build = build.SetDir(projectDir)
 		core.Handle(build.RunAndCheck())
 	}
 	showDuration()
 }
 
+func RebuildSelf(projectDir string) {
+	_, curFile, _, ok := runtime.Caller(0)
+	if ok {
+		file := filepath.Base(curFile)
+		glob := path.Join(projectDir, "**.go")
+		src := filepath.Join(projectDir, file)
+		exeName := core.ExeName(file)
+		exe := filepath.Join(projectDir, exeName)
+		if core.Check(core.NeedRebuild(exe, glob)) {
+			fmt.Printf(">>> Rebuilding %s...\n", exeName)
+			build := core.Cmd("go", "build", "-o", exe, src)
+			build = build.SetDir(projectDir)
+			core.Handle(build.RunAndCheck())
+		}
+	}
+}
+
 func IsProjectRoot(path string) bool {
-	make := filepath.Join(path, "make.go")
+	make := filepath.Join(path, "maker.go")
 	boot := filepath.Join(path, "boot")
 	return core.IsFile(make) && core.IsDir(boot)
 }
@@ -134,7 +154,7 @@ func FindCommands(dirSrc, dirBuild core.File) (cmdSrc, cmdExe []core.File) {
 			continue
 		}
 
-		exe := dirBuild.Get(src.Name() + ".exe")
+		exe := dirBuild.Get(core.ExeName(src.Name()))
 		exeStat, exeErr := exe.Info()
 		if exeErr != nil {
 			if !errors.Is(exeErr, fs.ErrNotExist) {
