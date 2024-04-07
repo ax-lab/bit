@@ -22,7 +22,7 @@ type FSLoader interface {
 }
 
 type FSRoot interface {
-	Get(name string) (out File, valid bool)
+	Get(name string) File
 	Glob(glob string, options ...GlobOption) (list []File, errs []error)
 }
 
@@ -156,13 +156,13 @@ type fsRoot struct {
 	cache *fsCache
 }
 
-func (dir *fsRoot) Get(name string) (out File, valid bool) {
+func (dir *fsRoot) Get(name string) File {
 	fileName, filePath, valid := fsPathJoin(dir.path, name)
 	if !valid {
-		return out, false
+		panic(fmt.Sprintf("invalid file path: %s", name))
 	}
 
-	out = File{
+	out := File{
 		path:  fileName,
 		root:  dir,
 		entry: dir.cache.Get(name, filePath),
@@ -173,12 +173,36 @@ func (dir *fsRoot) Get(name string) (out File, valid bool) {
 		}
 		out.path = "."
 	}
-	return out, true
+	return out
 }
 
 func (dir *fsRoot) Glob(glob string, options ...GlobOption) (list []File, errs []error) {
-	root, _ := dir.Get("")
+	root := dir.Get("")
 	return root.Glob(glob, options...)
+}
+
+func (file File) Get(name string) File {
+	fileName, filePath, valid := fsPathJoin(file.root.path, file.path, name)
+	if !valid {
+		panic(fmt.Sprintf("invalid file path relative to `%s`: %s", file.path, name))
+	}
+
+	out := File{
+		path:  fileName,
+		root:  file.root,
+		entry: file.root.cache.Get(name, filePath),
+	}
+	if out.path == "" {
+		if out.entry.path != file.root.path {
+			panic("FS: empty file name")
+		}
+		out.path = "."
+	}
+	return out
+}
+
+func (file File) FilePath() string {
+	return file.entry.path
 }
 
 func (file File) Glob(glob string, options ...GlobOption) (list []File, errs []error) {

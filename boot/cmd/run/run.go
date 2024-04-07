@@ -42,7 +42,7 @@ func main() {
 	}
 
 	srcDir := core.Check(core.FS(filepath.Join(root, dirBoot)))
-	cmdDir, _ := srcDir.Get(dirBootCmd + "/" + exeName)
+	cmdDir := srcDir.Get(dirBootCmd + "/" + exeName)
 
 	var cmdFile core.File
 	if cmdDir.IsDir() {
