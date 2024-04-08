@@ -20,7 +20,28 @@ const (
 	BootDirCmd = "cmd"
 )
 
+var (
+	projectDir = FindProjectRoot()
+)
+
 func main() {
+
+	exe := core.Check(os.Executable())
+	exe = core.ExeName(filepath.Base(exe))
+
+	src := core.ExeName(CurFile())
+	isSelf := src == exe
+	build(isSelf)
+
+	if !isSelf {
+		exePath := filepath.Join(projectDir, DirBuild, exe)
+		cmd := core.Cmd(exePath, os.Args[1:]...).Pipe()
+		core.Handle(cmd.Run())
+		os.Exit(cmd.ExitCode())
+	}
+}
+
+func build(isSelf bool) {
 	var (
 		argVerbose = false
 		argForce   = false
@@ -32,17 +53,18 @@ func main() {
 		fmt.Printf("=== Took %s\n\n", dur)
 	}
 
-	for _, arg := range os.Args[1:] {
-		switch arg {
-		case "-v", "--verbose":
-			argVerbose = true
-		case "-f", "--force":
-			argForce = true
+	if isSelf {
+		for _, arg := range os.Args[1:] {
+			switch arg {
+			case "-v", "--verbose":
+				argVerbose = true
+			case "-f", "--force":
+				argForce = true
+			}
 		}
 	}
 
-	projectDir := FindProjectRoot()
-	RebuildSelf(projectDir)
+	RebuildSelf()
 
 	root := core.Check(core.FS(projectDir))
 	dirSrc := root.Get(DirBoot)
@@ -110,10 +132,15 @@ func main() {
 	showDuration()
 }
 
-func RebuildSelf(projectDir string) {
-	_, curFile, _, ok := runtime.Caller(0)
-	if ok {
-		file := filepath.Base(curFile)
+func CurFile() string {
+	_, file, _, _ := runtime.Caller(0)
+	file = filepath.Base(file)
+	return file
+}
+
+func RebuildSelf() {
+	file := CurFile()
+	if file != "" {
 		glob := path.Join(projectDir, "**.go")
 		src := filepath.Join(projectDir, file)
 		exeName := core.ExeName(file)

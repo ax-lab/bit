@@ -3,29 +3,17 @@ package main
 import (
 	"fmt"
 	"os"
-	"strings"
-	"unicode"
-
-	"axlab.dev/bit/boot/core"
 )
 
 func main() {
-	cmd := core.Cmd("go", "run", "cmd/run/bit_run.go")
-	err := cmd.Run()
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "\nFatal: %v\n\n", err)
-		os.Exit(-1)
-	}
+	fmt.Println("Hello from bit!!!")
+	fmt.Println(os.Args)
 
-	if err := strings.TrimRightFunc(cmd.StdErr(), unicode.IsSpace); err != "" {
-		fmt.Fprintf(os.Stderr, "\n>>> Error:\n\n%s\n", err)
-	}
+	fmt.Printf("Input text: ")
 
-	if out := cmd.StdOut(); len(out) > 0 {
-		fmt.Fprintf(os.Stdout, "\n>>> Output:\n\n%s<EOF>\n", out)
-	}
-
-	fmt.Printf("\n-> Exit code = %d\n\n", cmd.ExitCode())
+	var input string
+	fmt.Scanln(&input)
+	fmt.Printf("> %s\n\n", input)
 
 	//
 
