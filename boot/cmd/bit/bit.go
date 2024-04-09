@@ -2,18 +2,24 @@ package main
 
 import (
 	"fmt"
-	"os"
+	"path/filepath"
+
+	"axlab.dev/bit/boot/core"
+)
+
+const (
+	DirSrc = "src"
 )
 
 func main() {
-	fmt.Println("Hello from bit!!!")
-	fmt.Println(os.Args)
+	rootDir := core.ProjectRoot()
+	rootSrc := filepath.Join(rootDir, DirSrc)
 
-	fmt.Printf("Input text: ")
+	root := core.Check(core.FS(rootSrc))
 
-	var input string
-	fmt.Scanln(&input)
-	fmt.Printf("> %s\n\n", input)
+	for _, it := range core.CheckErrs(root.Glob("*.bit")) {
+		fmt.Println(it.Path())
+	}
 
 	//
 

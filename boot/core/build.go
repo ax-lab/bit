@@ -2,8 +2,10 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -57,4 +59,31 @@ func NeedRebuild(output string, srcGlob string) (bool, error) {
 	}
 
 	return out.ModTime().Before(srcTime), nil
+}
+
+var (
+	projectRoot = projectRootFind()
+)
+
+func ProjectRoot() string {
+	return projectRoot
+}
+
+func projectRootFind() string {
+	cwd := Check(filepath.Abs("."))
+	root := cwd
+	for !projectRootCheck(root) {
+		next := filepath.Join(root, "..")
+		if next == "" || next == root {
+			Fatal(fmt.Errorf("could not find project path [cwd=%s]", cwd))
+		}
+		root = next
+	}
+	return root
+}
+
+func projectRootCheck(path string) bool {
+	make := filepath.Join(path, "maker.go")
+	boot := filepath.Join(path, "boot")
+	return IsFile(make) && IsDir(boot)
 }

@@ -21,7 +21,7 @@ const (
 )
 
 var (
-	projectDir = FindProjectRoot()
+	projectDir = core.ProjectRoot()
 )
 
 func main() {
@@ -152,25 +152,6 @@ func RebuildSelf() {
 			core.Handle(build.RunAndCheck())
 		}
 	}
-}
-
-func IsProjectRoot(path string) bool {
-	make := filepath.Join(path, "maker.go")
-	boot := filepath.Join(path, "boot")
-	return core.IsFile(make) && core.IsDir(boot)
-}
-
-func FindProjectRoot() string {
-	cwd := core.Check(filepath.Abs("."))
-	root := cwd
-	for !IsProjectRoot(root) {
-		next := filepath.Join(root, "..")
-		if next == "" || next == root {
-			core.Fatal(fmt.Errorf("could not find project path [cwd=%s]", cwd))
-		}
-		root = next
-	}
-	return root
 }
 
 func FindCommands(dirSrc, dirBuild core.File) (cmdSrc, cmdExe []core.File) {
