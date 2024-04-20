@@ -88,6 +88,10 @@ func (span Span) Skip(offset int) Span {
 	return span.Range(offset, len)
 }
 
+func (span Span) ErrorAt(err error) error {
+	return ErrorAt(err, span.Location())
+}
+
 func (span Span) Compare(other Span) int {
 	if res := span.src.Compare(other.src); res != 0 {
 		return res

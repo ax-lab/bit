@@ -3,6 +3,7 @@ package core
 import (
 	"cmp"
 	"fmt"
+	"path"
 	"sync"
 	"sync/atomic"
 	"unsafe"
@@ -21,6 +22,22 @@ func (src Source) Name() string {
 		return ""
 	}
 	return src.data.name
+}
+
+func (src Source) Path() string {
+	file := src.FileName()
+	filePath := path.Dir(file)
+	if filePath == "." || filePath == "/" {
+		return ""
+	}
+	return filePath
+}
+
+func (src Source) FileName() string {
+	if src.data != nil && src.data.file {
+		return src.data.name
+	}
+	return ""
 }
 
 func (src Source) Text() string {
@@ -75,6 +92,7 @@ func (src Source) checkValid() {
 type sourceData struct {
 	err  error
 	name string
+	file bool
 	text string
 	tabs atomic.Int32
 }
@@ -107,6 +125,7 @@ func (src *SourceMap) LoadFile(path string) (Source, error) {
 
 	entry := &sourceData{
 		name: name,
+		file: true,
 	}
 
 	if src.sourceMap == nil {

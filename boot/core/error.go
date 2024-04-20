@@ -18,6 +18,19 @@ func Error(msg string, args ...any) ErrorWithLocation {
 	}
 }
 
+func ErrorAt(err error, at LocationPos) error {
+	if err == nil {
+		return nil
+	}
+
+	if pos, ok := err.(ErrorWithLocation); ok {
+		pos.loc = at
+		return pos
+	}
+
+	return Error(err.Error()).AtLocation(at)
+}
+
 type ErrorWithLocation struct {
 	loc  LocationPos
 	text string
@@ -43,6 +56,11 @@ func (err ErrorWithLocation) Error() string {
 
 func (err ErrorWithLocation) At(file string, pos ...int) ErrorWithLocation {
 	err.loc = Location(file, pos...)
+	return err
+}
+
+func (err ErrorWithLocation) AtLocation(loc LocationPos) ErrorWithLocation {
+	err.loc = loc
 	return err
 }
 

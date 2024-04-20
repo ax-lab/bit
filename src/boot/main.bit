@@ -1,3 +1,7 @@
 # Bootstrap compiler entry point
 
+#print Hi there
+#error some error
+#load test.bit
+
 print 'Hello world!!!'

@@ -17,7 +17,7 @@ func ErrorFromList(errs []error, msg string, args ...any) error {
 		out.WriteString(msg)
 		out.WriteString(":")
 		for n, err := range errs {
-			out.WriteString(fmt.Sprintf("[%d] %v", n+1, err))
+			out.WriteString(fmt.Sprintf("\n\n[%d] %v", n+1, err))
 		}
 		return errors.New(out.String())
 	}
@@ -37,7 +37,18 @@ func (errList *ErrorList) HasErrors() bool {
 }
 
 func (errList *ErrorList) AddError(err error) {
+	if err == nil {
+		panic("ErrorList: adding nil error")
+	}
 	errList.AddErrors(err)
+}
+
+func (errList *ErrorList) MergeErrors(other *ErrorList) {
+	if other.HasErrors() {
+		other.sync.Lock()
+		defer other.sync.Unlock()
+		errList.AddErrors(other.list...)
+	}
 }
 
 func (errList *ErrorList) AddErrors(errs ...error) {
