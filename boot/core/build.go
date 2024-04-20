@@ -55,7 +55,7 @@ func NeedRebuild(output string, srcGlob string) (bool, error) {
 	}
 
 	if len(errs) > 0 {
-		return false, Errors(errs, "glob errors")
+		return false, ErrorFromList(errs, "glob errors")
 	}
 
 	return out.ModTime().Before(srcTime), nil

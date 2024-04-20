@@ -1,0 +1,3 @@
+# Bootstrap compiler entry point
+
+print 'Hello world!!!'

@@ -2,35 +2,21 @@ package main
 
 import (
 	"fmt"
-	"path/filepath"
+	"os"
 
+	"axlab.dev/bit/boot/bit"
 	"axlab.dev/bit/boot/core"
-)
-
-const (
-	DirSrc = "src"
 )
 
 func main() {
 	rootDir := core.ProjectRoot()
-	rootSrc := filepath.Join(rootDir, DirSrc)
 
-	root := core.Check(core.FS(rootSrc))
+	compiler := bit.Compiler{}
+	compiler.SetRoot(rootDir)
+	compiler.SetMain("src/boot/main.bit")
 
-	for _, it := range core.CheckErrs(root.Glob("*.bit")) {
-		fmt.Println(it.Path())
+	if err := compiler.Run(); err != nil {
+		fmt.Fprintf(os.Stderr, "\nCompilation failed: %v\n\n", err)
+		os.Exit(1)
 	}
-
-	//
-
-	// prj := core.ProjectNew("bit")
-	// program := bit.Program(prj)
-
-	// prj.SetBase(core.RepoRoot())
-	// prj.Depends("./boot/**.go")
-	// prj.Source("./src/**.bit", bit.SourceLoader(program))
-	// prj.Step(bit.Compiler(program))
-	// prj.Step(bit.Builder(program))
-	// prj.ExecMain(program.OutputExe(), os.Args[1:]...)
-	// prj.Run()
 }
