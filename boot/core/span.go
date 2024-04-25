@@ -35,6 +35,11 @@ func (span Span) Merged(other Span) Span {
 }
 
 func (span *Span) Merge(other Span) {
+	if !span.src.Valid() && span.sta == 0 && span.end == 0 {
+		*span = other
+		return
+	}
+
 	if span.src != other.src {
 		panic("Span: cannot merge from different sources")
 	}
@@ -80,7 +85,7 @@ func (span Span) WithLen(len int) Span {
 	return span.Range(0, len)
 }
 
-func (span Span) Skip(offset int) Span {
+func (span Span) From(offset int) Span {
 	len := span.Len()
 	if offset < 0 || len < offset {
 		panic("Span: invalid skip offset")
@@ -103,6 +108,14 @@ func (span Span) Compare(other Span) int {
 		return res
 	}
 	return 0
+}
+
+func (span Span) Contains(other Span) bool {
+	if !other.src.Valid() || other.src != span.src {
+		return false
+	}
+	return span.sta <= other.sta && other.sta < span.end &&
+		span.sta <= other.end && other.end <= span.end
 }
 
 func (span Span) Location() LocationPos {

@@ -230,5 +230,5 @@ func (cur *Cursor) Advance(length int) {
 		offset += 1
 	}
 
-	cur.span = cur.span.Skip(offset)
+	cur.span = cur.span.From(offset)
 }
