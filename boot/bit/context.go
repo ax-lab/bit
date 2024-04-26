@@ -9,7 +9,9 @@ import (
 )
 
 type Context struct {
-	globalErrors core.ErrorList
+	core.ErrorList
+
+	queue *EvalQueue
 
 	lexer   Lexer
 	rootDir core.DirEntry
@@ -30,7 +32,7 @@ func contextNew(rootDir string, lexer Lexer) (*Context, error) {
 		return nil, err
 	}
 
-	out := &Context{
+	ctx := &Context{
 		rootDir: root,
 		lexer:   lexer,
 		sources: core.SourceMapNew(root),
@@ -40,7 +42,13 @@ func contextNew(rootDir string, lexer Lexer) (*Context, error) {
 		moduleByFile: make(map[string]*Module),
 	}
 
-	return out, nil
+	ctx.queue = evalQueueNew(ctx)
+
+	return ctx, nil
+}
+
+func (ctx *Context) Queue() *EvalQueue {
+	return ctx.queue
 }
 
 func (ctx *Context) GetModule(name string) *Module {
@@ -71,7 +79,7 @@ func (ctx *Context) DeclareModule(name, text string) *Module {
 	if modByName == nil {
 		ctx.moduleByName[name] = modBySrc
 	} else if modBySrc != modByName {
-		ctx.globalErrors.AddError(fmt.Errorf("module `%s` was declared multiple times for context", name))
+		ctx.AddError(fmt.Errorf("module `%s` was declared multiple times for context", name))
 	}
 
 	return modBySrc
@@ -87,9 +95,11 @@ func (ctx *Context) Eval() (out Result) {
 	go func() {
 		defer close(loaded)
 		ctx.loading.Wait()
+		ctx.queue.Start()
+		ctx.queue.Wait()
 	}()
 
-	timeout := time.After(15 * time.Second)
+	timeout := time.After(30 * time.Second)
 	select {
 	case <-timeout:
 		out.AddError(fmt.Errorf("context loading timed out"))
@@ -102,13 +112,12 @@ func (ctx *Context) Eval() (out Result) {
 	modules = append(modules, ctx.moduleList...)
 	ctx.moduleSync.Unlock()
 
-	out.MergeErrors(&ctx.globalErrors)
+	out.MergeErrors(&ctx.ErrorList)
 	for _, mod := range modules {
 		mod.Wait()
 		out.MergeErrors(&mod.ErrorList)
 	}
 
-	out.AddError(fmt.Errorf("context eval not implemented"))
 	return
 }
 

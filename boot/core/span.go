@@ -35,6 +35,10 @@ func (span Span) Merged(other Span) Span {
 }
 
 func (span *Span) Merge(other Span) {
+	if !other.src.Valid() {
+		return
+	}
+
 	if !span.src.Valid() && span.sta == 0 && span.end == 0 {
 		*span = other
 		return

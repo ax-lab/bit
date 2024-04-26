@@ -20,13 +20,18 @@ func (comp *Compiler) SetMain(mainFile string) {
 	comp.mainFile = mainFile
 }
 
-func (comp *Compiler) Run() (err error) {
+func (comp *Compiler) NewContext() (*Context, error) {
 	root := comp.rootDir
 	if root == "" {
 		root = "."
 	}
 
 	ctx, err := contextNew(root, comp.Lexer.Copy())
+	return ctx, err
+}
+
+func (comp *Compiler) Run() (err error) {
+	ctx, err := comp.NewContext()
 	if err != nil {
 		return err
 	}
