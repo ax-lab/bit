@@ -1,0 +1,49 @@
+segment 1
+segment 2
+segment 3
+	3a
+	3b
+	3c
+		3c.1
+		3c.2
+	3d
+
+segment4: s4a s4b(
+	b1
+	b2
+	b3
+) s4c
+	s4c.1
+	s4c.2 {
+		x
+		y
+		z
+	}
+		s4c.2.1
+		s4c.2.2
+
+#load string
+
+'some string $<
+	s1
+	s2
+	s3 (
+		'>'
+		'$<
+			1 + 2
+		>'
+		'>'
+	)
+	end>->'
+
+<<<HERE
+	( # never closed
+		'${
+			<<<HERE
+			>>>HERE
+
+			<<<THERE
+			>>>THERE
+		}
+	) <-- still string
+>>>HERE
