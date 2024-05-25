@@ -1,6 +1,7 @@
 package core
 
 import (
+	"cmp"
 	"errors"
 	"fmt"
 	"os"
@@ -13,8 +14,21 @@ import (
 type Source interface {
 	Name() string
 	Text() string
+	Span() Span
 	String() string
 	Loader() *SourceLoader
+}
+
+func SourceCompare(a, b Source) int {
+	if a == nil && b == nil {
+		return 0
+	} else if a == nil {
+		return -1
+	} else if b == nil {
+		return +1
+	}
+	res := cmp.Compare(a.Name(), b.Name())
+	return res
 }
 
 type SourceLoader struct {
@@ -172,6 +186,10 @@ func (src *source) Name() string {
 
 func (src *source) Text() string {
 	return src.text
+}
+
+func (src *source) Span() Span {
+	return spanForSource(src)
 }
 
 func (src *source) String() string {
