@@ -160,5 +160,23 @@ func (compiler *Compiler) outputErrors() bool {
 
 	fmt.Fprintln(compiler.StdOut())
 
+	compiler.Dump()
+
 	return false
+}
+
+func (compiler *Compiler) Dump() {
+	out := compiler.StdOut()
+
+	count := len(compiler.list)
+
+	fmt.Fprintf(out, "\n-- COMPILER DUMP --\n\n")
+	fmt.Fprintf(out, ">>> Lists (%d) <<<\n", count)
+
+	for idx, list := range compiler.list {
+		repr := Indent(list.Dump())
+		fmt.Fprintf(out, "\n%s[%d of %d] = %s\n", DefaultIndent, idx+1, count, repr)
+	}
+
+	fmt.Fprintf(out, "\n")
 }

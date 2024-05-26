@@ -1,5 +1,10 @@
 package core
 
+import (
+	"fmt"
+	"strings"
+)
+
 type Node struct {
 	data *nodeData
 }
@@ -37,6 +42,32 @@ func (node Node) Span() Span {
 func (node Node) Value() Value {
 	node.checkValid()
 	return node.data.value
+}
+
+func (node Node) String() string {
+	if node.data == nil {
+		return "Node()"
+	} else if node.data.value == nil {
+		return "Node(nil)"
+	}
+	return fmt.Sprintf("Node(%s)", node.data.value.String())
+}
+
+func (node Node) Dump() string {
+	if node.data == nil || node.data.value == nil {
+		return node.String()
+	}
+
+	var repr string
+	if val, ok := node.data.value.(WithDump); ok {
+		repr = val.Dump()
+	} else {
+		repr = node.data.value.String()
+	}
+
+	val := IndentBlock(repr)
+	out := fmt.Sprintf("Node(%s)", val)
+	return out
 }
 
 func (node Node) checkValid() {
@@ -102,6 +133,40 @@ func (list NodeList) Span() Span {
 func (list NodeList) Errors() []error {
 	list.checkValid()
 	return list.data.errors
+}
+
+func (list NodeList) String() string {
+	if list.data == nil {
+		return "NodeList(nil)"
+	}
+	return fmt.Sprintf("NodeList(%d)", list.Len())
+}
+
+func (list NodeList) Dump() string {
+	out := strings.Builder{}
+	out.WriteString(list.String())
+	if list.data == nil {
+		return out.String()
+	}
+
+	out.WriteString(" {\n")
+	if span := list.data.span; span.Valid() {
+		out.WriteString(fmt.Sprintf("%s[...] @ %s\n", DefaultIndent, span.Location()))
+	}
+	for idx, node := range list.Nodes() {
+		out.WriteString(fmt.Sprintf("%s[%03d] = ", DefaultIndent, idx))
+		out.WriteString(Indent(node.Dump()))
+
+		if span := node.Span(); span.Valid() {
+			out.WriteString("    \t\t# ")
+			out.WriteString(span.Location())
+		}
+
+		out.WriteString("\n")
+	}
+
+	out.WriteString("}")
+	return out.String()
 }
 
 func (list NodeList) checkValid() {

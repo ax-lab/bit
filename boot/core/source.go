@@ -11,8 +11,6 @@ import (
 	"sync"
 )
 
-const DefaultTabSize = 4
-
 type Source interface {
 	Name() string
 	Text() string
