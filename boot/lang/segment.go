@@ -27,9 +27,9 @@ func OpSegment(list core.NodeList) {
 
 		lexer := compiler.Lexer.Copy()
 		input := src.Span().Cursor()
-		for input.Len() > 0 {
+		for input.Len() > 0 && !compiler.ShouldStop() {
 			next := ReadNext(lexer, &input)
-			if next.Len() > 0 {
+			if !next.Empty() {
 				compiler.Eval(next)
 			}
 		}
@@ -43,7 +43,9 @@ func ReadNext(lexer *core.Lexer, input *core.Cursor) (out core.NodeList) {
 		if err == io.EOF {
 			break
 		} else if err != nil {
-			out.PushError(err)
+			if stop := out.PushError(err); stop {
+				break
+			}
 		}
 
 		if _, eol := next.Value().(core.LineBreak); eol {

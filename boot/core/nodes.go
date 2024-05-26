@@ -84,6 +84,11 @@ func (list NodeList) Get(idx int) Node {
 	return list.data.nodes[idx]
 }
 
+func (list NodeList) Empty() bool {
+	list.checkValid()
+	return list.Len() == 0 && len(list.data.errors) == 0
+}
+
 func (list NodeList) Len() int {
 	list.checkValid()
 	return len(list.data.nodes)
@@ -126,7 +131,12 @@ func (list NodeList) Push(nodes ...Node) {
 	list.data.nodes = append(list.data.nodes, nodes...)
 }
 
-func (list NodeList) PushError(err error) {
+func (list NodeList) PushError(err error) (stop bool) {
 	list.checkValid()
+	if err == nil {
+		return false
+	}
+
 	list.data.errors = append(list.data.errors, err)
+	return list.Compiler().incrementErrorCount()
 }

@@ -73,22 +73,37 @@ func (lex *Lexer) AddBrackets(sta, end string) {
 	lex.bracketSta[end] = sta
 }
 
-func (lexer *Lexer) Read(input *Cursor) (out Node, err error) {
+func (lex *Lexer) Read(input *Cursor) (out Node, err error) {
+	out, err, valid := lex.readNext(input)
+	if valid {
+		return out, err
+	}
+
+	sta := *input
+	input.Read()
+	lex.skipInvalid(input)
+	span := input.GetSpan(sta)
+	out = NodeNew(span, Invalid(span.Text()))
+	err = Errorf(span, "invalid token")
+	return out, err
+}
+
+func (lex *Lexer) readNext(input *Cursor) (out Node, err error, valid bool) {
 	input.SkipWhile(IsSpace)
 	sta := *input
 
 	text := input.Text()
 	if len(text) == 0 {
-		return out, io.EOF
+		return out, io.EOF, true
 	}
 
 	if input.SkipAny("\n", "\r\n", "\r") {
 		span := input.GetSpan(sta)
 		out = NodeNew(span, LineBreak(span.Text()))
-		return
+		return out, nil, true
 	}
 
-	for _, matchFunc := range lexer.matchers {
+	for _, matchFunc := range lex.matchers {
 		cur := *input
 		val, err := matchFunc(&cur)
 		if val != nil || err != nil {
@@ -103,24 +118,39 @@ func (lexer *Lexer) Read(input *Cursor) (out Node, err error) {
 			if err != nil {
 				err = ErrorAt(span, err)
 			}
-			return out, err
+			return out, err, true
 		}
 	}
 
-	for _, sym := range lexer.symbols {
+	for _, sym := range lex.symbols {
 		if strings.HasPrefix(text, sym) {
 			input.Advance(len(sym))
 			span := input.GetSpan(sta)
 			out = NodeNew(span, Symbol(sym))
-			return out, nil
+			return out, nil, true
 		}
 	}
 
-	input.Read()
-	span := input.GetSpan(sta)
-	out = NodeNew(span, Invalid(span.Text()))
-	err = Errorf(span, "invalid token")
-	return out, err
+	return
+}
+
+func (lex *Lexer) skipInvalid(input *Cursor) {
+	cur := *input
+	end := *input
+	tmp := lex.Copy()
+	for cur.Len() > 0 {
+		if chr := cur.Peek(); IsSpace(chr) || chr == '\r' || chr == '\n' {
+			break
+		}
+		_, _, valid := tmp.readNext(&cur)
+		if valid {
+			break
+		} else {
+			cur.Read()
+			end = cur
+		}
+	}
+	*input = end
 }
 
 func (lex *Lexer) initBrackets() {

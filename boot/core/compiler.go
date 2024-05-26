@@ -5,13 +5,22 @@ import (
 	"io"
 	"os"
 	"slices"
+	"sync"
+	"sync/atomic"
 )
+
+const MaxErrors = 32
 
 type Compiler struct {
 	Lexer Lexer
 
 	redirectedStdOut io.Writer
 	redirectedStdErr io.Writer
+
+	errorCount atomic.Uint32
+
+	fatalSync   sync.Mutex
+	fatalErrors []error
 
 	list []NodeList
 	ops  []func(list NodeList)
@@ -33,7 +42,11 @@ func (compiler *Compiler) Run() bool {
 		}
 	}
 
-	if !compiler.checkAndOutputErrors() {
+	if compiler.HasErrors() {
+		if stopped := compiler.ShouldStop(); stopped {
+			compiler.Fatal(fmt.Errorf("too many errors, aborting compilation"))
+		}
+		compiler.outputErrors()
 		return false
 	}
 
@@ -41,7 +54,8 @@ func (compiler *Compiler) Run() bool {
 		compiler.out(ls)
 	}
 
-	return true
+	ok := compiler.outputErrors()
+	return ok
 }
 
 func (compiler *Compiler) AddSource(src Source) {
@@ -51,6 +65,15 @@ func (compiler *Compiler) AddSource(src Source) {
 	node := NodeNew(src.Span(), src)
 	list := NodeListNew(src.Span(), node)
 	compiler.Eval(list)
+}
+
+func (compiler *Compiler) Fatal(err error) {
+	if err != nil {
+		compiler.fatalSync.Lock()
+		compiler.fatalErrors = append(compiler.fatalErrors, err)
+		compiler.fatalSync.Unlock()
+		compiler.incrementErrorCount()
+	}
 }
 
 func (compiler *Compiler) Eval(list NodeList) {
@@ -87,7 +110,26 @@ func (compiler *Compiler) SetOutput(op func(list NodeList)) {
 	compiler.out = op
 }
 
-func (compiler *Compiler) checkAndOutputErrors() bool {
+func (compiler *Compiler) HasErrors() bool {
+	return compiler.errorCount.Load() > 0
+}
+
+func (compiler *Compiler) ShouldStop() bool {
+	count := compiler.errorCount.Load()
+
+	compiler.fatalSync.Lock()
+	fatal := len(compiler.fatalErrors)
+	compiler.fatalSync.Unlock()
+
+	return count >= MaxErrors || fatal > 0
+}
+
+func (compiler *Compiler) incrementErrorCount() (stop bool) {
+	compiler.errorCount.Add(1)
+	return compiler.ShouldStop()
+}
+
+func (compiler *Compiler) outputErrors() bool {
 	var errors []error
 	for _, ls := range compiler.list {
 		errors = append(errors, ls.Errors()...)
@@ -108,6 +150,15 @@ func (compiler *Compiler) checkAndOutputErrors() bool {
 			fmt.Fprintf(stdErr, "\n[%d] %s\n", idx+1, err)
 		}
 	}
+
+	if fatal := compiler.fatalErrors; len(fatal) > 0 {
+		fmt.Fprintln(stdErr)
+		for _, err := range fatal {
+			fmt.Fprintf(stdErr, "Fatal: %s\n", err)
+		}
+	}
+
 	fmt.Fprintln(compiler.StdOut())
+
 	return false
 }
