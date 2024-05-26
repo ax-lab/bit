@@ -1,19 +1,52 @@
 package core
 
-import "cmp"
+import (
+	"cmp"
+	"fmt"
+)
+
+func GetSpan[T any](value ...T) (Span, bool) {
+	type withSpan interface {
+		Span() Span
+	}
+
+	out := Span{}
+	for _, it := range value {
+		val := any(it)
+		if span, ok := val.(Span); ok {
+			out = out.Merged(span)
+		} else if withSpan, ok := val.(withSpan); ok {
+			span := withSpan.Span()
+			out = out.Merged(span)
+		}
+	}
+
+	return out, out.Valid()
+}
 
 type Span struct {
 	src Source
 	sta int
 	end int
+
+	line   int
+	column int
+	indent int
 }
 
 func spanForSource(src Source) Span {
 	return Span{
 		src: src,
-		sta: 0,
 		end: len(src.Text()),
 	}
+}
+
+func (span Span) Valid() bool {
+	return span.src != nil
+}
+
+func (span Span) Compiler() *Compiler {
+	return span.src.Loader().Compiler()
 }
 
 func (span Span) Sta() int {
@@ -38,6 +71,69 @@ func (span Span) Text() string {
 	}
 	txt := span.src.Text()
 	return txt[span.sta:span.end]
+}
+
+func (span Span) Line() int {
+	return span.line
+}
+
+func (span Span) Column() int {
+	return span.column
+}
+
+func (span Span) Indent() int {
+	return span.indent
+}
+
+func (span Span) Merged(other Span) (out Span) {
+	if !span.Valid() {
+		return other
+	} else if !other.Valid() {
+		return span
+	}
+
+	if span.src != other.src {
+		panic("Span from different sources cannot be merged")
+	}
+
+	if span.sta <= other.sta {
+		out = span
+	} else {
+		out = other
+	}
+	out.end = max(span.end, other.end)
+	return
+}
+
+func (span Span) WithSize(size int) Span {
+	if size < 0 || size > span.Len() {
+		panic("Span: size out of bounds")
+	}
+	out := span
+	out.end = out.sta + size
+	return out
+}
+
+func (span Span) Location() string {
+	if span.src == nil {
+		if span.sta != 0 || span.end != 0 || span.line != 0 || span.column != 0 {
+			panic("invalid span location")
+		}
+		return ""
+	}
+	line := span.line + 1
+	column := span.column + 1
+
+	size := ""
+	if bytes := span.Len(); bytes > 0 {
+		size = fmt.Sprintf("+%d", bytes)
+	}
+
+	return fmt.Sprintf("%s:%d:%d%s", span.src.Name(), line, column, size)
+}
+
+func (span Span) String() string {
+	return span.Location()
 }
 
 func (span Span) Compare(other Span) int {

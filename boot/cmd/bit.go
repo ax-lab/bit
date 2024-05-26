@@ -21,12 +21,12 @@ func main() {
 }
 
 func runMain(args ...string) error {
-	loader, err := core.SourceLoaderNew(".")
+	compiler := core.Compiler{}
+	loader, err := core.SourceLoaderNew(&compiler, ".")
 	if err != nil {
 		return err
 	}
 
-	compiler := core.Compiler{}
 	if err := lang.Declare(&compiler); err != nil {
 		return err
 	}
@@ -36,12 +36,12 @@ func runMain(args ...string) error {
 		if err != nil {
 			return err
 		}
-
-		node := core.NodeNew(src.Span(), src)
-		list := core.NodeListNew(src.Span(), node)
-		compiler.Add(list)
+		compiler.AddSource(src)
 	}
 
-	compiler.Run()
+	if !compiler.Run() {
+		return fmt.Errorf("compilation failed")
+	}
+
 	return nil
 }

@@ -11,12 +11,15 @@ import (
 	"sync"
 )
 
+const DefaultTabSize = 4
+
 type Source interface {
 	Name() string
 	Text() string
 	Span() Span
 	String() string
 	Loader() *SourceLoader
+	TabSize() int
 }
 
 func SourceCompare(a, b Source) int {
@@ -32,12 +35,13 @@ func SourceCompare(a, b Source) int {
 }
 
 type SourceLoader struct {
-	baseDir string
-	sync    sync.Mutex
-	sources map[string]sourceEntry
+	compiler *Compiler
+	baseDir  string
+	sync     sync.Mutex
+	sources  map[string]sourceEntry
 }
 
-func SourceLoaderNew(baseDir string) (*SourceLoader, error) {
+func SourceLoaderNew(compiler *Compiler, baseDir string) (*SourceLoader, error) {
 	fullPath, err := filepath.Abs(baseDir)
 	if err != nil {
 		return nil, fmt.Errorf("source `%s`: path error (%v)", baseDir, err)
@@ -50,12 +54,19 @@ func SourceLoaderNew(baseDir string) (*SourceLoader, error) {
 	}
 
 	loader := &SourceLoader{
-		baseDir: fullPath,
+		compiler: compiler,
+		baseDir:  fullPath,
 	}
 	return loader, nil
 }
 
+func (loader *SourceLoader) Compiler() *Compiler {
+	loader.checkValid()
+	return loader.compiler
+}
+
 func (loader *SourceLoader) Preload(name, text string) Source {
+	loader.checkValid()
 	nameKey, err := loader.cleanName(name)
 	if err != nil {
 		panic(fmt.Sprintf("SourceLoader: preloading invalid source name: %v", err))
@@ -83,6 +94,7 @@ func (loader *SourceLoader) Preload(name, text string) Source {
 }
 
 func (loader *SourceLoader) Load(name string) (Source, error) {
+	loader.checkValid()
 	nameKey, err := loader.cleanName(name)
 	if err != nil {
 		return nil, err
@@ -125,6 +137,7 @@ func (loader *SourceLoader) Load(name string) (Source, error) {
 }
 
 func (loader *SourceLoader) ResolveName(base, name string) (out string, err error) {
+	loader.checkValid()
 	base, err = loader.cleanName(base)
 	if err != nil {
 		panic(fmt.Sprintf("invalid base name: %v", err))
@@ -143,6 +156,12 @@ func (loader *SourceLoader) ResolveName(base, name string) (out string, err erro
 	}
 
 	return fullName, nil
+}
+
+func (loader *SourceLoader) checkValid() {
+	if loader.compiler == nil {
+		panic("SourceLoader is not valid")
+	}
 }
 
 func (loader *SourceLoader) cleanName(name string) (string, error) {
@@ -198,4 +217,8 @@ func (src *source) String() string {
 
 func (src *source) Loader() *SourceLoader {
 	return src.loader
+}
+
+func (src *source) TabSize() int {
+	return DefaultTabSize
 }
