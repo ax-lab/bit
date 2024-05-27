@@ -22,8 +22,7 @@ func main() {
 
 func runMain(args ...string) error {
 	compiler := core.Compiler{}
-	loader, err := core.SourceLoaderNew(&compiler, ".")
-	if err != nil {
+	if err := compiler.Sources.SetBaseDir("."); err != nil {
 		return err
 	}
 
@@ -32,14 +31,11 @@ func runMain(args ...string) error {
 	}
 
 	for _, it := range args {
-		src, err := loader.Load(it)
-		if err != nil {
-			return err
-		}
-		compiler.AddSource(src)
+		compiler.AddSource(it)
 	}
 
-	if !compiler.Run() {
+	rt := compiler.CreateRuntime()
+	if !rt.Run() {
 		return fmt.Errorf("compilation failed")
 	}
 

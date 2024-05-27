@@ -16,7 +16,6 @@ type Source interface {
 	Text() string
 	Span() Span
 	String() string
-	Loader() *SourceLoader
 	TabSize() int
 }
 
@@ -33,38 +32,29 @@ func SourceCompare(a, b Source) int {
 }
 
 type SourceLoader struct {
-	compiler *Compiler
-	baseDir  string
-	sync     sync.Mutex
-	sources  map[string]sourceEntry
+	sync sync.Mutex
+
+	baseDir      string
+	baseDirInit  bool
+	baseDirPath  string
+	baseDirError error
+
+	sources map[string]sourceEntry
 }
 
-func SourceLoaderNew(compiler *Compiler, baseDir string) (*SourceLoader, error) {
-	fullPath, err := filepath.Abs(baseDir)
-	if err != nil {
-		return nil, fmt.Errorf("source `%s`: path error (%v)", baseDir, err)
+func (loader *SourceLoader) SetBaseDir(baseDir string) error {
+	loader.sync.Lock()
+	defer loader.sync.Unlock()
+	if loader.baseDirInit {
+		panic("SourceLoader: cannot change base directory after loading files")
 	}
 
-	if stat, err := os.Stat(fullPath); err != nil {
-		return nil, fmt.Errorf("source `%s`: stat error (%v)", baseDir, err)
-	} else if !stat.IsDir() {
-		return nil, fmt.Errorf("source `%s`: not a directory", baseDir)
-	}
-
-	loader := &SourceLoader{
-		compiler: compiler,
-		baseDir:  fullPath,
-	}
-	return loader, nil
-}
-
-func (loader *SourceLoader) Compiler() *Compiler {
-	loader.checkValid()
-	return loader.compiler
+	loader.baseDir = baseDir
+	_, err := loader.getBaseDir()
+	return err
 }
 
 func (loader *SourceLoader) Preload(name, text string) Source {
-	loader.checkValid()
 	nameKey, err := loader.cleanName(name)
 	if err != nil {
 		panic(fmt.Sprintf("SourceLoader: preloading invalid source name: %v", err))
@@ -92,7 +82,6 @@ func (loader *SourceLoader) Preload(name, text string) Source {
 }
 
 func (loader *SourceLoader) Load(name string) (Source, error) {
-	loader.checkValid()
 	nameKey, err := loader.cleanName(name)
 	if err != nil {
 		return nil, err
@@ -108,7 +97,12 @@ func (loader *SourceLoader) Load(name string) (Source, error) {
 		loader.sources = make(map[string]sourceEntry)
 	}
 
-	nameFull := filepath.Join(loader.baseDir, nameKey)
+	baseDir, err := loader.getBaseDir()
+	if err != nil {
+		return nil, err
+	}
+
+	nameFull := filepath.Join(baseDir, nameKey)
 	data, err := os.ReadFile(nameFull)
 
 	var entry sourceEntry
@@ -135,7 +129,6 @@ func (loader *SourceLoader) Load(name string) (Source, error) {
 }
 
 func (loader *SourceLoader) ResolveName(base, name string) (out string, err error) {
-	loader.checkValid()
 	base, err = loader.cleanName(base)
 	if err != nil {
 		panic(fmt.Sprintf("invalid base name: %v", err))
@@ -154,12 +147,6 @@ func (loader *SourceLoader) ResolveName(base, name string) (out string, err erro
 	}
 
 	return fullName, nil
-}
-
-func (loader *SourceLoader) checkValid() {
-	if loader.compiler == nil {
-		panic("SourceLoader is not valid")
-	}
 }
 
 func (loader *SourceLoader) cleanName(name string) (string, error) {
@@ -219,4 +206,29 @@ func (src *source) Loader() *SourceLoader {
 
 func (src *source) TabSize() int {
 	return DefaultTabSize
+}
+
+func (loader *SourceLoader) getBaseDir() (string, error) {
+	if loader.baseDirInit {
+		return loader.baseDir, loader.baseDirError
+	}
+
+	baseDir := loader.baseDir
+	if baseDir == "" {
+		baseDir = "."
+	}
+
+	fullPath, err := filepath.Abs(baseDir)
+	if err != nil {
+		err = fmt.Errorf("source `%s`: path error (%v)", baseDir, err)
+	} else if stat, statErr := os.Stat(fullPath); statErr != nil {
+		err = fmt.Errorf("source `%s`: stat error (%v)", baseDir, statErr)
+	} else if !stat.IsDir() {
+		err = fmt.Errorf("source `%s`: not a directory", baseDir)
+	}
+
+	loader.baseDirPath = fullPath
+	loader.baseDirError = err
+	loader.baseDirInit = true
+	return fullPath, err
 }

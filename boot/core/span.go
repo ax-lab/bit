@@ -45,10 +45,6 @@ func (span Span) Valid() bool {
 	return span.src != nil
 }
 
-func (span Span) Compiler() *Compiler {
-	return span.src.Loader().Compiler()
-}
-
 func (span Span) Sta() int {
 	return span.sta
 }

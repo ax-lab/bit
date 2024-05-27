@@ -30,11 +30,6 @@ func (node Node) Valid() bool {
 	return node.data != nil
 }
 
-func (node Node) Compiler() *Compiler {
-	node.checkValid()
-	return node.data.span.Compiler()
-}
-
 func (node Node) Span() Span {
 	node.checkValid()
 	return node.data.span
@@ -82,28 +77,29 @@ type NodeList struct {
 }
 
 type nodeListData struct {
+	module *Module
 	span   Span
 	nodes  []Node
-	errors []error
 }
 
-func NodeListNew(span Span, nodes ...Node) NodeList {
-	if span.Src() == nil {
-		panic("NodeList with invalid span")
+func nodeListNew(mod *Module, span Span, nodes []Node) NodeList {
+	if mod == nil {
+		panic("NodeList: invalid module")
 	}
-	data := &nodeListData{span: span}
-	list := NodeList{data}
-	list.Push(nodes...)
-	return list
+	if span.Src() == nil {
+		panic("NodeList: invalid span")
+	}
+	data := &nodeListData{mod, span, nodes}
+	return NodeList{data}
 }
 
 func (list NodeList) Valid() bool {
 	return list.data != nil
 }
 
-func (list NodeList) Compiler() *Compiler {
+func (list NodeList) Module() *Module {
 	list.checkValid()
-	return list.data.span.Compiler()
+	return list.data.module
 }
 
 func (list NodeList) Nodes() []Node {
@@ -116,11 +112,6 @@ func (list NodeList) Get(idx int) Node {
 	return list.data.nodes[idx]
 }
 
-func (list NodeList) Empty() bool {
-	list.checkValid()
-	return list.Len() == 0 && len(list.data.errors) == 0
-}
-
 func (list NodeList) Len() int {
 	list.checkValid()
 	return len(list.data.nodes)
@@ -129,11 +120,6 @@ func (list NodeList) Len() int {
 func (list NodeList) Span() Span {
 	list.checkValid()
 	return list.data.span
-}
-
-func (list NodeList) Errors() []error {
-	list.checkValid()
-	return list.data.errors
 }
 
 func (list NodeList) String() string {
@@ -187,12 +173,8 @@ func (list NodeList) Set(idx int, node Node) {
 
 func (list NodeList) Push(nodes ...Node) {
 	list.checkValid()
-	span := list.data.span
 	for _, it := range nodes {
 		it.checkValid()
-		if it.Compiler() != span.Compiler() {
-			panic("NodeList node has a different compiler")
-		}
 	}
 	list.data.nodes = append(list.data.nodes, nodes...)
 }
@@ -200,14 +182,4 @@ func (list NodeList) Push(nodes ...Node) {
 func (list NodeList) Replace(sta, end int, nodes ...Node) {
 	list.checkValid()
 	list.data.nodes = slices.Replace(list.data.nodes, sta, end, nodes...)
-}
-
-func (list NodeList) PushError(err error) (stop bool) {
-	list.checkValid()
-	if err == nil {
-		return false
-	}
-
-	list.data.errors = append(list.data.errors, err)
-	return list.Compiler().incrementErrorCount()
 }
