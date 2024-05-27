@@ -13,6 +13,7 @@ func Declare(compiler *core.Compiler) error {
 
 func InitLexer(lexer *core.Lexer) {
 	lexer.AddMatcher(MatchWord)
+	lexer.AddMatcher(MatchNumber)
 
 	lexer.AddBrackets("(", ")")
 	lexer.AddBrackets("[", "]")

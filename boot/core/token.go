@@ -47,3 +47,40 @@ type LineBreak string
 func (LineBreak) String() string {
 	return "LineBreak"
 }
+
+type Integer struct {
+	Base   int
+	Digits string
+	Suffix string
+}
+
+func (num Integer) String() string {
+	out := strings.Builder{}
+	out.WriteString("Int(")
+
+	based := false
+	switch num.Base {
+	case 0, 10:
+		break
+	case 2:
+		out.WriteString("0b")
+	case 8:
+		out.WriteString("0c")
+	case 16:
+		out.WriteString("0x")
+	default:
+		based = true
+	}
+
+	out.WriteString(num.Digits)
+	if len(num.Suffix) > 0 {
+		out.WriteString(fmt.Sprintf("; suffix=%s", num.Suffix))
+	}
+
+	if based {
+		out.WriteString(fmt.Sprintf("; base=%d", num.Base))
+	}
+
+	out.WriteString(")")
+	return out.String()
+}

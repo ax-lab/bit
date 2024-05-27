@@ -50,12 +50,29 @@ func (cursor *Cursor) Read() (out rune) {
 	return out
 }
 
+func (cursor *Cursor) ReadChar(chr ...rune) bool {
+	next := cursor.Peek()
+	for _, it := range chr {
+		if next == it {
+			cursor.Read()
+			return true
+		}
+	}
+	return false
+}
+
 func (cursor *Cursor) SkipWhile(pred func(chr rune) bool) (skipped bool) {
+	txt := cursor.ReadWhile(pred)
+	return len(txt) > 0
+}
+
+func (cursor *Cursor) ReadWhile(pred func(chr rune) bool) (read string) {
+	txt := cursor.src.Text()
 	sta := cursor.sta
 	for cursor.Len() > 0 && pred(cursor.Peek()) {
 		cursor.Read()
 	}
-	return cursor.sta > sta
+	return txt[sta:cursor.sta]
 }
 
 func (cursor *Cursor) SkipAny(prefixes ...string) (skipped bool) {

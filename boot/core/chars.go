@@ -29,3 +29,21 @@ func IsLetterOrDigit(chr rune) bool {
 func IsWord(chr rune) bool {
 	return chr == '_' || IsLetterOrDigit(chr)
 }
+
+func IsBaseDigit(chr rune, base int) bool {
+	if digit := int(chr - '0'); digit >= 0 && digit < base {
+		return true
+	}
+
+	if base <= 10 {
+		return false
+	}
+
+	digit := base
+	if 'A' <= chr && chr <= 'Z' {
+		digit = int(chr - 'A')
+	} else if 'a' <= chr && chr <= 'z' {
+		digit = int(chr - 'a')
+	}
+	return (digit + 10) < base
+}

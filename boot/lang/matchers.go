@@ -3,6 +3,7 @@ package lang
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"axlab.dev/bit/core"
 )
@@ -25,7 +26,13 @@ func MatchWithRE(regex string, token core.TokenType) core.LexMatcher {
 	}
 }
 
-func MatchNumber(input *core.Cursor) (core.Value, error) {
+func MatchNumber(input *core.Cursor) (val core.Value, err error) {
+	if !core.IsDigit(input.Peek()) {
+		return nil, nil
+	}
+
+	out := strings.Builder{}
+
 	base := 10
 	switch input.ReadAny("0x", "0c", "0o", "0b") {
 	case "0x":
@@ -35,8 +42,50 @@ func MatchNumber(input *core.Cursor) (core.Value, error) {
 	case "0b":
 		base = 2
 	}
-	_ = base
-	panic("TODO")
+
+	skipSeparator := func(input *core.Cursor) bool {
+		return input.SkipWhile(func(chr rune) bool { return chr == '_' })
+	}
+
+	if base != 10 {
+		skipSeparator(input)
+	}
+
+	digit := func(chr rune) bool { return core.IsBaseDigit(chr, base) }
+
+	chunk := input.ReadWhile(digit)
+	out.WriteString(chunk)
+
+	if valid := len(chunk) > 0; !valid {
+		err = fmt.Errorf("invalid numeric literal")
+	}
+
+	for skipSeparator(input) {
+		chunk = input.ReadWhile(digit)
+		out.WriteString(chunk)
+		if len(chunk) == 0 {
+			break
+		}
+	}
+
+	suffix := input.ReadWhile(core.IsLetter)
+	if suffix != "" {
+		suffix += input.ReadWhile(core.IsWord)
+	} else {
+		sta := *input
+		invalid := input.ReadWhile(core.IsWord)
+		if err == nil && len(invalid) > 0 {
+			err = core.Errorf(input.GetSpan(sta), "invalid digits in numeric literal of base %d", base)
+		}
+	}
+
+	val = core.Integer{
+		Digits: out.String(),
+		Base:   base,
+		Suffix: suffix,
+	}
+
+	return val, err
 }
 
 func MatchWord(input *core.Cursor) (core.Value, error) {

@@ -150,6 +150,9 @@ func (rt *Runtime) Run() bool {
 	}
 
 	ok := rt.outputErrors()
+
+	rt.Dump()
+
 	return ok
 }
 
@@ -211,8 +214,6 @@ func (rt *Runtime) outputErrors() bool {
 	}
 
 	fmt.Fprintln(rt.stdOut)
-
-	rt.Dump()
 
 	return false
 }
