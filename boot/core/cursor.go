@@ -59,15 +59,20 @@ func (cursor *Cursor) SkipWhile(pred func(chr rune) bool) (skipped bool) {
 }
 
 func (cursor *Cursor) SkipAny(prefixes ...string) (skipped bool) {
+	read := cursor.ReadAny(prefixes...)
+	return len(read) > 0
+}
+
+func (cursor *Cursor) ReadAny(prefixes ...string) (read string) {
 	if txt := cursor.Text(); len(txt) > 0 {
 		for _, it := range prefixes {
 			if len(it) > 0 && strings.HasPrefix(txt, it) {
 				cursor.Advance(len(it))
-				return true
+				return it
 			}
 		}
 	}
-	return false
+	return ""
 }
 
 func (cursor *Cursor) Advance(bytes int) {

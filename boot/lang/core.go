@@ -12,9 +12,12 @@ func Declare(compiler *core.Compiler) error {
 }
 
 func InitLexer(lexer *core.Lexer) {
+	lexer.AddMatcher(MatchWord)
+
 	lexer.AddBrackets("(", ")")
 	lexer.AddBrackets("[", "]")
 	lexer.AddBrackets("{", "}")
+
 	lexer.AddSymbols(
 		// punctuation
 		".", "..", ",", ";", ":",
