@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 )
 
@@ -194,6 +195,11 @@ func (list NodeList) Push(nodes ...Node) {
 		}
 	}
 	list.data.nodes = append(list.data.nodes, nodes...)
+}
+
+func (list NodeList) Replace(sta, end int, nodes ...Node) {
+	list.checkValid()
+	list.data.nodes = slices.Replace(list.data.nodes, sta, end, nodes...)
 }
 
 func (list NodeList) PushError(err error) (stop bool) {
