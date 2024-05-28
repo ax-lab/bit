@@ -129,3 +129,70 @@ func MatcherLineComment(prefixes ...string) core.LexMatcher {
 		return val, nil
 	}
 }
+
+func MatcherBlockComment(pairs ...string) core.LexMatcher {
+	var (
+		staDelims []string
+		endDelims []string
+	)
+
+	trim := func(val string) bool {
+		return val == "" || len(strings.TrimSpace(val)) != len(val)
+	}
+
+	for _, it := range pairs {
+		split := strings.Split(it, " ")
+		if len(split) != 2 || trim(split[0]) || trim(split[1]) {
+			panic(fmt.Sprintf("invalid block comment delimiter: %#v", it))
+		}
+		staDelims = append(staDelims, split[0])
+		endDelims = append(endDelims, split[1])
+	}
+
+	return func(input *core.Cursor) (core.Value, error) {
+		var (
+			stack []string
+			sta   string
+			end   string
+		)
+
+		readStart := func(input *core.Cursor) (sta, end string) {
+			index := input.ReadFrom(staDelims)
+			if index >= 0 {
+				return staDelims[index], endDelims[index]
+			}
+			return "", ""
+		}
+
+		if sta, end = readStart(input); len(sta) == 0 {
+			return nil, nil
+		} else {
+			stack = []string{end}
+		}
+
+		input.SkipSpaces()
+		textSta := *input
+		textEnd := textSta
+
+		for input.Len() > 0 && len(stack) > 0 {
+			last := len(stack) - 1
+			if endDelim := stack[last]; input.ReadIf(endDelim) {
+				stack = stack[:last]
+			} else if sta, end = readStart(input); len(sta) > 0 {
+				stack = append(stack, end)
+			} else {
+				input.Read()
+				textEnd = *input
+				input.SkipSpaces()
+			}
+		}
+
+		text := textSta.GetSpan(textEnd).Text()
+		val := core.Comment{
+			Text: text,
+			Sta:  sta,
+			End:  end,
+		}
+		return val, nil
+	}
+}

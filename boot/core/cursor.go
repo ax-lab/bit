@@ -61,6 +61,14 @@ func (cursor *Cursor) ReadChar(chr ...rune) bool {
 	return false
 }
 
+func (cursor *Cursor) ReadIf(prefix string) bool {
+	return cursor.SkipAny(prefix)
+}
+
+func (cursor *Cursor) SkipSpaces() {
+	cursor.SkipWhile(IsSpace)
+}
+
 func (cursor *Cursor) SkipWhile(pred func(chr rune) bool) (skipped bool) {
 	txt := cursor.ReadWhile(pred)
 	return len(txt) > 0
@@ -90,6 +98,18 @@ func (cursor *Cursor) ReadAny(prefixes ...string) (read string) {
 		}
 	}
 	return ""
+}
+
+func (cursor *Cursor) ReadFrom(list []string) (index int) {
+	if txt := cursor.Text(); len(txt) > 0 {
+		for idx, it := range list {
+			if len(it) > 0 && strings.HasPrefix(txt, it) {
+				cursor.Advance(len(it))
+				return idx
+			}
+		}
+	}
+	return -1
 }
 
 func (cursor *Cursor) Advance(bytes int) {

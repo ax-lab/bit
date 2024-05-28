@@ -15,6 +15,7 @@ func InitLexer(lexer *core.Lexer) {
 	lexer.AddMatcher(MatchWord)
 	lexer.AddMatcher(MatchNumber)
 	lexer.AddMatcher(MatcherLineComment("#", "//"))
+	lexer.AddMatcher(MatcherBlockComment("/* */", "/# #/"))
 
 	lexer.AddBrackets("(", ")")
 	lexer.AddBrackets("[", "]")
