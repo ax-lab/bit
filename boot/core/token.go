@@ -84,3 +84,28 @@ func (num Integer) String() string {
 	out.WriteString(")")
 	return out.String()
 }
+
+type Comment struct {
+	Text string
+	Sta  string
+	End  string
+}
+
+func (comment Comment) String() string {
+	const maxW = HintTextColumns / 2
+	text := Clip(comment.Text, maxW, "…")
+
+	repr := strings.Builder{}
+	repr.WriteString("Comment(")
+	repr.WriteString(comment.Sta)
+	repr.WriteString("[")
+	repr.WriteString(text)
+	repr.WriteString("]")
+	if comment.End != "" {
+		repr.WriteString(comment.End)
+	}
+	repr.WriteString(")")
+
+	out := repr.String()
+	return out
+}

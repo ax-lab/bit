@@ -14,7 +14,7 @@ const (
 	TokenString  core.TokenType = "String"
 )
 
-func MatchWithRE(regex string, token core.TokenType) core.LexMatcher {
+func MatcherWithRE(regex string, token core.TokenType) core.LexMatcher {
 	regex = fmt.Sprintf(`^(%s)`, regex)
 	re := regexp.MustCompile(regex)
 	return func(input *core.Cursor) (core.Value, error) {
@@ -24,6 +24,30 @@ func MatchWithRE(regex string, token core.TokenType) core.LexMatcher {
 		}
 		return nil, nil
 	}
+}
+
+func MatchWord(input *core.Cursor) (core.Value, error) {
+
+	sta := *input
+	next := input.Peek()
+	if next != '_' && !core.IsLetter(next) {
+		return nil, nil
+	}
+
+	input.SkipWhile(core.IsWord)
+
+	for input.Peek() == '-' {
+		tmp := *input
+		tmp.Read()
+		if tmp.SkipWhile(core.IsWord) {
+			*input = tmp
+		} else {
+			break
+		}
+	}
+
+	word := input.GetSpan(sta).Text()
+	return core.Word(word), nil
 }
 
 func MatchNumber(input *core.Cursor) (val core.Value, err error) {
@@ -88,26 +112,20 @@ func MatchNumber(input *core.Cursor) (val core.Value, err error) {
 	return val, err
 }
 
-func MatchWord(input *core.Cursor) (core.Value, error) {
-
-	sta := *input
-	next := input.Peek()
-	if next != '_' && !core.IsLetter(next) {
-		return nil, nil
-	}
-
-	input.SkipWhile(core.IsWord)
-
-	for input.Peek() == '-' {
-		tmp := *input
-		tmp.Read()
-		if tmp.SkipWhile(core.IsWord) {
-			*input = tmp
-		} else {
-			break
+func MatcherLineComment(prefixes ...string) core.LexMatcher {
+	return func(input *core.Cursor) (core.Value, error) {
+		prefix := input.ReadAny(prefixes...)
+		if len(prefix) == 0 {
+			return nil, nil
 		}
-	}
 
-	word := input.GetSpan(sta).Text()
-	return core.Word(word), nil
+		text := input.ReadWhile(core.Not(core.IsLineBreak))
+		text = strings.TrimFunc(text, core.IsSpace)
+
+		val := core.Comment{
+			Text: text,
+			Sta:  prefix,
+		}
+		return val, nil
+	}
 }

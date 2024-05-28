@@ -9,6 +9,7 @@ import (
 )
 
 func main() {
+	defer fmt.Println()
 	if len(os.Args) > 1 {
 		args := os.Args[1:]
 		if err := runMain(args...); err != nil {
@@ -16,7 +17,7 @@ func main() {
 			os.Exit(1)
 		}
 	} else {
-		fmt.Printf("\nBit language %s\n\n", core.Version())
+		fmt.Printf("\nBit language %s\n", core.Version())
 	}
 }
 

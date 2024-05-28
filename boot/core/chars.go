@@ -47,3 +47,7 @@ func IsBaseDigit(chr rune, base int) bool {
 	}
 	return (digit + 10) < base
 }
+
+func IsLineBreak(chr rune) bool {
+	return chr == '\r' || chr == '\n'
+}

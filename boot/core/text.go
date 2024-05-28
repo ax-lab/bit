@@ -112,3 +112,32 @@ func Indent(text string, prefix ...Prefix) string {
 
 	return output.String()
 }
+
+func Clip(input string, maxLen int, trimSuffix ...string) string {
+	text := strings.TrimSpace(input)
+	clip := false
+
+	if eol := strings.IndexAny(text, "\r\n"); eol >= 0 {
+		text = text[:eol]
+		clip = true
+	}
+
+	if len(text) > maxLen {
+		offset := 0
+		for pos := range text {
+			if pos <= maxLen {
+				offset = pos
+			} else {
+				break
+			}
+		}
+		text = text[:offset]
+		clip = true
+	}
+
+	if clip && len(trimSuffix) > 0 {
+		text += strings.Join(trimSuffix, "")
+	}
+
+	return text
+}

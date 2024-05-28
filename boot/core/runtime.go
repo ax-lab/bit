@@ -86,7 +86,7 @@ func (rt *Runtime) Run() bool {
 	_, err := loader.getBaseDir()
 	if err != nil {
 		rt.Fatal(err)
-		return false
+		goto end
 	}
 
 	for _, name := range rt.sources {
@@ -111,7 +111,7 @@ func (rt *Runtime) Run() bool {
 	}
 
 	if rt.HasErrors() {
-		return false
+		goto end
 	}
 
 	for _, op := range rt.ops {
@@ -139,8 +139,7 @@ func (rt *Runtime) Run() bool {
 		if stopped := rt.ShouldStop(); stopped {
 			rt.Fatal(fmt.Errorf("too many errors, aborting compilation"))
 		}
-		rt.outputErrors()
-		return false
+		goto end
 	}
 
 	if rt.out != nil {
@@ -149,10 +148,10 @@ func (rt *Runtime) Run() bool {
 		}
 	}
 
-	ok := rt.outputErrors()
+end:
 
 	rt.Dump()
-
+	ok := rt.outputErrors()
 	return ok
 }
 
@@ -175,8 +174,6 @@ func (rt *Runtime) Dump() {
 		repr := Indent(list.Dump())
 		fmt.Fprintf(out, "\n%s[%d of %d] = %s\n", DefaultIndent, idx+1, count, repr)
 	}
-
-	fmt.Fprintf(out, "\n")
 }
 
 func (rt *Runtime) incrementErrorCount() (stop bool) {
@@ -198,9 +195,9 @@ func (rt *Runtime) outputErrors() bool {
 	stdErr := rt.stdErr
 	SortErrors(errors)
 	if cnt := len(errors); cnt == 1 {
-		fmt.Fprintf(stdErr, "Error: %s\n", errors[0])
+		fmt.Fprintf(stdErr, "[FAIL] with error: %s\n", errors[0])
 	} else {
-		fmt.Fprintf(stdErr, "Compilation failed with %d errors:\n", cnt)
+		fmt.Fprintf(stdErr, "[FAIL] compilation generated %d errors:\n", cnt)
 		for idx, err := range errors {
 			fmt.Fprintf(stdErr, "\n[%d] %s\n", idx+1, err)
 		}
@@ -208,12 +205,13 @@ func (rt *Runtime) outputErrors() bool {
 
 	if fatal := rt.fatalErrors; len(fatal) > 0 {
 		fmt.Fprintln(stdErr)
-		for _, err := range fatal {
+		for n, err := range fatal {
+			if n == 0 {
+				fmt.Fprintf(stdErr, "\n")
+			}
 			fmt.Fprintf(stdErr, "Fatal: %s\n", err)
 		}
 	}
-
-	fmt.Fprintln(rt.stdOut)
 
 	return false
 }

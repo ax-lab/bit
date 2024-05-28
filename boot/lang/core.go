@@ -14,6 +14,7 @@ func Declare(compiler *core.Compiler) error {
 func InitLexer(lexer *core.Lexer) {
 	lexer.AddMatcher(MatchWord)
 	lexer.AddMatcher(MatchNumber)
+	lexer.AddMatcher(MatcherLineComment("#", "//"))
 
 	lexer.AddBrackets("(", ")")
 	lexer.AddBrackets("[", "]")
