@@ -1,6 +1,8 @@
 package core
 
-import "strings"
+import (
+	"strings"
+)
 
 type Cursor struct {
 	Span
@@ -37,14 +39,17 @@ func (cursor *Cursor) Peek() rune {
 }
 
 func (cursor *Cursor) Read() (out rune) {
-	size := 0
-	for idx, chr := range cursor.Text() {
+	size, txt := 0, cursor.Text()
+	for idx, chr := range txt {
 		if idx == 0 {
 			out = chr
 		} else {
 			size = idx
 			break
 		}
+	}
+	if size == 0 {
+		size = len(txt)
 	}
 	cursor.Advance(size)
 	return out

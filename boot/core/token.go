@@ -109,3 +109,25 @@ func (comment Comment) String() string {
 	out := repr.String()
 	return out
 }
+
+type Literal struct {
+	RawText string
+	Delim   string
+	Prefix  string
+}
+
+func (str Literal) String() string {
+	const maxW = HintTextColumns / 2
+	text := Clip(str.RawText, maxW, "…")
+
+	repr := strings.Builder{}
+	repr.WriteString("Str(")
+	repr.WriteString(str.Prefix)
+	repr.WriteString(str.Delim)
+	repr.WriteString("[")
+	repr.WriteString(text)
+	repr.WriteString("])")
+
+	out := repr.String()
+	return out
+}

@@ -112,6 +112,49 @@ func MatchNumber(input *core.Cursor) (val core.Value, err error) {
 	return val, err
 }
 
+func MatchString(input *core.Cursor) (val core.Value, err error) {
+	delim := input.ReadAny(`r"`, `r'`, `"`, `'`)
+	if delim == "" {
+		return nil, nil
+	}
+
+	prefix := ""
+	raw := delim[0] == 'r'
+	if raw {
+		delim = delim[1:]
+		prefix = "r"
+	}
+
+	sta := *input
+	end := sta
+	doubleDelim := delim + delim
+	closed := false
+	for input.Len() > 0 {
+		if escape := !raw && input.ReadIf(`\`); escape {
+			input.Read()
+		} else if double := input.ReadIf(doubleDelim); !double {
+			if input.ReadIf(delim) {
+				closed = true
+				break
+			} else {
+				input.Read()
+			}
+		}
+		end = *input
+	}
+
+	if !closed {
+		err = fmt.Errorf("unclosed string literal")
+	}
+
+	val = core.Literal{
+		RawText: sta.GetSpan(end).Text(),
+		Delim:   delim,
+		Prefix:  prefix,
+	}
+	return val, err
+}
+
 func MatcherLineComment(prefixes ...string) core.LexMatcher {
 	return func(input *core.Cursor) (core.Value, error) {
 		prefix := input.ReadAny(prefixes...)

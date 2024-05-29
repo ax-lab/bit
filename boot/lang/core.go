@@ -12,6 +12,7 @@ func Declare(compiler *core.Compiler) error {
 }
 
 func InitLexer(lexer *core.Lexer) {
+	lexer.AddMatcher(MatchString)
 	lexer.AddMatcher(MatchWord)
 	lexer.AddMatcher(MatchNumber)
 	lexer.AddMatcher(MatcherLineComment("#", "//"))
