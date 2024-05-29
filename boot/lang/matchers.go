@@ -17,21 +17,21 @@ const (
 func MatcherWithRE(regex string, token core.TokenType) core.LexMatcher {
 	regex = fmt.Sprintf(`^(%s)`, regex)
 	re := regexp.MustCompile(regex)
-	return func(input *core.Cursor) (core.Value, error) {
+	return func(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.Value {
 		if m := re.FindString(input.Text()); len(m) > 0 {
 			input.Advance(len(m))
-			return core.Token{Type: token}, nil
+			return core.Token{Type: token}
 		}
-		return nil, nil
+		return nil
 	}
 }
 
-func MatchWord(input *core.Cursor) (core.Value, error) {
+func MatchWord(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.Value {
 
 	sta := *input
 	next := input.Peek()
 	if next != '_' && !core.IsLetter(next) {
-		return nil, nil
+		return nil
 	}
 
 	input.SkipWhile(core.IsWord)
@@ -47,14 +47,17 @@ func MatchWord(input *core.Cursor) (core.Value, error) {
 	}
 
 	word := input.GetSpan(sta).Text()
-	return core.Word(word), nil
+	return core.Word(word)
 }
 
-func MatchNumber(input *core.Cursor) (val core.Value, err error) {
+func MatchNumber(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.Value {
 	if !core.IsDigit(input.Peek()) {
-		return nil, nil
+		return nil
 	}
 
+	var err error
+
+	sta := *input
 	out := strings.Builder{}
 
 	base := 10
@@ -103,19 +106,25 @@ func MatchNumber(input *core.Cursor) (val core.Value, err error) {
 		}
 	}
 
-	val = core.Integer{
+	if err != nil {
+		err = core.ErrorAt(input.GetSpan(sta), err)
+		mod.Error(err)
+	}
+
+	val := core.Integer{
 		Digits: out.String(),
 		Base:   base,
 		Suffix: suffix,
 	}
-
-	return val, err
+	return val
 }
 
-func MatchString(input *core.Cursor) (val core.Value, err error) {
+func MatchString(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.Value {
+
+	sta := *input
 	delim := input.ReadAny(`r"`, `r'`, `"`, `'`)
 	if delim == "" {
-		return nil, nil
+		return nil
 	}
 
 	prefix := ""
@@ -125,8 +134,8 @@ func MatchString(input *core.Cursor) (val core.Value, err error) {
 		prefix = "r"
 	}
 
-	sta := *input
-	end := sta
+	textSta := *input
+	textEnd := textSta
 	doubleDelim := delim + delim
 	closed := false
 	for input.Len() > 0 {
@@ -140,26 +149,27 @@ func MatchString(input *core.Cursor) (val core.Value, err error) {
 				input.Read()
 			}
 		}
-		end = *input
+		textEnd = *input
 	}
 
 	if !closed {
-		err = fmt.Errorf("unclosed string literal")
+		err := core.Errorf(input.GetSpan(sta), "unclosed string literal")
+		mod.Error(err)
 	}
 
-	val = core.Literal{
-		RawText: sta.GetSpan(end).Text(),
+	val := core.Literal{
+		RawText: textSta.GetSpan(textEnd).Text(),
 		Delim:   delim,
 		Prefix:  prefix,
 	}
-	return val, err
+	return val
 }
 
 func MatcherLineComment(prefixes ...string) core.LexMatcher {
-	return func(input *core.Cursor) (core.Value, error) {
+	return func(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.Value {
 		prefix := input.ReadAny(prefixes...)
 		if len(prefix) == 0 {
-			return nil, nil
+			return nil
 		}
 
 		text := input.ReadWhile(core.Not(core.IsLineBreak))
@@ -169,7 +179,7 @@ func MatcherLineComment(prefixes ...string) core.LexMatcher {
 			Text: text,
 			Sta:  prefix,
 		}
-		return val, nil
+		return val
 	}
 }
 
@@ -192,7 +202,7 @@ func MatcherBlockComment(pairs ...string) core.LexMatcher {
 		endDelims = append(endDelims, split[1])
 	}
 
-	return func(input *core.Cursor) (core.Value, error) {
+	return func(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.Value {
 		var (
 			stack []string
 			sta   string
@@ -208,7 +218,7 @@ func MatcherBlockComment(pairs ...string) core.LexMatcher {
 		}
 
 		if sta, end = readStart(input); len(sta) == 0 {
-			return nil, nil
+			return nil
 		} else {
 			stack = []string{end}
 		}
@@ -236,6 +246,6 @@ func MatcherBlockComment(pairs ...string) core.LexMatcher {
 			Sta:  sta,
 			End:  end,
 		}
-		return val, nil
+		return val
 	}
 }

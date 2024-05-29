@@ -21,7 +21,7 @@ func moduleNew(runtime *Runtime, source Source) *Module {
 		runtime: runtime,
 		source:  source,
 	}
-	module.nodes = nodeListNew(module, source.Span(), nil)
+	module.nodes = NodeListNew(source.Span())
 	module.nodes.checkValid()
 	return module
 }
@@ -32,11 +32,6 @@ func (mod *Module) Runtime() *Runtime {
 
 func (mod *Module) Nodes() NodeList {
 	return mod.nodes
-}
-
-func (mod *Module) NewList(span Span, nodes ...Node) NodeList {
-	list := nodeListNew(mod, span, nodes)
-	return list
 }
 
 func (mod *Module) NewLexer() *Lexer {

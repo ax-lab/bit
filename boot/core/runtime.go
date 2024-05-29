@@ -27,8 +27,13 @@ type Runtime struct {
 	stdOut io.Writer
 
 	nodeSync    sync.Mutex
-	nodeLists   []NodeList
+	nodeLists   []nodeListEntry
 	nodeChanged bool
+}
+
+type nodeListEntry struct {
+	module *Module
+	list   NodeList
 }
 
 func runtimeNew(compiler *Compiler) *Runtime {
@@ -107,7 +112,7 @@ func (rt *Runtime) Run() bool {
 		nodeList := mod.Nodes()
 		nodeList.Push(node)
 
-		rt.Eval(nodeList)
+		rt.Eval(mod, nodeList)
 	}
 
 	if rt.HasErrors() {
@@ -117,8 +122,8 @@ func (rt *Runtime) Run() bool {
 	for _, op := range rt.ops {
 		rt.nodeSync.Lock()
 		if rt.nodeChanged {
-			slices.SortFunc(rt.nodeLists, func(a, b NodeList) int {
-				return a.Span().Compare(b.Span())
+			slices.SortFunc(rt.nodeLists, func(a, b nodeListEntry) int {
+				return a.list.Span().Compare(b.list.Span())
 			})
 			rt.nodeChanged = false
 		}
@@ -126,8 +131,8 @@ func (rt *Runtime) Run() bool {
 		list := rt.nodeLists[:]
 		rt.nodeSync.Unlock()
 
-		for _, ls := range list {
-			op(ls)
+		for _, entry := range list {
+			op(entry.module, entry.list)
 		}
 
 		if rt.HasErrors() {
@@ -143,8 +148,8 @@ func (rt *Runtime) Run() bool {
 	}
 
 	if rt.out != nil {
-		for _, ls := range rt.nodeLists {
-			rt.out(ls)
+		for _, entry := range rt.nodeLists {
+			rt.out(entry.module, entry.list)
 		}
 	}
 
@@ -155,9 +160,9 @@ end:
 	return ok
 }
 
-func (rt *Runtime) Eval(list NodeList) {
+func (rt *Runtime) Eval(mod *Module, list NodeList) {
 	rt.nodeSync.Lock()
-	rt.nodeLists = append(rt.nodeLists, list)
+	rt.nodeLists = append(rt.nodeLists, nodeListEntry{mod, list})
 	rt.nodeChanged = true
 	rt.nodeSync.Unlock()
 }
@@ -170,8 +175,8 @@ func (rt *Runtime) Dump() {
 	fmt.Fprintf(out, "\n-- COMPILER DUMP --\n\n")
 	fmt.Fprintf(out, ">>> Lists (%d) <<<\n", count)
 
-	for idx, list := range rt.nodeLists {
-		repr := Indent(list.Dump())
+	for idx, entry := range rt.nodeLists {
+		repr := Indent(entry.list.Dump())
 		fmt.Fprintf(out, "\n%s[%d of %d] = %s\n", DefaultIndent, idx+1, count, repr)
 	}
 }

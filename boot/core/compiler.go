@@ -9,7 +9,7 @@ import (
 
 const MaxErrors = 32
 
-type OpFunc func(list NodeList)
+type OpFunc func(mod *Module, list NodeList)
 
 type Compiler struct {
 	Sources SourceLoader

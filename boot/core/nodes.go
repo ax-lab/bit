@@ -77,29 +77,20 @@ type NodeList struct {
 }
 
 type nodeListData struct {
-	module *Module
-	span   Span
-	nodes  []Node
+	span  Span
+	nodes []Node
 }
 
-func nodeListNew(mod *Module, span Span, nodes []Node) NodeList {
-	if mod == nil {
-		panic("NodeList: invalid module")
-	}
+func NodeListNew(span Span, nodes ...Node) NodeList {
 	if span.Src() == nil {
 		panic("NodeList: invalid span")
 	}
-	data := &nodeListData{mod, span, nodes}
+	data := &nodeListData{span, nodes}
 	return NodeList{data}
 }
 
 func (list NodeList) Valid() bool {
 	return list.data != nil
-}
-
-func (list NodeList) Module() *Module {
-	list.checkValid()
-	return list.data.module
 }
 
 func (list NodeList) Nodes() []Node {

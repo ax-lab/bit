@@ -2,17 +2,20 @@ package core
 
 import (
 	"fmt"
-	"io"
 	"slices"
 	"strings"
 	"sync"
 )
 
-type LexMatcher func(input *Cursor) (Value, error)
+type LexMatcher func(mod *Module, lexer *Lexer, input *Cursor) Value
+
+type LexSegmenter func(mod *Module, lexer *Lexer, input *Cursor) Node
 
 type Lexer struct {
 	sync     sync.Mutex
 	matchers []LexMatcher
+
+	segmenter LexSegmenter
 
 	brackets   map[string]bool
 	bracketSta map[string]string
@@ -73,52 +76,52 @@ func (lex *Lexer) AddBrackets(sta, end string) {
 	lex.bracketSta[end] = sta
 }
 
-func (lex *Lexer) Read(input *Cursor) (out Node, err error) {
-	out, err, valid := lex.readNext(input)
+func (lex *Lexer) SetSegmenter(segmenter LexSegmenter) {
+	lex.sync.Lock()
+	defer lex.sync.Unlock()
+	lex.segmenter = segmenter
+}
+
+func (lex *Lexer) Read(mod *Module, input *Cursor) (out Node) {
+	out, valid := lex.readNext(mod, input)
 	if valid {
-		return out, err
+		return out
 	}
 
 	sta := *input
 	input.Read()
-	lex.skipInvalid(input)
+	lex.skipInvalid(mod, input)
 	span := input.GetSpan(sta)
 	out = NodeNew(span, Invalid(span.Text()))
-	err = Errorf(span, "invalid token")
-	return out, err
+	return out
 }
 
-func (lex *Lexer) readNext(input *Cursor) (out Node, err error, valid bool) {
+func (lex *Lexer) readNext(mod *Module, input *Cursor) (out Node, valid bool) {
 	input.SkipWhile(IsSpace)
 	sta := *input
 
 	text := input.Text()
 	if len(text) == 0 {
-		return out, io.EOF, true
+		return out, true
 	}
 
 	if input.SkipAny("\n", "\r\n", "\r") {
 		span := input.GetSpan(sta)
 		out = NodeNew(span, LineBreak(span.Text()))
-		return out, nil, true
+		return out, true
 	}
 
 	for _, matchFunc := range lex.matchers {
 		cur := *input
-		val, err := matchFunc(&cur)
-		if val != nil || err != nil {
+		val := matchFunc(mod, lex, &cur)
+		if val != nil {
 			if cur == sta {
 				panic("Lexer: matcher generated empty span")
 			}
 			*input = cur
 			span := input.GetSpan(sta)
-			if val != nil {
-				out = NodeNew(span, val)
-			}
-			if err != nil {
-				err = ErrorAt(span, err)
-			}
-			return out, err, true
+			out = NodeNew(span, val)
+			return out, true
 		}
 	}
 
@@ -127,14 +130,14 @@ func (lex *Lexer) readNext(input *Cursor) (out Node, err error, valid bool) {
 			input.Advance(len(sym))
 			span := input.GetSpan(sta)
 			out = NodeNew(span, Symbol(sym))
-			return out, nil, true
+			return out, true
 		}
 	}
 
 	return
 }
 
-func (lex *Lexer) skipInvalid(input *Cursor) {
+func (lex *Lexer) skipInvalid(mod *Module, input *Cursor) {
 	cur := *input
 	end := *input
 	tmp := lex.Copy()
@@ -142,7 +145,7 @@ func (lex *Lexer) skipInvalid(input *Cursor) {
 		if chr := cur.Peek(); IsSpace(chr) || chr == '\r' || chr == '\n' {
 			break
 		}
-		_, _, valid := tmp.readNext(&cur)
+		_, valid := tmp.readNext(mod, &cur)
 		if valid {
 			break
 		} else {
