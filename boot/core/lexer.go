@@ -11,11 +11,14 @@ type LexMatcher func(mod *Module, lexer *Lexer, input *Cursor) Value
 
 type LexSegmenter func(mod *Module, lexer *Lexer, input *Cursor) Node
 
+type LexStopFn func(input *Cursor) bool
+
 type Lexer struct {
 	sync     sync.Mutex
 	matchers []LexMatcher
 
-	segmenter LexSegmenter
+	segmentFn LexSegmenter
+	stopFn    LexStopFn
 
 	brackets   map[string]bool
 	bracketSta map[string]string
@@ -29,7 +32,8 @@ func (lex *Lexer) Copy() *Lexer {
 	lex.sync.Lock()
 	defer lex.sync.Unlock()
 	out := &Lexer{
-		segmenter: lex.segmenter,
+		segmentFn: lex.segmentFn,
+		stopFn:    lex.stopFn,
 	}
 
 	out.matchers = append(out.matchers, lex.matchers...)
@@ -58,25 +62,27 @@ func (lex *Lexer) Tokenize(mod *Module, input *Cursor) (out []Node) {
 	return lex.TokenizeUntil(mod, input, nil)
 }
 
-func (lex *Lexer) TokenizeUntil(mod *Module, input *Cursor, stop func(input *Cursor) bool) (out []Node) {
+func (lex *Lexer) TokenizeUntil(mod *Module, input *Cursor, stop LexStopFn) (out []Node) {
+
+	if stop != nil {
+		oldStop := lex.stopFn
+		lex.stopFn = stop
+		defer func() {
+			lex.stopFn = oldStop
+		}()
+	}
+
 	rt := mod.runtime
 	for input.Len() > 0 && !rt.ShouldStop() {
-		if stop != nil {
-			input.SkipSpaces()
-			if stop(input) {
-				break
-			}
-		}
-
 		var next Node
-		if lex.segmenter != nil {
-			next = lex.segmenter(mod, lex, input)
+		if lex.segmentFn != nil {
+			next = lex.segmentFn(mod, lex, input)
 		} else {
 			next = lex.Read(mod, input)
 		}
 
 		if !next.Valid() {
-			if input.Len() > 0 {
+			if lex.stopFn == nil && input.Len() > 0 {
 				panic("lexer read returned an invalid node")
 			}
 			break
@@ -113,7 +119,7 @@ func (lex *Lexer) AddBrackets(sta, end string) {
 func (lex *Lexer) SetSegmenter(segmenter LexSegmenter) {
 	lex.sync.Lock()
 	defer lex.sync.Unlock()
-	lex.segmenter = segmenter
+	lex.segmentFn = segmenter
 }
 
 func (lex *Lexer) Read(mod *Module, input *Cursor) (out Node) {
@@ -137,6 +143,17 @@ func (lex *Lexer) readNext(mod *Module, input *Cursor) (out Node, valid bool) {
 	text := input.Text()
 	if len(text) == 0 {
 		return out, true
+	}
+
+	if lex.stopFn != nil {
+		pos := input.Sta()
+		stop := lex.stopFn(input)
+		if input.Sta() != pos {
+			panic("Lexer: stop function should not modify cursor position")
+		}
+		if stop {
+			return out, true
+		}
 	}
 
 	if input.SkipAny("\n", "\r\n", "\r") {

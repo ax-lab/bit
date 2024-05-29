@@ -150,9 +150,14 @@ func MatchString(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.V
 	}
 
 	for input.Len() > 0 {
-		var evalSta, evalEnd string
+		var (
+			evalSta, evalEnd       string
+			evalPosSta, evalPosEnd core.Cursor
+		)
 		if !raw {
+			evalPosSta = *input
 			evalSta = input.ReadAny("${", "$[", "$(")
+			evalPosEnd = *input
 			switch evalSta {
 			case "${":
 				evalEnd = "}"
@@ -165,8 +170,12 @@ func MatchString(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.V
 
 		if len(evalSta) > 0 {
 			pushText()
-			stop := func(input *core.Cursor) bool { return input.ReadIf(evalEnd) }
+			stop := func(input *core.Cursor) bool { return input.HasPrefix(evalEnd) }
 			nodes := lexer.TokenizeUntil(mod, input, stop)
+			if !input.ReadIf(evalEnd) {
+				err := core.Errorf(evalPosSta.GetSpan(evalPosEnd), "missing close delimiter for string interpolated expression")
+				mod.Error(err)
+			}
 			expr := core.NodeListNew(core.SpanForRange(nodes), nodes...)
 			segments = append(segments, core.LiteralExprSegment{Expr: expr})
 			textSta = *input

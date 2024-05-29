@@ -66,6 +66,19 @@ func (cursor *Cursor) ReadChar(chr ...rune) bool {
 	return false
 }
 
+func (cursor *Cursor) HasPrefix(prefixes ...string) bool {
+	txt := cursor.Text()
+	if len(txt) == 0 {
+		return false
+	}
+	for _, pre := range prefixes {
+		if len(pre) > 0 && strings.HasPrefix(txt, pre) {
+			return true
+		}
+	}
+	return false
+}
+
 func (cursor *Cursor) ReadIf(prefix string) bool {
 	return cursor.SkipAny(prefix)
 }
