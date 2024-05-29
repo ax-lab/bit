@@ -55,8 +55,19 @@ func (lex *Lexer) Copy() *Lexer {
 }
 
 func (lex *Lexer) Tokenize(mod *Module, input *Cursor) (out []Node) {
+	return lex.TokenizeUntil(mod, input, nil)
+}
+
+func (lex *Lexer) TokenizeUntil(mod *Module, input *Cursor, stop func(input *Cursor) bool) (out []Node) {
 	rt := mod.runtime
 	for input.Len() > 0 && !rt.ShouldStop() {
+		if stop != nil {
+			input.SkipSpaces()
+			if stop(input) {
+				break
+			}
+		}
+
 		var next Node
 		if lex.segmenter != nil {
 			next = lex.segmenter(mod, lex, input)
@@ -113,7 +124,7 @@ func (lex *Lexer) Read(mod *Module, input *Cursor) (out Node) {
 
 	sta := *input
 	input.Read()
-	lex.skipInvalid(input)
+	lex.skipInvalid(mod, input)
 	span := input.GetSpan(sta)
 	out = NodeNew(span, Invalid(span.Text()))
 	return out
@@ -160,7 +171,7 @@ func (lex *Lexer) readNext(mod *Module, input *Cursor) (out Node, valid bool) {
 	return
 }
 
-func (lex *Lexer) skipInvalid(input *Cursor) {
+func (lex *Lexer) skipInvalid(mod *Module, input *Cursor) {
 	cur := *input
 	end := *input
 	tmp := lex.Copy()
@@ -168,7 +179,7 @@ func (lex *Lexer) skipInvalid(input *Cursor) {
 		if chr := cur.Peek(); IsSpace(chr) || chr == '\r' || chr == '\n' {
 			break
 		}
-		_, valid := tmp.readNext(nil, &cur)
+		_, valid := tmp.readNext(mod, &cur)
 		if valid {
 			break
 		} else {

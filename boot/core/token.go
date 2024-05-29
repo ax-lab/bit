@@ -131,3 +131,54 @@ func (str Literal) String() string {
 	out := repr.String()
 	return out
 }
+
+type LiteralExpr struct {
+	Segments []LiteralExprSegment
+	Delim    string
+	Prefix   string
+}
+
+type LiteralExprSegment struct {
+	Text string
+	Expr NodeList
+}
+
+func (str *LiteralExpr) PushText(text string) {
+	if len(text) == 0 {
+		return
+	}
+	str.Segments = append(str.Segments, LiteralExprSegment{Text: text})
+}
+
+func (str *LiteralExpr) PushExpr(expr NodeList) {
+	if !expr.Valid() {
+		panic("LiteralExpr: invalid expression segment")
+	}
+	str.Segments = append(str.Segments, LiteralExprSegment{Expr: expr})
+}
+
+func (str LiteralExpr) String() string {
+	repr := strings.Builder{}
+	repr.WriteString("StrExpr(")
+	repr.WriteString(str.Prefix)
+	repr.WriteString(str.Delim)
+	if len(str.Segments) == 0 {
+		repr.WriteString("[])")
+		return repr.String()
+	}
+
+	repr.WriteString("[")
+	for idx, seg := range str.Segments {
+		repr.WriteString(fmt.Sprintf("\n\t[%d]", idx))
+		if seg.Text != "" {
+			repr.WriteString(fmt.Sprintf(" %#v", seg.Text))
+		}
+		if seg.Expr.Valid() {
+			expr := seg.Expr.Dump()
+			repr.WriteString(" ")
+			repr.WriteString(Indent(expr))
+		}
+	}
+	repr.WriteString("\n])")
+	return repr.String()
+}

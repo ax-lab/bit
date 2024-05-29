@@ -134,12 +134,44 @@ func MatchString(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.V
 		prefix = "r"
 	}
 
-	textSta := *input
-	textEnd := textSta
 	doubleDelim := delim + delim
 	closed := false
+
+	textSta := *input
+	textEnd := textSta
+	segments := []core.LiteralExprSegment(nil)
+
+	pushText := func() {
+		text := textSta.GetSpan(textEnd).Text()
+		if len(text) > 0 {
+			segments = append(segments, core.LiteralExprSegment{Text: text})
+		}
+		textSta = textEnd
+	}
+
 	for input.Len() > 0 {
-		if escape := !raw && input.ReadIf(`\`); escape {
+		var evalSta, evalEnd string
+		if !raw {
+			evalSta = input.ReadAny("${", "$[", "$(")
+			switch evalSta {
+			case "${":
+				evalEnd = "}"
+			case "$[":
+				evalEnd = "]"
+			case "$(":
+				evalEnd = ")"
+			}
+		}
+
+		if len(evalSta) > 0 {
+			pushText()
+			stop := func(input *core.Cursor) bool { return input.ReadIf(evalEnd) }
+			nodes := lexer.TokenizeUntil(mod, input, stop)
+			expr := core.NodeListNew(core.SpanForRange(nodes), nodes...)
+			segments = append(segments, core.LiteralExprSegment{Expr: expr})
+			textSta = *input
+			textEnd = textSta
+		} else if escape := !raw && input.ReadIf(`\`); escape {
 			input.Read()
 		} else if double := input.ReadIf(doubleDelim); !double {
 			if input.ReadIf(delim) {
@@ -152,17 +184,35 @@ func MatchString(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.V
 		textEnd = *input
 	}
 
+	pushText()
+
 	if !closed {
 		err := core.Errorf(input.GetSpan(sta), "unclosed string literal")
 		mod.Error(err)
 	}
 
-	val := core.Literal{
-		RawText: textSta.GetSpan(textEnd).Text(),
-		Delim:   delim,
-		Prefix:  prefix,
+	var str core.Value
+	if len(segments) == 0 {
+		str = core.Literal{
+			RawText: "",
+			Delim:   delim,
+			Prefix:  prefix,
+		}
+	} else if seg := segments[0]; len(segments) == 1 && !seg.Expr.Valid() {
+		str = core.Literal{
+			RawText: seg.Text,
+			Delim:   delim,
+			Prefix:  prefix,
+		}
+	} else {
+		str = core.LiteralExpr{
+			Segments: segments,
+			Delim:    delim,
+			Prefix:   prefix,
+		}
 	}
-	return val
+
+	return str
 }
 
 func MatcherLineComment(prefixes ...string) core.LexMatcher {

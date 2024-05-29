@@ -5,11 +5,11 @@ import (
 	"fmt"
 )
 
-func GetSpan[T any](value ...T) (Span, bool) {
-	type withSpan interface {
-		Span() Span
-	}
+type withSpan interface {
+	Span() Span
+}
 
+func GetSpan[T any](value ...T) (Span, bool) {
 	out := Span{}
 	for _, it := range value {
 		val := any(it)
@@ -22,6 +22,17 @@ func GetSpan[T any](value ...T) (Span, bool) {
 	}
 
 	return out, out.Valid()
+}
+
+func SpanForRange[E ~[]T, T any](ls E) Span {
+	out := Span{}
+	if len(ls) == 0 {
+		return out
+	}
+
+	sta, _ := GetSpan(ls[0])
+	end, _ := GetSpan(ls[len(ls)-1])
+	return sta.Merged(end)
 }
 
 type Span struct {
