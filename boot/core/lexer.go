@@ -28,7 +28,9 @@ type Lexer struct {
 func (lex *Lexer) Copy() *Lexer {
 	lex.sync.Lock()
 	defer lex.sync.Unlock()
-	out := &Lexer{}
+	out := &Lexer{
+		segmenter: lex.segmenter,
+	}
 
 	out.matchers = append(out.matchers, lex.matchers...)
 	if len(lex.bracketSta) > 0 {
@@ -49,6 +51,27 @@ func (lex *Lexer) Copy() *Lexer {
 		}
 	}
 
+	return out
+}
+
+func (lex *Lexer) Tokenize(mod *Module, input *Cursor) (out []Node) {
+	rt := mod.runtime
+	for input.Len() > 0 && !rt.ShouldStop() {
+		var next Node
+		if lex.segmenter != nil {
+			next = lex.segmenter(mod, lex, input)
+		} else {
+			next = lex.Read(mod, input)
+		}
+
+		if !next.Valid() {
+			if input.Len() > 0 {
+				panic("lexer read returned an invalid node")
+			}
+			break
+		}
+		out = append(out, next)
+	}
 	return out
 }
 
@@ -90,7 +113,7 @@ func (lex *Lexer) Read(mod *Module, input *Cursor) (out Node) {
 
 	sta := *input
 	input.Read()
-	lex.skipInvalid(mod, input)
+	lex.skipInvalid(input)
 	span := input.GetSpan(sta)
 	out = NodeNew(span, Invalid(span.Text()))
 	return out
@@ -137,7 +160,7 @@ func (lex *Lexer) readNext(mod *Module, input *Cursor) (out Node, valid bool) {
 	return
 }
 
-func (lex *Lexer) skipInvalid(mod *Module, input *Cursor) {
+func (lex *Lexer) skipInvalid(input *Cursor) {
 	cur := *input
 	end := *input
 	tmp := lex.Copy()
@@ -145,7 +168,7 @@ func (lex *Lexer) skipInvalid(mod *Module, input *Cursor) {
 		if chr := cur.Peek(); IsSpace(chr) || chr == '\r' || chr == '\n' {
 			break
 		}
-		_, valid := tmp.readNext(mod, &cur)
+		_, valid := tmp.readNext(nil, &cur)
 		if valid {
 			break
 		} else {

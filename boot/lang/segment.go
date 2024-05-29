@@ -28,8 +28,6 @@ type Block struct {
 }
 
 func OpSegment(mod *core.Module, list core.NodeList) {
-	rt := mod.Runtime()
-
 	offset := 0
 	for n, it := range list.Nodes() {
 		idx := offset + n
@@ -39,33 +37,25 @@ func OpSegment(mod *core.Module, list core.NodeList) {
 		}
 
 		span := src.Span()
-		lexer := mod.NewLexer()
-		lines := []core.Node(nil)
 		input := span.Cursor()
-		for input.Len() > 0 && !rt.ShouldStop() {
-			next := ParseLine(mod, lexer, &input)
-			if next.Len() > 0 {
-				rt.Eval(mod, next)
-				line := core.NodeNew(next.Span(), Line(next))
-				lines = append(lines, line)
-			}
-		}
-
+		lexer := mod.NewLexer()
+		lines := lexer.Tokenize(mod, &input)
 		list.Replace(idx, idx+1, lines...)
 		offset += len(lines) - 1
 	}
 }
 
-func ParseLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out core.NodeList) {
-	out = core.NodeListNew(input.ToSpan())
-	for !mod.Runtime().ShouldStop() {
+func ParseLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out core.Node) {
+	rt := mod.Runtime()
+	line := core.NodeListNew(input.ToSpan().WithSize(0))
+	for !rt.ShouldStop() {
 		next := lexer.Read(mod, input)
 		if !next.Valid() {
 			break
 		}
 
 		if _, eol := next.Value().(core.LineBreak); eol {
-			if out.Len() > 0 {
+			if line.Len() > 0 {
 				break
 			} else {
 				continue
@@ -73,8 +63,16 @@ func ParseLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out cor
 		}
 
 		if next.Valid() {
-			out.Push(next)
+			line.Push(next)
 		}
 	}
+
+	if line.Len() == 0 {
+		return
+	}
+
+	rt.Eval(mod, line)
+
+	out = core.NodeNew(line.Span(), Line(line))
 	return out
 }
