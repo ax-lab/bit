@@ -7,9 +7,7 @@ import (
 )
 
 const (
-	DefaultTabSize = 4
-	DefaultIndent  = "\t"
-
+	DefaultTabSize  = 4
 	HintTextColumns = 60
 )
 
@@ -81,7 +79,7 @@ type Prefix string
 
 func IndentBlock(text string) (out string) {
 	if strings.ContainsAny(text, "\r\n") || len(text) > HintTextColumns {
-		out = fmt.Sprintf("\n%s%s\n", DefaultIndent, Indent(text))
+		out = fmt.Sprintf("\n\t%s\n", Indent(text))
 	} else {
 		out = text
 	}

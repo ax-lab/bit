@@ -155,7 +155,7 @@ func (rt *Runtime) Run() bool {
 
 end:
 
-	rt.Dump()
+	rt.Dump(false)
 	ok := rt.outputErrors()
 	return ok
 }
@@ -167,17 +167,29 @@ func (rt *Runtime) Eval(mod *Module, list NodeList) {
 	rt.nodeSync.Unlock()
 }
 
-func (rt *Runtime) Dump() {
+func (rt *Runtime) Dump(full bool) {
 	out := rt.stdOut
 
-	count := len(rt.nodeLists)
-
 	fmt.Fprintf(out, "\n-- COMPILER DUMP --\n\n")
-	fmt.Fprintf(out, ">>> Lists (%d) <<<\n", count)
+	fmt.Fprintf(out, "-> Modules:     %d\n", len(rt.modules))
+	fmt.Fprintf(out, "-> Node Lists:  %d\n", len(rt.nodeLists))
 
-	for idx, entry := range rt.nodeLists {
+	var lists []nodeListEntry
+	if !full {
+		for _, it := range rt.modules {
+			lists = append(lists, nodeListEntry{it, it.nodes})
+		}
+	} else {
+		lists = append(lists, rt.nodeLists...)
+	}
+
+	slices.SortFunc(lists, func(a, b nodeListEntry) int {
+		return a.list.Span().Compare(b.list.Span())
+	})
+
+	for idx, entry := range lists {
 		repr := Indent(entry.list.Dump())
-		fmt.Fprintf(out, "\n%s[%d of %d] = %s\n", DefaultIndent, idx+1, count, repr)
+		fmt.Fprintf(out, "\n\t[%d of %d] = %s\n", idx+1, len(lists), repr)
 	}
 }
 

@@ -129,10 +129,10 @@ func (list NodeList) Dump() string {
 
 	out.WriteString(" {\n")
 	if span := list.data.span; span.Valid() {
-		out.WriteString(fmt.Sprintf("%s[...] @ %s\n", DefaultIndent, span.Location()))
+		out.WriteString(fmt.Sprintf("\t[...] @ %s\n", span.Location()))
 	}
 	for idx, node := range list.Nodes() {
-		out.WriteString(fmt.Sprintf("%s[%03d] = ", DefaultIndent, idx))
+		out.WriteString(fmt.Sprintf("\t[%03d] = ", idx))
 		out.WriteString(Indent(node.Dump()))
 
 		if span := node.Span(); span.Valid() {
