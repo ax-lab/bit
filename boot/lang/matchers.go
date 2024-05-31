@@ -224,6 +224,42 @@ func MatchString(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.V
 	return str
 }
 
+func ParseStringLiteral(str string, raw bool, delim string) string {
+	out := strings.Builder{}
+	dbl := delim + delim
+
+	if strings.HasSuffix(str, delim) {
+		str = str[:len(str)-1]
+	}
+
+	for len(str) > 0 {
+		if raw {
+			if pos := strings.Index(str, dbl); pos >= 0 {
+				out.WriteString(str[:pos])
+				out.WriteString(delim)
+				str = str[pos+len(dbl):]
+			} else {
+				out.WriteString(str)
+				str = ""
+			}
+		} else {
+			if pos := strings.Index(str, "\\"); pos >= 0 {
+				out.WriteString(str[:pos])
+				str = str[pos+1:]
+				if strings.HasPrefix(str, "\\") {
+					out.WriteString("\\")
+					str = str[1:]
+				}
+			} else {
+				out.WriteString(str)
+				str = ""
+			}
+		}
+	}
+
+	return out.String()
+}
+
 func MatcherLineComment(prefixes ...string) core.LexMatcher {
 	return func(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.Value {
 		prefix := input.ReadAny(prefixes...)

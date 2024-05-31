@@ -29,6 +29,9 @@ type Runtime struct {
 	nodeSync    sync.Mutex
 	nodeLists   []nodeListEntry
 	nodeChanged bool
+
+	codeSync sync.Mutex
+	codeList []Expr
 }
 
 type nodeListEntry struct {
@@ -62,6 +65,14 @@ func (rt *Runtime) Compiler() *Compiler {
 	return rt.compiler
 }
 
+func (rt *Runtime) StdOut() io.Writer {
+	return rt.stdOut
+}
+
+func (rt *Runtime) StdErr() io.Writer {
+	return rt.stdErr
+}
+
 func (rt *Runtime) HasErrors() bool {
 	return rt.errorCount.Load() > 0
 }
@@ -85,7 +96,7 @@ func (rt *Runtime) Fatal(err error) {
 	}
 }
 
-func (rt *Runtime) Run() bool {
+func (rt *Runtime) RunCompiler() bool {
 
 	loader := &rt.compiler.Sources
 	_, err := loader.getBaseDir()
@@ -148,16 +159,40 @@ func (rt *Runtime) Run() bool {
 	}
 
 	if rt.out != nil {
-		for _, entry := range rt.nodeLists {
-			rt.out(entry.module, entry.list)
+		var modules []*Module
+		for _, it := range rt.modules {
+			modules = append(modules, it)
+		}
+
+		slices.SortFunc(modules, func(a, b *Module) int {
+			return SourceCompare(a.source, b.source)
+		})
+
+		for _, module := range modules {
+			rt.out(module, module.nodes)
 		}
 	}
 
 end:
 
-	rt.Dump(false)
 	ok := rt.outputErrors()
 	return ok
+}
+
+func (rt *Runtime) RunCode() (out Value, err error) {
+	for _, it := range rt.codeList {
+		out, err = it.Eval(rt)
+		if err != nil {
+			break
+		}
+	}
+	return
+}
+
+func (rt *Runtime) OutputCode(expr Expr) {
+	rt.codeSync.Lock()
+	defer rt.codeSync.Unlock()
+	rt.codeList = append(rt.codeList, expr)
 }
 
 func (rt *Runtime) Eval(mod *Module, list NodeList) {
@@ -207,6 +242,8 @@ func (rt *Runtime) outputErrors() bool {
 	if len(errors) == 0 {
 		return true
 	}
+
+	rt.Dump(true)
 
 	fmt.Fprintln(rt.stdOut)
 	stdErr := rt.stdErr

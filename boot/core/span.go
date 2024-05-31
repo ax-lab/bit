@@ -92,6 +92,17 @@ func (span Span) Indent() int {
 	return span.indent
 }
 
+func (span Span) Range(sta, end int) Span {
+	if sta < 0 || end > span.Len() || end < sta {
+		panic("Span: invalid range args")
+	}
+
+	pos := span.Cursor()
+	pos.Advance(sta)
+	out := pos.Span.WithSize(end - sta)
+	return out
+}
+
 func (span Span) Merged(other Span) (out Span) {
 	if !span.Valid() {
 		return other

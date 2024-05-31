@@ -121,7 +121,7 @@ func (str Literal) String() string {
 	text := Clip(str.RawText, maxW, "…")
 
 	repr := strings.Builder{}
-	repr.WriteString("Str(")
+	repr.WriteString("Literal(")
 	repr.WriteString(str.Prefix)
 	repr.WriteString(str.Delim)
 	repr.WriteString("[")
@@ -159,7 +159,7 @@ func (str *LiteralExpr) PushExpr(expr NodeList) {
 
 func (str LiteralExpr) String() string {
 	repr := strings.Builder{}
-	repr.WriteString("StrExpr(")
+	repr.WriteString("LiteralExpr(")
 	repr.WriteString(str.Prefix)
 	repr.WriteString(str.Delim)
 	if len(str.Segments) == 0 {

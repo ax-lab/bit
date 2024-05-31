@@ -46,8 +46,13 @@ func OpSegment(mod *core.Module, list core.NodeList) {
 }
 
 func ParseLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out core.Node) {
+	return readLine(mod, lexer, input)
+}
+
+func readLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out core.Node) {
 	rt := mod.Runtime()
-	line := core.NodeListNew(input.ToSpan().WithSize(0))
+
+	var nodes []core.Node
 	for !rt.ShouldStop() {
 		next := lexer.Read(mod, input)
 		if !next.Valid() {
@@ -55,7 +60,7 @@ func ParseLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out cor
 		}
 
 		if _, eol := next.Value().(core.LineBreak); eol {
-			if line.Len() > 0 {
+			if len(nodes) > 0 {
 				break
 			} else {
 				continue
@@ -63,14 +68,15 @@ func ParseLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out cor
 		}
 
 		if next.Valid() {
-			line.Push(next)
+			nodes = append(nodes, next)
 		}
 	}
 
-	if line.Len() == 0 {
+	if len(nodes) == 0 {
 		return
 	}
 
+	line := core.NodeListNew(core.SpanForRange(nodes), nodes...)
 	rt.Eval(mod, line)
 
 	out = core.NodeNew(line.Span(), Line(line))

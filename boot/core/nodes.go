@@ -103,6 +103,36 @@ func (list NodeList) Get(idx int) Node {
 	return list.data.nodes[idx]
 }
 
+func (list NodeList) GetSpan(idx ...int) Span {
+	sta, end := list.rangeArgs(idx...)
+	nodes := list.data.nodes
+	if len(nodes) == 0 {
+		return list.data.span
+	}
+
+	if sta == end {
+		var span Span
+		if sta == len(nodes) {
+			span = nodes[sta-1].Span()
+			len := span.Len()
+			span = span.Range(len, len)
+		} else {
+			span = nodes[sta].Span()
+			span = span.WithSize(0)
+		}
+		return span
+	}
+
+	span := SpanForRange(nodes[sta:end])
+	return span
+}
+
+func (list NodeList) Range(sta, end int) (out []Node) {
+	list.checkValid()
+	out = append(out, list.data.nodes[sta:end]...)
+	return out
+}
+
 func (list NodeList) Len() int {
 	list.checkValid()
 	return len(list.data.nodes)
@@ -170,7 +200,61 @@ func (list NodeList) Push(nodes ...Node) {
 	list.data.nodes = append(list.data.nodes, nodes...)
 }
 
+func (list NodeList) TakeNodes(idx ...int) (out []Node) {
+	sta, end := list.rangeArgs(idx...)
+	out = append(out, list.data.nodes[sta:end]...)
+	list.Replace(sta, end)
+	return out
+}
+
+func (list NodeList) TakeList(idx ...int) (out NodeList) {
+	nodes := list.TakeNodes(idx...)
+	span := list.GetSpan(idx...)
+	return NodeListNew(span, nodes...)
+}
+
+func (list NodeList) RemoveIf(pred func(node Node) bool) {
+	list.checkValid()
+	nodes := list.data.nodes
+	for pos := len(nodes) - 1; pos >= 0; pos-- {
+		if remove := pred(nodes[pos]); !remove {
+			continue
+		}
+
+		copy(nodes[pos:], nodes[pos+1:])
+		nodes = nodes[:len(nodes)-1]
+	}
+	list.data.nodes = nodes
+}
+
+func (list NodeList) Remove(idx ...int) {
+	sta, end := list.rangeArgs(idx...)
+	list.Replace(sta, end)
+}
+
 func (list NodeList) Replace(sta, end int, nodes ...Node) {
 	list.checkValid()
 	list.data.nodes = slices.Replace(list.data.nodes, sta, end, nodes...)
+}
+
+func (list NodeList) rangeArgs(idx ...int) (sta, end int) {
+	list.checkValid()
+
+	switch len(idx) {
+	case 0:
+		sta, end = 0, list.Len()
+	case 1:
+		sta = idx[0]
+		end = sta + 1
+	case 2:
+		sta, end = idx[0], idx[1]
+	default:
+		panic("NodeList: invalid range arguments")
+	}
+
+	if sta < 0 || end > list.Len() || end < sta {
+		panic("NodeList: invalid range")
+	}
+
+	return sta, end
 }
