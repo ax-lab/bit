@@ -48,10 +48,14 @@ func (rt *Runtime) StdErr() io.Writer {
 }
 
 func (rt *Runtime) Run() (out Value, err error) {
-	for _, it := range rt.compiler.codeList {
-		out, err = it.Eval(rt)
-		if err != nil {
-			break
+	modules, output := rt.compiler.GetOutput()
+	for n := range modules {
+		expr := output[n]
+		for _, it := range expr {
+			out, err = it.Eval(rt)
+			if err != nil {
+				return
+			}
 		}
 	}
 	return

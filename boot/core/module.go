@@ -65,6 +65,10 @@ func (mod *Module) Errors() (out []error) {
 	return out
 }
 
+func (mod *Module) Compare(other *Module) int {
+	return SourceCompare(mod.source, other.source)
+}
+
 func (mod *Module) checkValid() {
 	if mod.compiler == nil {
 		panic("Module: compiler is invalid")

@@ -37,8 +37,8 @@ type Compiler struct {
 	nodeLists   []nodeListEntry
 	nodeChanged bool
 
-	codeSync sync.Mutex
-	codeList []Expr
+	codeSync   sync.Mutex
+	codeOutput map[*Module][]Expr
 }
 
 type nodeListEntry struct {
@@ -120,6 +120,42 @@ func (compiler *Compiler) Fatal(err error) {
 	}
 }
 
+func (compiler *Compiler) Output(module *Module, expr Expr) {
+	compiler.codeSync.Lock()
+	defer compiler.codeSync.Unlock()
+	if compiler.codeOutput == nil {
+		compiler.codeOutput = make(map[*Module][]Expr)
+	}
+	compiler.codeOutput[module] = append(compiler.codeOutput[module], expr)
+}
+
+func (compiler *Compiler) GetOutput() (modules []*Module, output [][]Expr) {
+	compiler.sync.Lock()
+	defer compiler.sync.Unlock()
+
+	for _, mod := range compiler.modules {
+		modules = append(modules, mod)
+	}
+
+	slices.SortFunc(modules, func(a, b *Module) int {
+		return a.Compare(b)
+	})
+
+	for _, mod := range modules {
+		out := compiler.codeOutput[mod]
+		output = append(output, out)
+	}
+
+	return
+}
+
+func (compiler *Compiler) Eval(mod *Module, list NodeList) {
+	compiler.nodeSync.Lock()
+	compiler.nodeLists = append(compiler.nodeLists, nodeListEntry{mod, list})
+	compiler.nodeChanged = true
+	compiler.nodeSync.Unlock()
+}
+
 func (compiler *Compiler) Execute() bool {
 	compiler.sync.Lock()
 	defer compiler.sync.Unlock()
@@ -195,7 +231,7 @@ func (compiler *Compiler) Execute() bool {
 		}
 
 		slices.SortFunc(modules, func(a, b *Module) int {
-			return SourceCompare(a.source, b.source)
+			return a.Compare(b)
 		})
 
 		for _, module := range modules {
@@ -277,17 +313,4 @@ func (compiler *Compiler) Dump(full bool) {
 		repr := Indent(entry.list.Dump())
 		fmt.Fprintf(out, "\n\t[%d of %d] = %s\n", idx+1, len(lists), repr)
 	}
-}
-
-func (compiler *Compiler) OutputCode(expr Expr) {
-	compiler.codeSync.Lock()
-	defer compiler.codeSync.Unlock()
-	compiler.codeList = append(compiler.codeList, expr)
-}
-
-func (compiler *Compiler) Eval(mod *Module, list NodeList) {
-	compiler.nodeSync.Lock()
-	compiler.nodeLists = append(compiler.nodeLists, nodeListEntry{mod, list})
-	compiler.nodeChanged = true
-	compiler.nodeSync.Unlock()
 }

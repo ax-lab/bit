@@ -10,7 +10,7 @@ import (
 func OutputCode(mod *core.Module, nodes core.NodeList) {
 	compiler := mod.Compiler()
 	seq := outputSequence(mod, nodes)
-	compiler.OutputCode(seq)
+	compiler.Output(mod, seq)
 }
 
 func outputSequence(mod *core.Module, list core.NodeList) (out code.Seq) {
