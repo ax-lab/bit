@@ -50,10 +50,10 @@ func ParseLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out cor
 }
 
 func readLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out core.Node) {
-	rt := mod.Runtime()
+	compiler := mod.Compiler()
 
 	var nodes []core.Node
-	for !rt.ShouldStop() {
+	for !compiler.ShouldStop() {
 		next := lexer.Read(mod, input)
 		if !next.Valid() {
 			break
@@ -77,7 +77,7 @@ func readLine(mod *core.Module, lexer *core.Lexer, input *core.Cursor) (out core
 	}
 
 	line := core.NodeListNew(core.SpanForRange(nodes), nodes...)
-	rt.Eval(mod, line)
+	compiler.Eval(mod, line)
 
 	out = core.NodeNew(line.Span(), Line(line))
 	return out

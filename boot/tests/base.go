@@ -39,13 +39,11 @@ func Run(test *require.Assertions, input string) (out TestRun) {
 	stdErr := strings.Builder{}
 	compiler.RedirectStdOut(&stdOut)
 	compiler.RedirectStdErr(&stdErr)
+	out.Success = compiler.Execute()
 
 	rt := compiler.CreateRuntime()
-
-	out.Success = rt.RunCompiler()
-
 	if out.Success {
-		out.Result, out.Error = rt.RunCode()
+		out.Result, out.Error = rt.Run()
 		out.Success = out.Error == nil
 	}
 

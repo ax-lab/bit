@@ -35,12 +35,12 @@ func runMain(args ...string) error {
 		compiler.AddSource(it)
 	}
 
-	rt := compiler.CreateRuntime()
-	if !rt.RunCompiler() {
+	if !compiler.Execute() {
 		return fmt.Errorf("compilation failed")
 	}
 
-	val, err := rt.RunCode()
+	rt := compiler.CreateRuntime()
+	val, err := rt.Run()
 	if val != nil {
 		fmt.Printf("\nResult = %s\n", val)
 	}

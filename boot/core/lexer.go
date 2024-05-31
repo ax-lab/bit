@@ -72,8 +72,8 @@ func (lex *Lexer) TokenizeUntil(mod *Module, input *Cursor, stop LexStopFn) (out
 		}()
 	}
 
-	rt := mod.runtime
-	for input.Len() > 0 && !rt.ShouldStop() {
+	compiler := mod.compiler
+	for input.Len() > 0 && !compiler.ShouldStop() {
 		var next Node
 		if lex.segmentFn != nil {
 			next = lex.segmentFn(mod, lex, input)

@@ -3,31 +3,31 @@ package core
 import "sync"
 
 type Module struct {
-	runtime *Runtime
-	source  Source
-	nodes   NodeList
+	compiler *Compiler
+	source   Source
+	nodes    NodeList
 
 	errorSync sync.Mutex
 	errorSort bool
 	errors    []error
 }
 
-func moduleNew(runtime *Runtime, source Source) *Module {
+func moduleNew(compiler *Compiler, source Source) *Module {
 	if source == nil {
 		panic("Module: invalid source")
 	}
 
 	module := &Module{
-		runtime: runtime,
-		source:  source,
+		compiler: compiler,
+		source:   source,
 	}
 	module.nodes = NodeListNew(source.Span())
 	module.nodes.checkValid()
 	return module
 }
 
-func (mod *Module) Runtime() *Runtime {
-	return mod.runtime
+func (mod *Module) Compiler() *Compiler {
+	return mod.compiler
 }
 
 func (mod *Module) Nodes() NodeList {
@@ -35,7 +35,7 @@ func (mod *Module) Nodes() NodeList {
 }
 
 func (mod *Module) NewLexer() *Lexer {
-	return mod.runtime.lexer.Copy()
+	return mod.compiler.Lexer.Copy()
 }
 
 func (mod *Module) Error(err error) (stop bool) {
@@ -49,7 +49,7 @@ func (mod *Module) Error(err error) (stop bool) {
 	mod.errorSort = true
 	mod.errorSync.Unlock()
 
-	return mod.runtime.incrementErrorCount()
+	return mod.compiler.incrementErrorCount()
 }
 
 func (mod *Module) Errors() (out []error) {
@@ -66,7 +66,7 @@ func (mod *Module) Errors() (out []error) {
 }
 
 func (mod *Module) checkValid() {
-	if mod.runtime == nil {
-		panic("Module: runtime is invalid")
+	if mod.compiler == nil {
+		panic("Module: compiler is invalid")
 	}
 }

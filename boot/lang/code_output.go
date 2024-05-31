@@ -8,9 +8,9 @@ import (
 )
 
 func OutputCode(mod *core.Module, nodes core.NodeList) {
-	rt := mod.Runtime()
+	compiler := mod.Compiler()
 	seq := outputSequence(mod, nodes)
-	rt.OutputCode(seq)
+	compiler.OutputCode(seq)
 }
 
 func outputSequence(mod *core.Module, list core.NodeList) (out code.Seq) {
