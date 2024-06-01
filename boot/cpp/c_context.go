@@ -52,11 +52,17 @@ func (cpp *Context) IncludeSystem(includes ...string) {
 }
 
 func (cpp *Context) Main() *Block {
+	cpp.sync.Lock()
+	defer cpp.sync.Unlock()
+
 	cpp.initBlocks()
 	return &cpp.mainBody
 }
 
 func (cpp *Context) DeclareFunction(header string, args ...any) *Block {
+	cpp.sync.Lock()
+	defer cpp.sync.Unlock()
+
 	if len(args) > 0 {
 		header = fmt.Sprintf(header, args...)
 	}
