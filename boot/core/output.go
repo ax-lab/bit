@@ -81,7 +81,7 @@ func (set *OutputSet) GetFullPath(name string) (string, error) {
 		base = "."
 	}
 
-	full, err := filepath.Abs(filepath.Join(path, set.name, base))
+	full, err := filepath.Abs(filepath.Join(base, set.name, path))
 	return full, err
 }
 

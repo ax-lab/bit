@@ -206,6 +206,9 @@ func (cmd *CmdArgs) Start() {
 
 	go func() {
 		defer complete(nil)
+		if exe.Process == nil {
+			return
+		}
 		state, err := exe.Process.Wait()
 		cmd.state = state
 		complete(err)
