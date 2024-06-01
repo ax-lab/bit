@@ -1,6 +1,9 @@
 package core
 
-import "sync"
+import (
+	"path"
+	"sync"
+)
 
 type Module struct {
 	compiler *Compiler
@@ -24,6 +27,19 @@ func moduleNew(compiler *Compiler, source Source) *Module {
 	module.nodes = NodeListNew(source.Span())
 	module.nodes.checkValid()
 	return module
+}
+
+func (mod *Module) Name() string {
+	mod.checkValid()
+	name := mod.source.Name()
+	for {
+		if ext := path.Ext(name); len(ext) > 0 {
+			name = name[:len(name)-len(ext)]
+		} else {
+			break
+		}
+	}
+	return name
 }
 
 func (mod *Module) Compiler() *Compiler {

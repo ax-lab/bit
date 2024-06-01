@@ -4,6 +4,10 @@ import (
 	"fmt"
 )
 
+const (
+	BuildCacheDir = ".build"
+)
+
 func Version() string {
 	return "0.1.0"
 }

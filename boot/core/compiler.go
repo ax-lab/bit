@@ -242,7 +242,7 @@ func (compiler *Compiler) Execute() bool {
 
 end:
 
-	ok := compiler.outputErrors()
+	ok := compiler.OutputErrors()
 	return ok
 }
 
@@ -251,7 +251,7 @@ func (compiler *Compiler) incrementErrorCount() (stop bool) {
 	return compiler.ShouldStop()
 }
 
-func (compiler *Compiler) outputErrors() bool {
+func (compiler *Compiler) OutputErrors() bool {
 	var errors []error
 	for _, ls := range compiler.modules {
 		errors = append(errors, ls.Errors()...)
