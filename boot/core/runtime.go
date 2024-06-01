@@ -48,7 +48,7 @@ func (rt *Runtime) StdErr() io.Writer {
 }
 
 func (rt *Runtime) Run() (out Value, err error) {
-	modules, output := rt.compiler.GetOutput()
+	modules, output := rt.compiler.GetOutputCode()
 	for n := range modules {
 		expr := output[n]
 		for _, it := range expr {

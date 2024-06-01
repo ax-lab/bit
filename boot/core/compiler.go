@@ -14,6 +14,7 @@ const MaxErrors = 32
 type OpFunc func(mod *Module, list NodeList)
 
 type Compiler struct {
+	Output  OutputMap
 	Sources SourceLoader
 	Lexer   Lexer
 
@@ -120,7 +121,7 @@ func (compiler *Compiler) Fatal(err error) {
 	}
 }
 
-func (compiler *Compiler) Output(module *Module, expr Expr) {
+func (compiler *Compiler) OutputExpr(module *Module, expr Expr) {
 	compiler.codeSync.Lock()
 	defer compiler.codeSync.Unlock()
 	if compiler.codeOutput == nil {
@@ -129,7 +130,7 @@ func (compiler *Compiler) Output(module *Module, expr Expr) {
 	compiler.codeOutput[module] = append(compiler.codeOutput[module], expr)
 }
 
-func (compiler *Compiler) GetOutput() (modules []*Module, output [][]Expr) {
+func (compiler *Compiler) GetOutputCode() (modules []*Module, output [][]Expr) {
 	compiler.sync.Lock()
 	defer compiler.sync.Unlock()
 

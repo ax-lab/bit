@@ -7,7 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"strings"
 	"sync"
 )
 
@@ -150,27 +149,11 @@ func (loader *SourceLoader) ResolveName(base, name string) (out string, err erro
 }
 
 func (loader *SourceLoader) cleanName(name string) (string, error) {
-	out := path.Clean(name)
-
-	valid := true
-	if out == "" || strings.ContainsAny(out, "\r\n\t\\*?:|") {
-		valid = false
-	} else {
-		for _, it := range strings.Split(out, "/") {
-			if it == "." || it == ".." {
-				valid = false
-				break
-			}
-		}
+	out, err := CleanPath(name)
+	if err != nil {
+		err = fmt.Errorf("source name: %v", err)
 	}
-
-	if !valid {
-		return "", fmt.Errorf("source name is not valid: %#v", name)
-	} else if strings.HasPrefix(out, "/") {
-		return "", fmt.Errorf("source name must be relative: %s", name)
-	}
-
-	return out, nil
+	return out, err
 }
 
 type sourceEntry struct {
