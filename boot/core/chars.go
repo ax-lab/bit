@@ -1,9 +1,19 @@
 package core
 
-import "unicode"
+import (
+	"unicode"
+)
 
 func IsSpace(chr rune) bool {
 	return chr != '\r' && chr != '\n' && unicode.IsSpace(chr)
+}
+
+func IsIdentifierChar(chr rune, start bool) bool {
+	id := chr == '_' || IsAlphaNum(chr) || IsLetterOrNumber(chr)
+	if start && id {
+		id = !(IsDigit(chr) || unicode.IsNumber(chr))
+	}
+	return id
 }
 
 func IsAlpha(chr rune) bool {
@@ -22,12 +32,12 @@ func IsLetter(chr rune) bool {
 	return IsAlpha(chr) || unicode.IsLetter(chr)
 }
 
-func IsLetterOrDigit(chr rune) bool {
+func IsLetterOrNumber(chr rune) bool {
 	return IsAlphaNum(chr) || unicode.IsLetter(chr) || unicode.IsNumber(chr)
 }
 
 func IsWord(chr rune) bool {
-	return chr == '_' || IsLetterOrDigit(chr)
+	return chr == '_' || IsLetterOrNumber(chr)
 }
 
 func IsBaseDigit(chr rune, base int) bool {

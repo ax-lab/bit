@@ -30,7 +30,7 @@ func MatchWord(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.Val
 
 	sta := *input
 	next := input.Peek()
-	if next != '_' && !core.IsLetter(next) {
+	if !core.IsIdentifierChar(next, true) {
 		return nil
 	}
 
@@ -39,7 +39,7 @@ func MatchWord(mod *core.Module, lexer *core.Lexer, input *core.Cursor) core.Val
 	for input.Peek() == '-' {
 		tmp := *input
 		tmp.Read()
-		if tmp.SkipWhile(core.IsWord) {
+		if tmp.SkipWhile(func(chr rune) bool { return core.IsIdentifierChar(chr, false) }) {
 			*input = tmp
 		} else {
 			break
