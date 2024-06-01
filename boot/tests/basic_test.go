@@ -27,3 +27,14 @@ func TestHelloWorldC(t *testing.T) {
 	run.NoError()
 	test.Equal("hello world!!!\n", run.StdOut())
 }
+
+func TestHelloWorldGo(t *testing.T) {
+	test := require.New(t)
+
+	run := RunGo("hello-world", test, `
+		print 'hello world!!!'
+	`)
+
+	run.NoError()
+	test.Equal("hello world!!!\n", run.StdOut())
+}

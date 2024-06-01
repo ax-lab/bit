@@ -80,6 +80,29 @@ func RunC(name string, test *require.Assertions, input string) (out TestRun) {
 	return
 }
 
+func RunGo(name string, test *require.Assertions, input string) (out TestRun) {
+	out = compileTest(name, test, input)
+	if !out.Success() {
+		return
+	}
+
+	output := out.compiler.Output.Get("go")
+	cmd := lang.OutputGo(out.compiler, output)
+	if !out.Success() {
+		out.compiler.OutputErrors()
+		return
+	}
+
+	test.NotNil(cmd)
+
+	out.Error = cmd.Run()
+	out.Result = cmd.ExitCode()
+	out.writerStdOut.WriteString(cmd.StdOut())
+	out.writerStdErr.WriteString(cmd.StdErr())
+
+	return
+}
+
 func compileTest(name string, test *require.Assertions, input string) (out TestRun) {
 	out.test = test
 	out.writerStdOut = &strings.Builder{}
