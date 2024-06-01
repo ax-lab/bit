@@ -6,14 +6,29 @@ import (
 	"axlab.dev/bit/core"
 )
 
-type Str string
+type Str struct {
+	span core.Span
+	text string
+}
+
+func StrNew(span core.Span, text string) Str {
+	return Str{span, text}
+}
+
+func (str Str) Span() core.Span {
+	return str.span
+}
+
+func (str Str) Text() string {
+	return str.text
+}
 
 func (str Str) String() string {
-	return string(str)
+	return str.text
 }
 
 func (str Str) Debug() string {
-	return fmt.Sprintf("Str(%#v)", string(str))
+	return fmt.Sprintf("Str(%#v)", str.text)
 }
 
 func (str Str) Eval(rt *core.Runtime) (core.Value, error) {

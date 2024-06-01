@@ -14,6 +14,7 @@ func OutputCode(mod *core.Module, nodes core.NodeList) {
 }
 
 func outputSequence(mod *core.Module, list core.NodeList) (out code.Seq) {
+	out = code.SeqNew(list.Span())
 	for _, it := range list.Nodes() {
 		var (
 			expr core.Expr
@@ -34,7 +35,7 @@ func outputSequence(mod *core.Module, list core.NodeList) (out code.Seq) {
 		}
 
 		if expr != nil {
-			out.List = append(out.List, expr)
+			out.Push(expr)
 		}
 	}
 
@@ -54,13 +55,14 @@ func outputLine(line Line) (out core.Expr, err error) {
 }
 
 func outputExpr(node core.Node) (out core.Expr, err error) {
+	span := node.Span()
 	switch val := node.Value().(type) {
 	case PrintExpr:
-		out, err = outputPrintExpr(val)
+		out, err = outputPrintExpr(span, val)
 	case core.Literal:
 		raw := val.Prefix == "r"
 		text := ParseStringLiteral(val.RawText, raw, val.Delim)
-		out = code.Str(text)
+		out = code.StrNew(span, text)
 	default:
 		err = fmt.Errorf("cannot output expression for node: %s", val.String())
 	}
@@ -71,7 +73,7 @@ func outputExpr(node core.Node) (out core.Expr, err error) {
 	return
 }
 
-func outputPrintExpr(expr PrintExpr) (out core.Expr, err error) {
+func outputPrintExpr(span core.Span, expr PrintExpr) (out core.Expr, err error) {
 	args := make([]core.Expr, 0, expr.Args.Len())
 	for _, node := range expr.Args.Nodes() {
 		expr, exprErr := outputExpr(node)
@@ -83,6 +85,6 @@ func outputPrintExpr(expr PrintExpr) (out core.Expr, err error) {
 		}
 	}
 
-	out = code.Print{Args: args}
+	out = code.PrintNew(span, args...)
 	return
 }

@@ -9,13 +9,26 @@ import (
 )
 
 type Print struct {
-	Args []core.Expr
+	span core.Span
+	args []core.Expr
+}
+
+func PrintNew(span core.Span, args ...core.Expr) Print {
+	return Print{span, args}
+}
+
+func (expr Print) Span() core.Span {
+	return expr.span
+}
+
+func (expr Print) Args() []core.Expr {
+	return expr.args
 }
 
 func (expr Print) String() string {
 	out := strings.Builder{}
 	out.WriteString("Print(")
-	for n, it := range expr.Args {
+	for n, it := range expr.args {
 		if n > 0 {
 			out.WriteString(", ")
 		}
@@ -26,8 +39,8 @@ func (expr Print) String() string {
 }
 
 func (expr Print) Eval(rt *core.Runtime) (core.Value, error) {
-	args := make([]core.Value, 0, len(expr.Args))
-	for _, it := range expr.Args {
+	args := make([]core.Value, 0, len(expr.args))
+	for _, it := range expr.args {
 		if val, err := it.Eval(rt); err == nil {
 			args = append(args, val)
 		} else {
