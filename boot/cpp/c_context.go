@@ -23,81 +23,81 @@ type Context struct {
 	mainBody Block
 }
 
-func (cpp *Context) IncludeLocal(includes ...string) {
-	cpp.sync.Lock()
-	defer cpp.sync.Unlock()
-	if cpp.includeLocalSet == nil {
-		cpp.includeLocalSet = make(map[string]bool)
+func (ctx *Context) IncludeLocal(includes ...string) {
+	ctx.sync.Lock()
+	defer ctx.sync.Unlock()
+	if ctx.includeLocalSet == nil {
+		ctx.includeLocalSet = make(map[string]bool)
 	}
 	for _, it := range includes {
-		if !cpp.includeLocalSet[it] {
-			cpp.includeLocalSet[it] = true
-			cpp.includeLocalList = append(cpp.includeLocalList, it)
+		if !ctx.includeLocalSet[it] {
+			ctx.includeLocalSet[it] = true
+			ctx.includeLocalList = append(ctx.includeLocalList, it)
 		}
 	}
 }
 
-func (cpp *Context) IncludeSystem(includes ...string) {
-	cpp.sync.Lock()
-	defer cpp.sync.Unlock()
-	if cpp.includeSystemSet == nil {
-		cpp.includeSystemSet = make(map[string]bool)
+func (ctx *Context) IncludeSystem(includes ...string) {
+	ctx.sync.Lock()
+	defer ctx.sync.Unlock()
+	if ctx.includeSystemSet == nil {
+		ctx.includeSystemSet = make(map[string]bool)
 	}
 	for _, it := range includes {
-		if !cpp.includeSystemSet[it] {
-			cpp.includeSystemSet[it] = true
-			cpp.includeSystemList = append(cpp.includeSystemList, it)
+		if !ctx.includeSystemSet[it] {
+			ctx.includeSystemSet[it] = true
+			ctx.includeSystemList = append(ctx.includeSystemList, it)
 		}
 	}
 }
 
-func (cpp *Context) Main() *Block {
-	cpp.sync.Lock()
-	defer cpp.sync.Unlock()
+func (ctx *Context) Main() *Block {
+	ctx.sync.Lock()
+	defer ctx.sync.Unlock()
 
-	cpp.initBlocks()
-	return &cpp.mainBody
+	ctx.initBlocks()
+	return &ctx.mainBody
 }
 
-func (cpp *Context) DeclareFunction(header string, args ...any) *Block {
-	cpp.sync.Lock()
-	defer cpp.sync.Unlock()
+func (ctx *Context) DeclareFunction(header string, args ...any) *Block {
+	ctx.sync.Lock()
+	defer ctx.sync.Unlock()
 
 	if len(args) > 0 {
 		header = fmt.Sprintf(header, args...)
 	}
 
-	cpp.mainDecl.BlankLine()
-	cpp.mainDecl.WriteLine("%s;", header)
+	ctx.mainDecl.BlankLine()
+	ctx.mainDecl.WriteLine("%s;", header)
 
-	body := &Block{context: cpp}
-	cpp.declHead = append(cpp.declHead, header)
-	cpp.declBody = append(cpp.declBody, body)
+	body := &Block{context: ctx}
+	ctx.declHead = append(ctx.declHead, header)
+	ctx.declBody = append(ctx.declBody, body)
 
 	return body
 }
 
-func (cpp *Context) GenerateOutput(mainFile string, output *core.OutputSet) {
+func (ctx *Context) GenerateOutput(mainFile string, output *core.OutputSet) {
 	file := core.CodeText{}
 
-	for _, it := range cpp.includeSystemList {
+	for _, it := range ctx.includeSystemList {
 		file.WriteLine(`#include <%s>`, it)
 	}
-	if len(cpp.includeSystemList) > 0 {
+	if len(ctx.includeSystemList) > 0 {
 		file.BlankLine()
 	}
 
-	for _, it := range cpp.includeLocalList {
+	for _, it := range ctx.includeLocalList {
 		file.WriteLine(`#include "%s"`, it)
 	}
-	if len(cpp.includeLocalList) > 0 {
+	if len(ctx.includeLocalList) > 0 {
 		file.BlankLine()
 	}
 
-	file.WriteLine(cpp.mainDecl.String())
+	file.WriteLine(ctx.mainDecl.String())
 
-	for idx, header := range cpp.declHead {
-		body := cpp.declBody[idx]
+	for idx, header := range ctx.declHead {
+		body := ctx.declBody[idx]
 		file.BlankLine()
 		file.WriteLine("%s {", header)
 		file.Indent()
@@ -109,7 +109,7 @@ func (cpp *Context) GenerateOutput(mainFile string, output *core.OutputSet) {
 	file.BlankLine()
 	file.WriteLine(`int main() {`)
 	file.Indent()
-	file.WriteLine(cpp.mainBody.String())
+	file.WriteLine(ctx.mainBody.String())
 	file.Dedent()
 	file.WriteLine(`}`)
 
@@ -117,7 +117,7 @@ func (cpp *Context) GenerateOutput(mainFile string, output *core.OutputSet) {
 	output.Add(mainFile, text)
 }
 
-func (cpp *Context) initBlocks() {
-	cpp.mainDecl.context = cpp
-	cpp.mainBody.context = cpp
+func (ctx *Context) initBlocks() {
+	ctx.mainDecl.context = ctx
+	ctx.mainBody.context = ctx
 }
