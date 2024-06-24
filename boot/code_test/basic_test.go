@@ -41,8 +41,8 @@ func TestPrint(t *testing.T) {
 	eval := code.MustCompile(block)
 	ans, err := eval(&rt)
 
-	test.Equal("The answer to life, the universe and everything is 42\n", stdOut)
-	test.Empty(stdErr)
-	test.EqualValues([]any{"The answer to life, the universe, and everything is", 42}, ans)
+	test.Equal("The answer to life, the universe, and everything is 42\n", stdOut.String())
+	test.Empty(stdErr.String())
+	test.EqualValues([]any{"The answer to life, the universe, and everything is", int64(42)}, ans)
 	test.NoError(err)
 }
