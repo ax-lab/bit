@@ -1,13 +1,13 @@
-package core_test
+package base_test
 
 import (
 	"testing"
 
-	"axlab.dev/bit/core"
+	"axlab.dev/bit/base"
 	"github.com/stretchr/testify/require"
 )
 
 func TestVersion(t *testing.T) {
 	test := require.New(t)
-	test.NotEmpty(core.Version())
+	test.NotEmpty(base.Version())
 }

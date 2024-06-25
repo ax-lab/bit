@@ -3,9 +3,9 @@ package main
 import (
 	"fmt"
 
-	"axlab.dev/bit/core"
+	"axlab.dev/bit/base"
 )
 
 func main() {
-	fmt.Printf("\nBit version %s\n\n", core.Version())
+	fmt.Printf("\nBit version %s\n\n", base.Version())
 }
