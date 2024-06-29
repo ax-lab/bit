@@ -7,16 +7,17 @@ import (
 )
 
 var projectDir = (func() string {
-	dir := filepath.Dir(CurrentFile())
-	dir, valid := filepath.Join(dir, "..", ".."), false
+	dir, valid := filepath.Dir(CurrentFile()), false
 	for {
-		if IsDir(filepath.Join(dir, "bootstrap/bit")) && IsFile(filepath.Join(dir, "go.work")) {
+		if IsFile(filepath.Join(dir, "boot/cmd/bit.go")) && IsFile(filepath.Join(dir, "go.work")) {
 			valid = true
 			break
 		} else {
 			next := filepath.Dir(dir)
 			if next == dir || next == "." {
 				break
+			} else {
+				dir = next
 			}
 		}
 	}
