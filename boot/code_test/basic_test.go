@@ -1,19 +1,18 @@
-package code_test
+package code_tests
 
 import (
-	"strings"
 	"testing"
 
 	"axlab.dev/bit/code"
-	"github.com/stretchr/testify/require"
 )
 
 func TestPrint(t *testing.T) {
-	test := require.New(t)
+	test := NewTest(t)
+	program := &test.Program
 
 	varAns := code.Var{
 		Name: code.Id("ans"),
-		Type: code.TypeNumber(),
+		Type: program.Types().Scalar(code.TypeScalarNumber),
 	}
 
 	block := code.ExprNew(code.Block{
@@ -31,18 +30,8 @@ func TestPrint(t *testing.T) {
 		},
 	})
 
-	stdOut := strings.Builder{}
-	stdErr := strings.Builder{}
-	rt := code.Runtime{
-		StdOut: &stdOut,
-		StdErr: &stdErr,
-	}
-
-	eval := code.MustCompile(block)
-	ans, err := eval(&rt)
-
-	test.Equal("The answer to life, the universe, and everything is 42\n", stdOut.String())
-	test.Empty(stdErr.String())
-	test.EqualValues([]any{"The answer to life, the universe, and everything is", int64(42)}, ans)
-	test.NoError(err)
+	program.Append(block)
+	test.ExpectStdOut = "The answer to life, the universe, and everything is 42\n"
+	test.ExpectResult = []any{"The answer to life, the universe, and everything is", int64(42)}
+	test.Check()
 }

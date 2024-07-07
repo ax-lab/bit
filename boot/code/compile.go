@@ -2,51 +2,56 @@ package code
 
 import (
 	"fmt"
-	"log"
 )
 
 type EvalFunc func(rt *Runtime) (out any, err error)
 
-func MustCompile(expr Expr) EvalFunc {
-	global := &Scope{}
-	out, err := Compile(global, expr)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return out
+func (program *Program) Compile() (eval EvalFunc, err error) {
+	program.codeSync.Lock()
+	defer program.codeSync.Unlock()
+	eval, err = compileList(&program.scope, program.codeList)
+	return
 }
 
-func Compile(scope *Scope, expr Expr) (eval EvalFunc, err error) {
+func compileList(scope *Scope, list []Expr) (eval EvalFunc, err error) {
+	var code []EvalFunc
+	for _, it := range list {
+		eval, err := compileExpr(scope, it)
+		if err != nil {
+			return nil, err
+		}
+		code = append(code, eval)
+	}
+
+	eval = func(rt *Runtime) (out any, err error) {
+		for _, it := range code {
+			if out, err = it(rt); err != nil {
+				return nil, err
+			}
+		}
+		return out, nil
+	}
+
+	return eval, nil
+}
+
+func compileExpr(scope *Scope, expr Expr) (eval EvalFunc, err error) {
 	switch val := expr.Value().(type) {
 
 	case Block:
-		var (
-			code []EvalFunc
-		)
-
 		blockScope := scope.NewChild()
-		for _, it := range val.List {
-			eval, err := Compile(blockScope, it)
-			if err != nil {
-				return nil, err
+		if evalInner, err := compileList(blockScope, val.List); err != nil {
+			return nil, err
+		} else {
+			eval = func(rt *Runtime) (out any, err error) {
+				cleanup := rt.InitScope(blockScope)
+				defer cleanup()
+				return evalInner(rt)
 			}
-			code = append(code, eval)
-		}
-
-		eval = func(rt *Runtime) (out any, err error) {
-			cleanup := rt.InitScope(blockScope)
-			defer cleanup()
-
-			for _, it := range code {
-				if out, err = it(rt); err != nil {
-					return nil, err
-				}
-			}
-			return out, nil
 		}
 
 	case Let:
-		init, err := Compile(scope, val.Init)
+		init, err := compileExpr(scope, val.Init)
 		if err != nil {
 			return nil, err
 		}
@@ -93,7 +98,7 @@ func Compile(scope *Scope, expr Expr) (eval EvalFunc, err error) {
 
 		args := make([]EvalFunc, 0, len(val.Args))
 		for _, arg := range val.Args {
-			if fn, err := Compile(scope, arg); err == nil {
+			if fn, err := compileExpr(scope, arg); err == nil {
 				args = append(args, fn)
 			} else {
 				return nil, err
